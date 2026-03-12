@@ -4,10 +4,12 @@ const express = require('express');
 const path = require('path');
 const session = require('express-session');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt')
+
+const conn = require('./config/db')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 
 
 
@@ -155,7 +157,7 @@ app.get('/login', (req, res) => {
 });
 
 // POST Login - handle authentication
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     // Simple validation
@@ -164,36 +166,29 @@ app.post('/login', (req, res) => {
         return res.redirect('/login');
     }
     
-    // Find user in memory
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (user) {
-        // Set user session (don't include password)
-        req.session.user = {
-            id: user.id,
-            full_name: user.full_name,
-            email: user.email,
-            role: user.role
-        };
-        
-        console.log(`✅ User logged in: ${user.full_name} (${user.role})`);
-        
-        // Redirect based on role
-        switch(user.role) {
-            case 'administrator':
-                return res.redirect('/administrator/dashboard');
-            case 'moderator':
-                return res.redirect('/moderator/dashboard');
-            default:
-                return res.redirect('/client/dashboard');
+    try {
+
+        const userQuery = "SELECT email, password FROM User WHERE email = ?"
+        const [userRow] = await conn.execute(userQuery, [email])
+
+        if (userRow.length <= 0){
+            res.status(400).send("Invalid login")
+            return
         }
-    } else {
-        req.session.error = 'Invalid email or password. Try demo accounts:\n' +
-            '• resident@barangchan.ph / resident123\n' +
-            '• moderator@barangchan.ph / moderator123\n' +
-            '• admin@barangchan.ph / admin123';
-        return res.redirect('/login');
+
+        const validPass = await bcrypt.compare(password, userRow[0]["password"] ) 
+
+        if (!validPass) {
+            res.status(400).send("Invalid login")
+        }
+
+        res.status(200).send("Yehay")
+    } catch (err) {
+        console.log(err)
+        res.status(500).send("Server Error")
     }
+  
+    
 });
 
 // ==================== LOGOUT ROUTE ====================
@@ -208,56 +203,72 @@ app.get('/logout', (req, res) => {
 
 // ==================== REGISTER ROUTE ====================
 app.get('/register', (req, res) => {
+
+    const err = req.session.error
+    req.session.error = null
     res.render('register', { 
         title: 'BarangChan - Register',
-        error: null,
+        error: err,
         year: new Date().getFullYear()
     });
 });
 
-app.post('/register', (req, res) => {
-    const { full_name, email, password, confirm_password, birthday } = req.body;
-    
-    // Simple validation
-    if (!full_name || !email || !password || !confirm_password) {
-        req.session.error = 'Please fill in all required fields';
-        return res.redirect('/register');
+app.post('/register', async (req, res) => {
+    const { first_name, last_name, middle_name, email, password, confirm_password, phone, city, barangay, street, zipcode } = req.body;
+
+    try{
+        full_name = first_name
+        if (middle_name !== ""){
+            full_name = full_name + " " + middle_name 
+        } 
+        full_name = full_name + " " + last_name
+        
+        
+        
+        
+        //Simple validation
+        if (!first_name || !last_name || !email || !password || !confirm_password) {
+            req.session.error = 'Please fill in all required fields';
+            return res.redirect('/register');
+        }
+        
+        if (password !== confirm_password) {
+            req.session.error = 'Passwords do not match';
+            return res.redirect('/register');
+        }
+
+        
+        const existQuery = "SELECT * FROM User WHERE email = ?"
+        const [rows] = await conn.execute(existQuery, [email])
+
+        if (rows.length > 0){
+            req.session.error = 'Email already registered'
+            return res.redirect('register')
+        }
+
+        
+
+
+        
+        hashedPass = await bcrypt.hash(password, 10)
+        const insertUserQuery = "INSERT INTO User(first_name, last_name, middle_name, email, phone, password) VALUES (?, ?, ?, ?, ?, ?)"
+        const [insertUserRow] = await conn.execute(insertUserQuery, [first_name, last_name, middle_name, email, phone, hashedPass])
+
+        user_id = insertUserRow.insertId
+        const insertAddressQuery = "INSERT INTO Address(user_id, city, barangay, street, zip) VALUES (?, ?, ?, ?, ?)"
+        const [insertAddressRow] = await conn.execute(insertAddressQuery, [user_id, city, barangay, street, zipcode])
+
+        res.status(200).send("User added successfully!")
+
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send("Website down")
     }
+
+
     
-    if (password !== confirm_password) {
-        req.session.error = 'Passwords do not match';
-        return res.redirect('/register');
-    }
-    
-    // Check if email already exists
-    if (users.find(u => u.email === email)) {
-        req.session.error = 'Email already registered';
-        return res.redirect('/register');
-    }
-    
-    // Create new user
-    const newUser = {
-        id: users.length + 1,
-        full_name: full_name,
-        email: email,
-        password: password, // In production, hash this!
-        birthday: birthday || null,
-        role: 'resident', // Default role
-        created_at: new Date()
-    };
-    
-    users.push(newUser);
-    console.log(`✅ New user registered: ${full_name}`);
-    
-    // Auto login after registration
-    req.session.user = {
-        id: newUser.id,
-        full_name: newUser.full_name,
-        email: newUser.email,
-        role: newUser.role
-    };
-    
-    res.redirect('/client/dashboard');
+    //res.redirect('/client/dashboard');
 });
 
 // ==================== CLIENT ROUTES (RESIDENTS) ====================
