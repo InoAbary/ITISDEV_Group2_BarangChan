@@ -1,0 +1,1032 @@
+<!-- moderator/posts.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Manage Posts</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Status badges */
+        .status-pending { background-color: #fff3e0; color: #ef6c00; }
+        .status-approved { background-color: #e8f5e8; color: #2e7d32; }
+        .status-rejected { background-color: #ffebee; color: #c62828; }
+        .status-flagged { background-color: #fce4ec; color: #880e4f; }
+
+        /* Urgency badges */
+        .urgency-low { background-color: #e6f7e6; color: #2e7d32; }
+        .urgency-medium { background-color: #fff3e0; color: #ef6c00; }
+        .urgency-high { background-color: #ffebee; color: #c62828; }
+        .urgency-emergency { background-color: #fce4ec; color: #880e4f; animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Post card hover */
+        .post-management-card {
+            transition: all 0.2s ease;
+        }
+        .post-management-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Filter tabs */
+        .filter-tab {
+            transition: all 0.2s ease;
+        }
+        .filter-tab.active {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        /* Table row hover */
+        .table-row-hover:hover {
+            background-color: #f9fafb;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #f59e0b;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Include navigation -->
+    <%- include('../Partials/topnavigation', { currentPath: '/moderator/posts', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-amber-800 to-amber-700 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <i class="fas fa-comments"></i> 
+                        Manage Community Posts
+                    </h1>
+                    <p class="text-amber-100 mt-1 text-sm md:text-base">
+                        <i class="fas fa-shield-alt mr-1"></i> 
+                        Review, approve, and moderate all community posts
+                    </p>
+                </div>
+                <div class="mt-3 md:mt-0 flex items-center gap-3">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-clock mr-2"></i>Last updated: just now
+                    </span>
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-chart-line mr-2"></i>24 pending
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-amber-500">
+                <p class="text-xs text-gray-500">Total Posts</p>
+                <p class="text-2xl font-bold text-gray-800">1,284</p>
+                <p class="text-xs text-green-600">+124 this week</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-yellow-500">
+                <p class="text-xs text-gray-500">Pending Review</p>
+                <p class="text-2xl font-bold text-gray-800">24</p>
+                <p class="text-xs text-amber-600">8 urgent</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-green-500">
+                <p class="text-xs text-gray-500">Approved</p>
+                <p class="text-2xl font-bold text-gray-800">1,156</p>
+                <p class="text-xs text-green-600">92% approval rate</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-red-500">
+                <p class="text-xs text-gray-500">Flagged/Reported</p>
+                <p class="text-2xl font-bold text-gray-800">18</p>
+                <p class="text-xs text-red-600">+5 today</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-purple-500">
+                <p class="text-xs text-gray-500">Rejected</p>
+                <p class="text-2xl font-bold text-gray-800">86</p>
+                <p class="text-xs text-purple-600">6.7% rejection rate</p>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <!-- Search Bar -->
+                <div class="flex-1 w-full md:w-auto">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" 
+                               id="searchInput"
+                               placeholder="Search posts by title, author, or content..." 
+                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                    </div>
+                </div>
+                
+                <!-- Filter Dropdowns -->
+                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                    <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="flagged">Flagged</option>
+                    </select>
+                    
+                    <select id="urgencyFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Urgency</option>
+                        <option value="emergency">Emergency</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    
+                    <select id="typeFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Types</option>
+                        <option value="announcement">Announcement</option>
+                        <option value="concern">Concern</option>
+                        <option value="suggestion">Suggestion</option>
+                        <option value="complaint">Complaint</option>
+                        <option value="emergency">Emergency</option>
+                        <option value="query">Query</option>
+                    </select>
+                    
+                    <select id="sortFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="newest">Sort by: Newest</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="urgent">Most Urgent</option>
+                        <option value="reported">Most Reported</option>
+                    </select>
+                    
+                    <button id="applyFilters" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium transition">
+                        <i class="fas fa-filter mr-1"></i> Apply Filters
+                    </button>
+                    
+                    <button id="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-sm font-medium transition">
+                        <i class="fas fa-redo-alt mr-1"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Filter Tabs -->
+            <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+                <button class="filter-tab active px-4 py-2 rounded-lg text-sm font-medium bg-amber-600 text-white" data-filter="all">All Posts</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="pending">Pending (24)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="flagged">Flagged (18)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="emergency">Emergency (6)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="high">High Priority (15)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="today">Today's Posts (42)</button>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActionsBar" class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6 hidden">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-700"><span id="selectedCount" class="text-amber-600 font-bold">0</span> posts selected</span>
+                    <button id="clearSelection" class="text-xs text-gray-500 hover:text-amber-600 transition">
+                        <i class="fas fa-times mr-1"></i>Clear selection
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="bulkApprove" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition">
+                        <i class="fas fa-check-circle mr-1"></i> Approve Selected
+                    </button>
+                    <button id="bulkReject" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition">
+                        <i class="fas fa-times-circle mr-1"></i> Reject Selected
+                    </button>
+                    <button id="bulkFlag" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition">
+                        <i class="fas fa-flag mr-1"></i> Flag Selected
+                    </button>
+                    <button id="bulkArchive" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium transition">
+                        <i class="fas fa-archive mr-1"></i> Archive
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden flex justify-center items-center py-12">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Posts Table -->
+        <div id="postsTable" class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Details</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgency</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reports</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="postsTableBody" class="bg-white divide-y divide-gray-200">
+                        <% 
+                        const posts = [
+                            {
+                                id: 'PST-2026-001',
+                                title: 'Broken Street Light in Phase 2',
+                                excerpt: 'The street light near the basketball court has been broken for 3 days...',
+                                content: 'The street light near the basketball court in Phase 2 has been broken for 3 days now. It\'s very dark at night and poses a safety risk, especially for residents walking home late. Several neighbors have reported near accidents and suspicious individuals lurking in the dark. Can the barangay please look into this as soon as possible?',
+                                author: 'Juan Dela Cruz',
+                                authorRole: 'Resident',
+                                authorAvatar: 'JD',
+                                type: 'concern',
+                                urgency: 'high',
+                                status: 'pending',
+                                reports: 3,
+                                timeAgo: '25 mins ago',
+                                timestamp: '2026-03-16T14:30:00',
+                                isOfficial: false,
+                                location: 'Phase 2, near basketball court',
+                                affectedResidents: '~20 households'
+                            },
+                            {
+                                id: 'PST-2026-002',
+                                title: '⚠️ Typhoon Preparedness Reminder',
+                                excerpt: 'As Typhoon "Amang" approaches, please secure your homes...',
+                                content: 'As Typhoon "Amang" approaches, please secure your homes and prepare emergency kits. Evacuation centers are open at Barangay Hall and San Antonio Elementary School. For emergencies, call 161 or 911.',
+                                author: 'Barangay DRRM',
+                                authorRole: 'Disaster Risk Reduction',
+                                authorAvatar: 'BD',
+                                type: 'emergency',
+                                urgency: 'emergency',
+                                status: 'approved',
+                                reports: 0,
+                                timeAgo: '1 hour ago',
+                                timestamp: '2026-03-16T13:45:00',
+                                isOfficial: true,
+                                location: 'Entire Barangay',
+                                affectedResidents: 'All residents'
+                            },
+                            {
+                                id: 'PST-2026-003',
+                                title: 'Free Medical Mission this Saturday',
+                                excerpt: 'In partnership with DOH, we will be holding a free medical mission...',
+                                content: 'In partnership with DOH, we will be holding a free medical mission at the Barangay Hall this Saturday, March 21, from 8AM to 12NN. Services include check-up, dental, and free medicines. First come, first served!',
+                                author: 'Kapitan Reyes',
+                                authorRole: 'Barangay Captain',
+                                authorAvatar: 'KR',
+                                type: 'announcement',
+                                urgency: 'low',
+                                status: 'approved',
+                                reports: 0,
+                                timeAgo: '3 hours ago',
+                                timestamp: '2026-03-16T11:20:00',
+                                isOfficial: true,
+                                location: 'Barangay Hall',
+                                affectedResidents: 'All residents'
+                            },
+                            {
+                                id: 'PST-2026-004',
+                                title: 'Suspicious Activity Near School',
+                                excerpt: 'I saw a suspicious person loitering near the elementary school...',
+                                content: 'I saw a suspicious person loitering near the elementary school around 3 PM today. He was wearing all black and seemed to be watching the children. Please increase patrol in the area.',
+                                author: 'Maria Santos',
+                                authorRole: 'Resident',
+                                authorAvatar: 'MS',
+                                type: 'concern',
+                                urgency: 'emergency',
+                                status: 'flagged',
+                                reports: 8,
+                                timeAgo: '2 hours ago',
+                                timestamp: '2026-03-16T12:15:00',
+                                isOfficial: false,
+                                location: 'Near San Antonio Elementary School',
+                                affectedResidents: 'Students and staff'
+                            },
+                            {
+                                id: 'PST-2026-005',
+                                title: 'Proposed Weekend Zumba Classes',
+                                excerpt: 'Would anyone be interested in weekend Zumba classes...',
+                                content: 'Would anyone be interested in weekend Zumba classes at the covered court? I\'m a certified instructor and could offer free sessions if we get at least 15 participants. Let me know in the comments!',
+                                author: 'Elena Rodriguez',
+                                authorRole: 'Resident',
+                                authorAvatar: 'ER',
+                                type: 'suggestion',
+                                urgency: 'low',
+                                status: 'pending',
+                                reports: 0,
+                                timeAgo: '5 hours ago',
+                                timestamp: '2026-03-16T09:30:00',
+                                isOfficial: false,
+                                location: 'Barangay Covered Court',
+                                affectedResidents: 'Interested residents'
+                            },
+                            {
+                                id: 'PST-2026-006',
+                                title: 'Complaint about Illegal Parking',
+                                excerpt: 'Vehicles are constantly parked along the fire lane...',
+                                content: 'Vehicles are constantly parked along the fire lane on Mabini Street. This is a serious safety hazard and needs to be addressed immediately.',
+                                author: 'Pedro Santos',
+                                authorRole: 'Resident',
+                                authorAvatar: 'PS',
+                                type: 'complaint',
+                                urgency: 'medium',
+                                status: 'pending',
+                                reports: 2,
+                                timeAgo: '6 hours ago',
+                                timestamp: '2026-03-16T08:45:00',
+                                isOfficial: false,
+                                location: 'Mabini Street',
+                                affectedResidents: 'Entire street'
+                            },
+                            {
+                                id: 'PST-2026-007',
+                                title: 'Barangay Clearance Processing Update',
+                                excerpt: 'Good news! We now have a faster processing time...',
+                                content: 'Good news! We now have a faster processing time for Barangay Clearances. Please expect your documents within 2-3 working days. Walk-in applications are accepted from 8AM to 3PM only.',
+                                author: 'Maria Santos',
+                                authorRole: 'Barangay Secretary',
+                                authorAvatar: 'MS',
+                                type: 'announcement',
+                                urgency: 'medium',
+                                status: 'approved',
+                                reports: 0,
+                                timeAgo: '1 day ago',
+                                timestamp: '2026-03-15T10:00:00',
+                                isOfficial: true,
+                                location: 'Barangay Hall',
+                                affectedResidents: 'All residents'
+                            },
+                            {
+                                id: 'PST-2026-008',
+                                title: 'Noise Complaint - Phase 3',
+                                excerpt: 'There has been loud karaoke every night until 2AM...',
+                                content: 'There has been loud karaoke every night until 2AM from a neighbor in Phase 3. This is affecting our sleep and work. Please advise.',
+                                author: 'Ramon Bautista',
+                                authorRole: 'Resident',
+                                authorAvatar: 'RB',
+                                type: 'complaint',
+                                urgency: 'high',
+                                status: 'rejected',
+                                reports: 1,
+                                timeAgo: '1 day ago',
+                                timestamp: '2026-03-15T08:30:00',
+                                isOfficial: false,
+                                location: 'Phase 3',
+                                affectedResidents: 'Nearby houses'
+                            }
+                        ];
+                        %>
+                        <% posts.forEach(function(post) { %>
+                        <tr class="table-row-hover" data-post-id="<%= post.id %>">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="post-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500" value="<%= post.id %>">
+                            </td>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900"><%= post.title %></p>
+                                    <p class="text-xs text-gray-500 mt-1"><%= post.excerpt %></p>
+                                    <p class="text-xs text-gray-400 mt-1">ID: <%= post.id %></p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br <%= post.isOfficial ? 'from-blue-600 to-amber-600' : 'from-gray-400 to-gray-500' %> flex items-center justify-center text-white text-xs font-bold">
+                                        <%= post.authorAvatar %>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900"><%= post.author %></p>
+                                        <p class="text-xs text-gray-500"><%= post.authorRole %></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs rounded-full 
+                                    <%= post.type === 'announcement' ? 'bg-blue-100 text-blue-700' : '' %>
+                                    <%= post.type === 'concern' ? 'bg-orange-100 text-orange-700' : '' %>
+                                    <%= post.type === 'emergency' ? 'bg-red-100 text-red-700' : '' %>
+                                    <%= post.type === 'suggestion' ? 'bg-green-100 text-green-700' : '' %>
+                                    <%= post.type === 'complaint' ? 'bg-purple-100 text-purple-700' : '' %>
+                                    <%= post.type === 'query' ? 'bg-gray-100 text-gray-700' : '' %>">
+                                    <i class="fas 
+                                        <%= post.type === 'announcement' ? 'fa-bullhorn' : '' %>
+                                        <%= post.type === 'concern' ? 'fa-exclamation-triangle' : '' %>
+                                        <%= post.type === 'emergency' ? 'fa-exclamation-circle' : '' %>
+                                        <%= post.type === 'suggestion' ? 'fa-lightbulb' : '' %>
+                                        <%= post.type === 'complaint' ? 'fa-flag' : '' %>
+                                        <%= post.type === 'query' ? 'fa-question-circle' : '' %> mr-1"></i>
+                                    <%= post.type.charAt(0).toUpperCase() + post.type.slice(1) %>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <% if (post.urgency === 'low') { %>
+                                    <span class="urgency-low px-3 py-1 rounded-full text-xs font-medium">Low</span>
+                                <% } else if (post.urgency === 'medium') { %>
+                                    <span class="urgency-medium px-3 py-1 rounded-full text-xs font-medium">Medium</span>
+                                <% } else if (post.urgency === 'high') { %>
+                                    <span class="urgency-high px-3 py-1 rounded-full text-xs font-medium">High</span>
+                                <% } else if (post.urgency === 'emergency') { %>
+                                    <span class="urgency-emergency px-3 py-1 rounded-full text-xs font-medium">🚨 Emergency</span>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <% if (post.status === 'pending') { %>
+                                    <span class="status-pending px-3 py-1 rounded-full text-xs font-medium">Pending</span>
+                                <% } else if (post.status === 'approved') { %>
+                                    <span class="status-approved px-3 py-1 rounded-full text-xs font-medium">Approved</span>
+                                <% } else if (post.status === 'rejected') { %>
+                                    <span class="status-rejected px-3 py-1 rounded-full text-xs font-medium">Rejected</span>
+                                <% } else if (post.status === 'flagged') { %>
+                                    <span class="status-flagged px-3 py-1 rounded-full text-xs font-medium">Flagged</span>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <% if (post.reports > 0) { %>
+                                    <span class="<%= post.reports >= 5 ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600' %> px-2 py-1 rounded-full text-xs font-medium">
+                                        <i class="fas fa-flag mr-1"></i><%= post.reports %> reports
+                                    </span>
+                                <% } else { %>
+                                    <span class="text-gray-400 text-xs">None</span>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span title="<%= post.timestamp %>"><%= post.timeAgo %></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center gap-1">
+                                    <button class="text-green-600 hover:text-green-700 hover:bg-green-50 p-2 rounded-lg transition" title="Approve" onclick='openApproveModal("<%= post.id %>")'>
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition" title="Reject" onclick='openRejectModal("<%= post.id %>")'>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <button class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-lg transition" title="View Details" onclick='openViewModal("<%= post.id %>")'>
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition" title="Flag/Report" onclick='openFlagModal("<%= post.id %>")'>
+                                        <i class="fas fa-flag"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Table Footer with Pagination -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-gray-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">8</span> of <span class="font-medium">1,284</span> posts
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="px-3 py-1 bg-amber-600 text-white rounded-lg text-sm">1</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">2</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">3</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">4</button>
+                    <span class="text-gray-400">...</span>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">161</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- View Post Modal -->
+    <div id="viewModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto modal-content">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-eye text-amber-600"></i>
+                    Post Details
+                </h3>
+                <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6" id="viewModalContent">
+                <!-- Content will be dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Approve Confirmation Modal -->
+    <div id="approveModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full modal-content">
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Approve Post</h3>
+                    <p class="text-gray-600" id="approveModalText">Are you sure you want to approve this post? It will be published immediately.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="closeApproveModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button id="confirmApproveBtn" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Confirm Approve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal with Reason -->
+    <div id="rejectModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full modal-content">
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-times-circle text-red-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Reject Post</h3>
+                    <p class="text-gray-600">Please provide a reason for rejection</p>
+                </div>
+                <textarea id="rejectReason" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 mb-4" placeholder="Enter reason for rejection..."></textarea>
+                <div class="flex gap-3">
+                    <button onclick="closeRejectModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button id="confirmRejectBtn" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Confirm Reject</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flag Modal -->
+    <div id="flagModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full modal-content">
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-flag text-blue-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Flag Post</h3>
+                    <p class="text-gray-600">Please select a reason for flagging this post:</p>
+                </div>
+                <div class="space-y-2 mb-4">
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="radio" name="flagReason" value="inappropriate" class="text-amber-600 focus:ring-amber-500">
+                        <span class="text-sm text-gray-700">Inappropriate content</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="radio" name="flagReason" value="spam" class="text-amber-600 focus:ring-amber-500">
+                        <span class="text-sm text-gray-700">Spam or misleading</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="radio" name="flagReason" value="harassment" class="text-amber-600 focus:ring-amber-500">
+                        <span class="text-sm text-gray-700">Harassment or bullying</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="radio" name="flagReason" value="false-info" class="text-amber-600 focus:ring-amber-500">
+                        <span class="text-sm text-gray-700">False information</span>
+                    </label>
+                </div>
+                <textarea id="flagComments" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 mb-4" placeholder="Additional comments (optional)..."></textarea>
+                <div class="flex gap-3">
+                    <button onclick="closeFlagModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button id="confirmFlagBtn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Submit Flag</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 min-w-[300px]">
+        <div class="flex items-center gap-3">
+            <i id="toastIcon" class="fas fa-check-circle text-green-500 text-xl"></i>
+            <div>
+                <p id="toastTitle" class="font-medium text-gray-800">Success</p>
+                <p id="toastMessage" class="text-sm text-gray-600">Action completed successfully</p>
+            </div>
+            <button onclick="hideToast()" class="ml-auto text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Include chatbot -->
+    <%- include('../Partials/chatbot') %>
+    <!-- Include footer -->
+    <%- include('../Partials/footer') %>
+
+    <script id="postsDataJson" type="application/json"><%- JSON.stringify(posts) %></script>
+    <script>
+        // Store posts data for JavaScript access
+        const postsDataElement = document.getElementById('postsDataJson');
+        const postsData = postsDataElement ? JSON.parse(postsDataElement.textContent || '[]') : [];
+        let currentPostId = null;
+        let selectedPosts = new Set();
+
+        // ========== MODAL FUNCTIONS ==========
+        
+        // View Modal
+        function openViewModal(postId) {
+            currentPostId = postId;
+            const post = postsData.find(p => p.id === postId);
+            
+            if (post) {
+                const modalContent = document.getElementById('viewModalContent');
+                modalContent.innerHTML = `
+                    <div class="mb-4">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br ${post.isOfficial ? 'from-blue-600 to-amber-600' : 'from-gray-400 to-gray-500'} flex items-center justify-center text-white font-bold text-xl">
+                                ${post.authorAvatar}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">${post.author}</p>
+                                <p class="text-sm text-gray-500">${post.authorRole} • Posted ${post.timeAgo}</p>
+                            </div>
+                            <span class="ml-auto urgency-${post.urgency} px-3 py-1 rounded-full text-xs font-medium">
+                                ${post.urgency === 'emergency' ? '🚨 ' : ''}${post.urgency.charAt(0).toUpperCase() + post.urgency.slice(1)} Urgency
+                            </span>
+                        </div>
+                        <h4 class="text-xl font-bold text-gray-800 mb-2">${post.title}</h4>
+                        <p class="text-gray-700 leading-relaxed mb-4">
+                            ${post.content}
+                        </p>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <p class="text-sm font-medium text-gray-700 mb-2">Additional Information:</p>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li><i class="fas fa-map-pin text-amber-600 w-5"></i> Location: ${post.location}</li>
+                                <li><i class="fas fa-clock text-amber-600 w-5"></i> Posted: ${new Date(post.timestamp).toLocaleString()}</li>
+                                <li><i class="fas fa-users text-amber-600 w-5"></i> Affected residents: ${post.affectedResidents}</li>
+                                ${post.reports > 0 ? `<li><i class="fas fa-flag text-red-600 w-5"></i> Reports: ${post.reports}</li>` : ''}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button onclick="closeViewModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Close</button>
+                        <button onclick="openApproveModal('${post.id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Approve Post</button>
+                        <button onclick="openRejectModal('${post.id}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Reject Post</button>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+        
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+        }
+        
+        // Approve Modal
+        function openApproveModal(postId) {
+            currentPostId = postId;
+            document.getElementById('approveModal').classList.remove('hidden');
+        }
+        
+        function closeApproveModal() {
+            document.getElementById('approveModal').classList.add('hidden');
+        }
+        
+        // Reject Modal
+        function openRejectModal(postId) {
+            currentPostId = postId;
+            document.getElementById('rejectModal').classList.remove('hidden');
+        }
+        
+        function closeRejectModal() {
+            document.getElementById('rejectModal').classList.add('hidden');
+            document.getElementById('rejectReason').value = '';
+        }
+        
+        // Flag Modal
+        function openFlagModal(postId) {
+            currentPostId = postId;
+            document.getElementById('flagModal').classList.remove('hidden');
+        }
+        
+        function closeFlagModal() {
+            document.getElementById('flagModal').classList.add('hidden');
+            document.getElementById('flagComments').value = '';
+            document.querySelectorAll('input[name="flagReason"]').forEach(r => r.checked = false);
+        }
+
+        // ========== BULK ACTIONS ==========
+        
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function(e) {
+            const checkboxes = document.querySelectorAll('.post-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+                if (e.target.checked) {
+                    selectedPosts.add(cb.value);
+                } else {
+                    selectedPosts.delete(cb.value);
+                }
+            });
+            updateBulkActionsBar();
+        });
+
+        // Individual checkbox selection
+        document.querySelectorAll('.post-checkbox').forEach(cb => {
+            cb.addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    selectedPosts.add(e.target.value);
+                } else {
+                    selectedPosts.delete(e.target.value);
+                }
+                updateBulkActionsBar();
+                
+                // Update select all checkbox
+                const allCheckboxes = document.querySelectorAll('.post-checkbox');
+                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                document.getElementById('selectAll').checked = allChecked;
+            });
+        });
+
+        // Clear selection
+        document.getElementById('clearSelection').addEventListener('click', function() {
+            document.querySelectorAll('.post-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            selectedPosts.clear();
+            document.getElementById('selectAll').checked = false;
+            updateBulkActionsBar();
+        });
+
+        function updateBulkActionsBar() {
+            const bar = document.getElementById('bulkActionsBar');
+            const countSpan = document.getElementById('selectedCount');
+            const count = selectedPosts.size;
+            
+            if (count > 0) {
+                countSpan.textContent = count;
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        // ========== FILTERS ==========
+        
+        // Quick filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tab').forEach(t => {
+                    t.classList.remove('active', 'bg-amber-600', 'text-white');
+                });
+                this.classList.add('active', 'bg-amber-600', 'text-white');
+                
+                const filter = this.dataset.filter;
+                applyQuickFilter(filter);
+            });
+        });
+
+        function applyQuickFilter(filter) {
+            // Show loading spinner
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+            document.getElementById('postsTable').classList.add('hidden');
+            
+            // Simulate API call
+            setTimeout(() => {
+                // In real implementation, this would fetch filtered data
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('postsTable').classList.remove('hidden');
+                
+                showToast('success', 'Filter Applied', `Showing ${filter} posts`);
+            }, 500);
+        }
+
+        // Apply filters button
+        document.getElementById('applyFilters').addEventListener('click', function() {
+            const status = document.getElementById('statusFilter').value;
+            const urgency = document.getElementById('urgencyFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+            const search = document.getElementById('searchInput').value;
+            
+            showToast('info', 'Filters Applied', `Status: ${status}, Urgency: ${urgency}, Type: ${type}`);
+        });
+
+        // Reset filters
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('urgencyFilter').value = 'all';
+            document.getElementById('typeFilter').value = 'all';
+            document.getElementById('sortFilter').value = 'newest';
+            document.getElementById('searchInput').value = '';
+            
+            showToast('info', 'Filters Reset', 'All filters have been cleared');
+        });
+
+        // Search with debounce
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                showToast('info', 'Searching', `Searching for: ${e.target.value}`);
+            }, 500);
+        });
+
+        // ========== BULK ACTION BUTTONS ==========
+        
+        document.getElementById('bulkApprove').addEventListener('click', function() {
+            if (selectedPosts.size === 0) return;
+            showToast('success', 'Bulk Approve', `${selectedPosts.size} posts approved successfully`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkReject').addEventListener('click', function() {
+            if (selectedPosts.size === 0) return;
+            showToast('error', 'Bulk Reject', `${selectedPosts.size} posts rejected`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkFlag').addEventListener('click', function() {
+            if (selectedPosts.size === 0) return;
+            showToast('warning', 'Bulk Flag', `${selectedPosts.size} posts flagged for review`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkArchive').addEventListener('click', function() {
+            if (selectedPosts.size === 0) return;
+            showToast('info', 'Bulk Archive', `${selectedPosts.size} posts archived`);
+            clearSelection();
+        });
+
+        // ========== CONFIRMATION BUTTONS ==========
+        
+        document.getElementById('confirmApproveBtn').addEventListener('click', function() {
+            showToast('success', 'Post Approved', `Post ${currentPostId} has been approved`);
+            closeApproveModal();
+        });
+
+        document.getElementById('confirmRejectBtn').addEventListener('click', function() {
+            const reason = document.getElementById('rejectReason').value;
+            showToast('error', 'Post Rejected', `Post ${currentPostId} rejected: ${reason || 'No reason provided'}`);
+            closeRejectModal();
+        });
+
+        document.getElementById('confirmFlagBtn').addEventListener('click', function() {
+            const reason = document.querySelector('input[name="flagReason"]:checked')?.value || 'No reason selected';
+            const comments = document.getElementById('flagComments').value;
+            showToast('warning', 'Post Flagged', `Post ${currentPostId} flagged: ${reason}`);
+            closeFlagModal();
+        });
+
+        // ========== TOAST NOTIFICATION ==========
+        
+        function showToast(type, title, message) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // Set colors based on type
+            if (type === 'success') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-check-circle text-green-500 text-xl';
+            } else if (type === 'error') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-times-circle text-red-500 text-xl';
+            } else if (type === 'warning') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-yellow-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-exclamation-triangle text-yellow-500 text-xl';
+            } else if (type === 'info') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-info-circle text-blue-500 text-xl';
+            }
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            toast.classList.remove('hidden');
+            
+            // Auto hide after 3 seconds
+            setTimeout(hideToast, 3000);
+        }
+        
+        function hideToast() {
+            document.getElementById('toast').classList.add('hidden');
+        }
+
+        // Clear selection helper
+        function clearSelection() {
+            document.querySelectorAll('.post-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            selectedPosts.clear();
+            document.getElementById('selectAll').checked = false;
+            updateBulkActionsBar();
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                closeViewModal();
+                closeApproveModal();
+                closeRejectModal();
+                closeFlagModal();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Escape key closes modals
+            if (e.key === 'Escape') {
+                closeViewModal();
+                closeApproveModal();
+                closeRejectModal();
+                closeFlagModal();
+            }
+        });
+    </script>
+</body>
+</html>
