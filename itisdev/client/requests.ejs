@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Document Requests</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+        /* Document card hover */
+        .doc-card {
+            transition: all 0.2s ease;
+        }
+        .doc-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        /* Status badges */
+        .status-pending { background-color: #fff3e0; color: #ef6c00; }
+        .status-processing { background-color: #e3f2fd; color: #0d47a1; }
+        .status-ready { background-color: #e8f5e8; color: #2e7d32; }
+        .status-released { background-color: #e8eaf6; color: #283593; }
+        .status-rejected { background-color: #ffebee; color: #c62828; }
+        /* Requirement check */
+        .requirement-check {
+            transition: all 0.2s ease;
+        }
+        .requirement-check:hover {
+            background-color: #f9fafb;
+        }
+        /* Filipino ornament */
+        .filipino-border {
+            border-image: repeating-linear-gradient(45deg, #fbbf24, #2563eb, #fbbf24) 30;
+            border-width: 2px;
+            border-style: solid;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col" data-page-context="requests">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/user/requests', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-900 to-amber-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold flex items-center gap-2">
+                            <i class="fas fa-file-signature"></i> 
+                            Document Requests
+                        </h1>
+                        <p class="text-blue-100 mt-1 text-sm">
+                            <i class="fas fa-id-card mr-1"></i> 
+                            Humiling ng mga dokumento mula sa barangay (Request documents from your barangay)
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-clock mr-2"></i>Processing: 2-3 working days
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Main Grid: Available Documents + My Requests -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN - Available Documents -->
+            <div class="lg:col-span-7 space-y-5">
+                
+                <!-- Document Categories Tabs -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-1 flex flex-wrap">
+                    <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white">All Documents</button>
+                    <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Certificates</button>
+                    <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Clearances</button>
+                    <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Permits</button>
+                </div>
+
+                <!-- Available Documents Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Barangay Clearance -->
+                    <div class="doc-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-id-card text-amber-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Most Requested</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Barangay Clearance</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Government-issued identification and clearance certificate for residents.</p>
+                            
+                            <!-- Requirements Preview -->
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-check-circle text-green-500"></i> Requirements:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid Government ID</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Residency</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Community Tax Certificate (Cedula)</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-gray-500">Processing time</span>
+                                    <p class="font-semibold text-sm">1-2 working days</p>
+                                </div>
+                                <button onclick="openRequestModal('barangay-clearance')" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                    Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Certificate of Indigency -->
+                    <div class="doc-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-file-contract text-blue-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Social Services</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Certificate of Indigency</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">For financial assistance, medical subsidies, and social services.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-check-circle text-green-500"></i> Requirements:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid ID</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Barangay Certification</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Assessment Interview</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-gray-500">Processing time</span>
+                                    <p class="font-semibold text-sm">1 working day</p>
+                                </div>
+                                <button onclick="openRequestModal('certificate-indigency')" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                    Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business Permit -->
+                    <div class="doc-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-store text-green-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Business</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Business Permit</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">For sari-sari stores, small businesses, and home-based enterprises.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-check-circle text-green-500"></i> Requirements:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> DTI Registration (if applicable)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Barangay Clearance</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Community Tax Certificate</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-gray-500">Processing time</span>
+                                    <p class="font-semibold text-sm">3-5 working days</p>
+                                </div>
+                                <button onclick="openRequestModal('business-permit')" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                    Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Certificate of Residency -->
+                    <div class="doc-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-house-user text-purple-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Proof of Residence</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Certificate of Residency</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Proof that you are a resident of the barangay for school or employment.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-check-circle text-green-500"></i> Requirements:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Any Valid ID</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Utility Bill (proof of address)</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-gray-500">Processing time</span>
+                                    <p class="font-semibold text-sm">1 working day</p>
+                                </div>
+                                <button onclick="openRequestModal('certificate-residency')" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                    Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cedula (Community Tax Certificate) -->
+                    <div class="doc-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-receipt text-yellow-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Tax</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Community Tax Certificate (Cedula)</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Required for transactions, employment, and other government processes.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-check-circle text-green-500"></i> Requirements:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Name and Address</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Annual Income Declaration</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-gray-500">Processing time</span>
+                                    <p class="font-semibold text-sm">Same day</p>
+                                </div>
+                                <button onclick="openRequestModal('cedula')" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                    Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barangay ID -->
+                    <div class="doc-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-id-badge text-red-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Identification</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Barangay ID</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Official barangay-issued identification card for residents.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-check-circle text-green-500"></i> Requirements:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Birth Certificate</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> 1x1 ID Picture</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Residency</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-gray-500">Processing time</span>
+                                    <p class="font-semibold text-sm">2-3 working days</p>
+                                </div>
+                                <button onclick="openRequestModal('barangay-id')" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                    Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN - My Requests & Tracking -->
+            <div class="lg:col-span-5 space-y-5">
+                
+                <!-- Active Requests Summary -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg overflow-hidden">
+                    <div class="px-5 py-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm opacity-90">Your Active Requests</p>
+                                <p class="text-3xl font-bold">3</p>
+                            </div>
+                            <div class="bg-white/20 p-3 rounded-lg">
+                                <i class="fas fa-file-signature text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-3 text-xs">
+                            <span class="bg-white/20 px-2 py-1 rounded-full">2 Pending</span>
+                            <span class="bg-white/20 px-2 py-1 rounded-full">1 Processing</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Requests List -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3">
+                        <h3 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-history"></i> My Request History
+                        </h3>
+                    </div>
+                    
+                    <div class="divide-y divide-gray-100">
+                        <!-- Request Item 1 -->
+                        <div class="p-4 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Barangay Clearance</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Requested: March 15, 2026</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="status-pending text-xs px-2 py-1 rounded-full">Pending</span>
+                                        <span class="text-xs text-gray-400">Ref: BC-2026-0152</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Estimated release</p>
+                                    <p class="text-sm font-medium text-gray-700">March 17, 2026</p>
+                                    <button class="text-amber-600 text-xs hover:text-amber-700 mt-2">Track <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Request Item 2 -->
+                        <div class="p-4 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Certificate of Indigency</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Requested: March 14, 2026</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="status-processing text-xs px-2 py-1 rounded-full">Processing</span>
+                                        <span class="text-xs text-gray-400">Ref: CI-2026-0089</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Estimated release</p>
+                                    <p class="text-sm font-medium text-gray-700">March 16, 2026</p>
+                                    <button class="text-amber-600 text-xs hover:text-amber-700 mt-2">Track <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Request Item 3 (Ready for Pickup) -->
+                        <div class="p-4 bg-green-50 hover:bg-green-100 transition">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Cedula (Community Tax)</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Requested: March 12, 2026</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="status-ready text-xs px-2 py-1 rounded-full">Ready for Pickup</span>
+                                        <span class="text-xs text-gray-400">Ref: CED-2026-0234</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Released</p>
+                                    <p class="text-sm font-medium text-green-700">March 15, 2026</p>
+                                    <button class="text-green-600 text-xs hover:text-green-700 mt-2">View <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-t border-gray-100 text-center">
+                        <a href="#" class="text-sm text-amber-600 hover:text-amber-700">
+                            View All Requests <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Requirements Checklist Info -->
+                <div class="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                    <h3 class="font-semibold text-blue-800 flex items-center gap-2 mb-3">
+                        <i class="fas fa-clipboard-list"></i> Common Requirements
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-id-card text-blue-600 w-5"></i>
+                            <span>Government-issued ID (Passport, Driver's License, UMID)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-file-invoice text-blue-600 w-5"></i>
+                            <span>Proof of Residency (Utility Bill, Barangay Certification)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-image text-blue-600 w-5"></i>
+                            <span>1x1 or 2x2 ID Pictures (for ID applications)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-stamp text-blue-600 w-5"></i>
+                            <span>Community Tax Certificate (Cedula) - PHP 5.00 - 50.00</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-blue-600 mt-3">
+                        <i class="fas fa-info-circle"></i> 
+                        Bring original copies of requirements when picking up documents.
+                    </p>
+                </div>
+
+                <!-- Barangay Hall Info -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-landmark text-amber-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold">Document Processing Hours</p>
+                            <p class="text-xs text-gray-600">Monday - Friday: 8:00 AM - 5:00 PM</p>
+                            <p class="text-xs text-gray-600">Saturday: 8:00 AM - 12:00 PM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- REQUEST MODAL -->
+    <div id="requestModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold flex items-center gap-2" id="modalTitle">
+                            <i class="fas fa-file-contract"></i>
+                            Request Document
+                        </h3>
+                        <p class="text-blue-100 text-sm mt-1" id="modalSubtitle">Fill in the details below</p>
+                    </div>
+                    <button onclick="closeRequestModal()" class="text-white/80 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <form action="/user/requests/create" method="POST" id="requestForm">
+                    <input type="hidden" name="documentType" id="documentType">
+
+                    <!-- Personal Information Section -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-user-circle text-amber-600"></i> Personal Information
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                <input type="text" name="fullName" value="<%= user ? user.fullName : '' %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                       placeholder="Juan Dela Cruz">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Birthdate</label>
+                                <input type="date" name="birthdate" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Place of Birth</label>
+                                <input type="text" name="birthPlace" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                       placeholder="Manila, Philippines">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Civil Status</label>
+                                <select name="civilStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="widowed">Widowed</option>
+                                    <option value="separated">Separated</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Section -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-amber-600"></i> Address Details
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">House/Street Address</label>
+                                <input type="text" name="streetAddress" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                       placeholder="123 Mabini St., Phase 2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
+                                <input type="text" name="barangay" value="<%= user ? user.barangay : 'San Antonio' %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">City/Municipality</label>
+                                <input type="text" name="city" value="<%= user ? user.city : 'Quezon City' %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Section -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-phone-alt text-amber-600"></i> Contact Information
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <input type="email" name="email" value="<%= user ? user.email : '' %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                                <input type="tel" name="contactNumber" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                       placeholder="0917 123 4567">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document-Specific Fields -->
+                    <div id="documentSpecificFields" class="mb-6">
+                        <!-- These will be populated dynamically via JavaScript -->
+                    </div>
+
+                    <!-- Purpose of Request -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Purpose of Request</label>
+                        <textarea name="purpose" rows="3" required
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="e.g., Employment requirement, School enrollment, Business permit application, etc."></textarea>
+                    </div>
+
+                    <!-- Requirements Checklist -->
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <h4 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-600"></i> Requirements Checklist
+                        </h4>
+                        <p class="text-xs text-gray-500 mb-3">Check all that you have prepared:</p>
+                        <div class="space-y-2" id="requirementsChecklist">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <!-- Terms and Conditions -->
+                    <div class="mb-6">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="agreeTerms" required class="rounded text-amber-600 focus:ring-amber-500">
+                            <span class="text-sm text-gray-600">I confirm that the information provided is true and correct. I understand that providing false information may result in the rejection of my request.</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="flex items-center justify-end gap-3 border-t pt-4">
+                        <button type="button" onclick="closeRequestModal()"
+                                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg hover:from-amber-700 hover:to-amber-800 transition">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include chatbot partial -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- JavaScript for Requests Page -->
+    <script>
+        // Document type configurations
+        const documentConfigs = {
+            'barangay-clearance': {
+                title: 'Request Barangay Clearance',
+                subtitle: 'Government-issued clearance certificate',
+                fields: [],
+                requirements: [
+                    'Valid Government ID',
+                    'Proof of Residency (Utility Bill)',
+                    'Community Tax Certificate (Cedula)'
+                ]
+            },
+            'certificate-indigency': {
+                title: 'Request Certificate of Indigency',
+                subtitle: 'For financial assistance and social services',
+                fields: [
+                    {
+                        type: 'select',
+                        name: 'assistanceType',
+                        label: 'Type of Assistance Needed',
+                        options: ['Medical', 'Financial', 'Educational', 'Other']
+                    }
+                ],
+                requirements: [
+                    'Valid ID',
+                    'Barangay Certification',
+                    'Medical Certificate (if medical assistance)'
+                ]
+            },
+            'business-permit': {
+                title: 'Request Business Permit',
+                subtitle: 'For small businesses and home-based enterprises',
+                fields: [
+                    {
+                        type: 'text',
+                        name: 'businessName',
+                        label: 'Business Name'
+                    },
+                    {
+                        type: 'text',
+                        name: 'businessType',
+                        label: 'Type of Business'
+                    }
+                ],
+                requirements: [
+                    'DTI Registration (if applicable)',
+                    'Barangay Clearance',
+                    'Community Tax Certificate',
+                    'Proof of Business Address'
+                ]
+            },
+            'certificate-residency': {
+                title: 'Request Certificate of Residency',
+                subtitle: 'Proof of residence in the barangay',
+                fields: [],
+                requirements: [
+                    'Any Valid ID',
+                    'Utility Bill (last 3 months)'
+                ]
+            },
+            'cedula': {
+                title: 'Request Community Tax Certificate (Cedula)',
+                subtitle: 'Annual community tax certificate',
+                fields: [
+                    {
+                        type: 'number',
+                        name: 'annualIncome',
+                        label: 'Annual Income (PHP)',
+                        placeholder: 'e.g., 150000'
+                    }
+                ],
+                requirements: [
+                    'Name and Address',
+                    'Income Declaration'
+                ]
+            },
+            'barangay-id': {
+                title: 'Request Barangay ID',
+                subtitle: 'Official barangay identification card',
+                fields: [
+                    {
+                        type: 'file',
+                        name: 'idPicture',
+                        label: '1x1 ID Picture (Upload)'
+                    },
+                    {
+                        type: 'text',
+                        name: 'bloodType',
+                        label: 'Blood Type (Optional)'
+                    }
+                ],
+                requirements: [
+                    'Birth Certificate (PSA or Local)',
+                    '1x1 ID Picture (2 copies)',
+                    'Proof of Residency',
+                    'Valid Government ID (for verification)'
+                ]
+            }
+        };
+
+        function openRequestModal(docType) {
+            const modal = document.getElementById('requestModal');
+            const config = documentConfigs[docType];
+            
+            if (!config) return;
+
+            // Set document type
+            document.getElementById('documentType').value = docType;
+            
+            // Update modal title
+            document.getElementById('modalTitle').innerHTML = `<i class="fas fa-file-contract"></i> ${config.title}`;
+            document.getElementById('modalSubtitle').textContent = config.subtitle;
+
+            // Populate document-specific fields
+            const fieldsContainer = document.getElementById('documentSpecificFields');
+            fieldsContainer.innerHTML = '';
+            
+            if (config.fields && config.fields.length > 0) {
+                let fieldsHtml = '<h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2"><i class="fas fa-pen text-amber-600"></i> Additional Information</h4>';
+                fieldsHtml += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+                
+                config.fields.forEach(field => {
+                    if (field.type === 'select') {
+                        fieldsHtml += `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
+                                <select name="${field.name}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
+                                    ${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    } else if (field.type === 'file') {
+                        fieldsHtml += `
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
+                                <input type="file" name="${field.name}" accept="image/*" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                                <p class="text-xs text-gray-400 mt-1">Accepted formats: JPG, PNG (Max 2MB)</p>
+                            </div>
+                        `;
+                    } else {
+                        fieldsHtml += `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
+                                <input type="${field.type}" name="${field.name}" placeholder="${field.placeholder || ''}"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                            </div>
+                        `;
+                    }
+                });
+                
+                fieldsHtml += '</div>';
+                fieldsContainer.innerHTML = fieldsHtml;
+            }
+
+            // Populate requirements checklist
+            const checklistContainer = document.getElementById('requirementsChecklist');
+            checklistContainer.innerHTML = '';
+            
+            if (config.requirements) {
+                config.requirements.forEach((req, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'requirement-check flex items-center gap-2 p-2 rounded';
+                    div.innerHTML = `
+                        <input type="checkbox" name="requirement_${index}" id="req_${index}" class="rounded text-amber-600 focus:ring-amber-500">
+                        <label for="req_${index}" class="text-sm text-gray-700">${req}</label>
+                    `;
+                    checklistContainer.appendChild(div);
+                });
+            }
+
+            // Show modal
+            modal.classList.remove('hidden');
+        }
+
+        function closeRequestModal() {
+            document.getElementById('requestModal').classList.add('hidden');
+            document.getElementById('requestForm').reset();
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('requestModal');
+            if (event.target === modal) {
+                closeRequestModal();
+            }
+        });
+
+        // Add quick actions for chatbot
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickActionsContainer = document.getElementById('quickActionsContainer');
+            if (quickActionsContainer) {
+                quickActionsContainer.innerHTML = `
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What documents can I request?">
+                        📄 Available documents
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What are the requirements for Barangay Clearance?">
+                        📋 Requirements
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I track my request?">
+                        🔍 Track request
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How much are the fees?">
+                        💰 Fees
+                    </button>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -43,8 +43,11 @@ function isActive(path) {
                         <a href="/client/requests" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/client/requests') %> transition duration-150">
                             <i class="fas fa-file-alt mr-1"></i>My Requests
                         </a>
-                        <a href="/client/announcements" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/client/announcements') %> transition duration-150">
-                            <i class="fas fa-bullhorn mr-1"></i>Announcements
+                        <a href="/client/complaints" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/client/complaints') %> transition duration-150">
+                            <i class="fas fa-bullhorn mr-1"></i>Complaints
+                        </a>
+                        <a href="/client/govforms" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/client/govforms') %> transition duration-150">
+                            <i class="fas fa-file-alt mr-1"></i>Government Forms
                         </a>
                     <% } else if (role === 'moderator') { %>
                         <!-- MODERATOR Navigation -->
