@@ -1,0 +1,1439 @@
+<!-- moderator/requests.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Manage Document Requests</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Status badges */
+        .status-pending { background-color: #fff3e0; color: #ef6c00; }
+        .status-processing { background-color: #e3f2fd; color: #1565c0; }
+        .status-review { background-color: #f3e5f5; color: #7b1fa2; }
+        .status-approved { background-color: #e8f5e8; color: #2e7d32; }
+        .status-rejected { background-color: #ffebee; color: #c62828; }
+        .status-completed { background-color: #e0f2f1; color: #00695c; }
+        .status-hold { background-color: #fff8e1; color: #f57f17; }
+
+        /* Document type badges */
+        .doc-clearance { background-color: #e8f5e8; color: #2e7d32; }
+        .doc-indigency { background-color: #fff3e0; color: #ef6c00; }
+        .doc-permit { background-color: #e3f2fd; color: #1565c0; }
+        .doc-residency { background-color: #f3e5f5; color: #7b1fa2; }
+        .doc-business { background-color: #e0f2f1; color: #00695c; }
+        .doc-certificate { background-color: #fce4ec; color: #880e4f; }
+
+        /* Priority badges */
+        .priority-low { background-color: #e6f7e6; color: #2e7d32; }
+        .priority-medium { background-color: #fff3e0; color: #ef6c00; }
+        .priority-high { background-color: #ffebee; color: #c62828; }
+        .priority-urgent { background-color: #fce4ec; color: #880e4f; animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Table row hover */
+        .table-row-hover:hover {
+            background-color: #f9fafb;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #f59e0b;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Progress tracker */
+        .progress-step {
+            position: relative;
+            z-index: 1;
+        }
+        .progress-step.completed .step-indicator {
+            background-color: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+        .progress-step.active .step-indicator {
+            background-color: #f59e0b;
+            border-color: #f59e0b;
+            color: white;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+        .progress-line {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        .progress-line.completed {
+            background-color: #10b981;
+        }
+
+        /* Filter tabs */
+        .filter-tab {
+            transition: all 0.2s ease;
+        }
+        .filter-tab.active {
+            background-color: #f59e0b;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Include navigation -->
+    <%- include('../Partials/topnavigation', { currentPath: '/moderator/requests', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-800 to-blue-700 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <i class="fas fa-file-signature"></i> 
+                        Document Request Management
+                    </h1>
+                    <p class="text-blue-100 mt-1 text-sm md:text-base">
+                        <i class="fas fa-shield-alt mr-1"></i> 
+                        Process, track, and manage all document requests from residents
+                    </p>
+                </div>
+                <div class="mt-3 md:mt-0 flex items-center gap-3">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-clock mr-2"></i>Last updated: just now
+                    </span>
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-hourglass-half mr-2"></i>28 pending
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-500">
+                <p class="text-xs text-gray-500">Total Requests</p>
+                <p class="text-2xl font-bold text-gray-800">847</p>
+                <p class="text-xs text-green-600">+45 this week</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-yellow-500">
+                <p class="text-xs text-gray-500">Pending</p>
+                <p class="text-2xl font-bold text-gray-800">28</p>
+                <p class="text-xs text-amber-600">12 awaiting review</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-green-500">
+                <p class="text-xs text-gray-500">Processing</p>
+                <p class="text-2xl font-bold text-gray-800">42</p>
+                <p class="text-xs text-green-600">15 almost done</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-purple-500">
+                <p class="text-xs text-gray-500">Completed</p>
+                <p class="text-2xl font-bold text-gray-800">731</p>
+                <p class="text-xs text-purple-600">86% completion rate</p>
+            </div>
+        </div>
+
+        <!-- Secondary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-100">
+                <p class="text-xs text-gray-500">Barangay Clearance</p>
+                <p class="text-lg font-bold text-gray-800">342</p>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full mt-1">
+                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 40%"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-100">
+                <p class="text-xs text-gray-500">Indigency</p>
+                <p class="text-lg font-bold text-gray-800">156</p>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full mt-1">
+                    <div class="bg-green-600 h-1.5 rounded-full" style="width: 18%"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-100">
+                <p class="text-xs text-gray-500">Business Permit</p>
+                <p class="text-lg font-bold text-gray-800">98</p>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full mt-1">
+                    <div class="bg-purple-600 h-1.5 rounded-full" style="width: 12%"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-100">
+                <p class="text-xs text-gray-500">Residency Cert</p>
+                <p class="text-lg font-bold text-gray-800">251</p>
+                <div class="w-full bg-gray-200 h-1.5 rounded-full mt-1">
+                    <div class="bg-amber-600 h-1.5 rounded-full" style="width: 30%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <!-- Search Bar -->
+                <div class="flex-1 w-full md:w-auto">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" 
+                               id="searchInput"
+                               placeholder="Search by request ID, resident name, or document type..." 
+                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
+                    </div>
+                </div>
+                
+                <!-- Filter Dropdowns -->
+                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                    <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="review">Under Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="completed">Completed</option>
+                        <option value="hold">On Hold</option>
+                    </select>
+                    
+                    <select id="documentFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400">
+                        <option value="all">All Documents</option>
+                        <option value="clearance">Barangay Clearance</option>
+                        <option value="indigency">Certificate of Indigency</option>
+                        <option value="residency">Certificate of Residency</option>
+                        <option value="business">Business Permit</option>
+                        <option value="permit">Building Permit</option>
+                        <option value="certificate">Other Certificates</option>
+                    </select>
+                    
+                    <select id="priorityFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400">
+                        <option value="all">All Priorities</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    
+                    <select id="dateFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="due">Due Date</option>
+                        <option value="completed">Recently Completed</option>
+                    </select>
+                    
+                    <button id="applyFilters" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition">
+                        <i class="fas fa-filter mr-1"></i> Apply Filters
+                    </button>
+                    
+                    <button id="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-sm font-medium transition">
+                        <i class="fas fa-redo-alt mr-1"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Filter Tabs -->
+            <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+                <button class="filter-tab active px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white" data-filter="all">All Requests</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="pending">Pending (28)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="processing">Processing (42)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="review">Under Review (15)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="urgent">Urgent (8)</button>
+                <button class="filter-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100" data-filter="today">Today's (23)</button>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActionsBar" class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6 hidden">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-700"><span id="selectedCount" class="text-blue-600 font-bold">0</span> requests selected</span>
+                    <button id="clearSelection" class="text-xs text-gray-500 hover:text-blue-600 transition">
+                        <i class="fas fa-times mr-1"></i>Clear selection
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="bulkProcess" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition">
+                        <i class="fas fa-play-circle mr-1"></i> Start Processing
+                    </button>
+                    <button id="bulkApprove" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition">
+                        <i class="fas fa-check-circle mr-1"></i> Approve
+                    </button>
+                    <button id="bulkComplete" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium transition">
+                        <i class="fas fa-check-double mr-1"></i> Mark Complete
+                    </button>
+                    <button id="bulkReject" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition">
+                        <i class="fas fa-times-circle mr-1"></i> Reject
+                    </button>
+                    <button id="bulkPrint" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium transition">
+                        <i class="fas fa-print mr-1"></i> Print Forms
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden flex justify-center items-center py-12">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Requests Table -->
+        <div id="requestsTable" class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resident</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestsTableBody" class="bg-white divide-y divide-gray-200">
+                        <% 
+                        const requests = [
+                            {
+                                id: 'REQ-2026-001',
+                                trackingCode: 'TRK-001-2026',
+                                resident: 'Juan Dela Cruz',
+                                residentAvatar: 'JD',
+                                residentAddress: 'Blk 2 Lot 5, Phase 1',
+                                contact: '0912-345-6789',
+                                email: 'juan.dc@email.com',
+                                documentType: 'clearance',
+                                documentName: 'Barangay Clearance',
+                                purpose: 'Employment requirement',
+                                priority: 'high',
+                                status: 'processing',
+                                submitted: '2026-03-15',
+                                submittedAgo: '1 day ago',
+                                dueDate: '2026-03-22',
+                                progress: 60,
+                                requirements: [
+                                    { name: 'Valid ID', status: 'verified' },
+                                    { name: 'Proof of Residency', status: 'verified' },
+                                    { name: 'Community Tax', status: 'pending' }
+                                ],
+                                notes: 'Applicant works as a delivery rider, needs clearance for background check.',
+                                assignedTo: 'Maria Santos'
+                            },
+                            {
+                                id: 'REQ-2026-002',
+                                trackingCode: 'TRK-002-2026',
+                                resident: 'Maria Santos',
+                                residentAvatar: 'MS',
+                                residentAddress: 'Blk 5 Lot 8, Phase 2',
+                                contact: '0918-765-4321',
+                                email: 'maria.s@email.com',
+                                documentType: 'indigency',
+                                documentName: 'Certificate of Indigency',
+                                purpose: 'Medical assistance application',
+                                priority: 'urgent',
+                                status: 'review',
+                                submitted: '2026-03-16',
+                                submittedAgo: '3 hours ago',
+                                dueDate: '2026-03-18',
+                                progress: 80,
+                                requirements: [
+                                    { name: 'Barangay Clearance', status: 'verified' },
+                                    { name: 'Medical Certificate', status: 'verified' },
+                                    { name: 'Social Case Study', status: 'verified' }
+                                ],
+                                notes: 'Emergency case - child needs immediate medical assistance.',
+                                assignedTo: 'Juan Reyes'
+                            },
+                            {
+                                id: 'REQ-2026-003',
+                                trackingCode: 'TRK-003-2026',
+                                resident: 'Pedro Santos',
+                                residentAvatar: 'PS',
+                                residentAddress: 'Blk 8 Lot 12, Phase 3',
+                                contact: '0922-333-4444',
+                                email: 'pedro.s@email.com',
+                                documentType: 'business',
+                                documentName: 'Business Permit',
+                                purpose: 'New sari-sari store opening',
+                                priority: 'medium',
+                                status: 'pending',
+                                submitted: '2026-03-16',
+                                submittedAgo: '5 hours ago',
+                                dueDate: '2026-03-30',
+                                progress: 20,
+                                requirements: [
+                                    { name: 'DTI Registration', status: 'pending' },
+                                    { name: 'Community Tax', status: 'verified' },
+                                    { name: 'Store Photos', status: 'pending' },
+                                    { name: 'Lessors Consent', status: 'pending' }
+                                ],
+                                notes: 'New business application, requires inspection.',
+                                assignedTo: 'Unassigned'
+                            },
+                            {
+                                id: 'REQ-2026-004',
+                                trackingCode: 'TRK-004-2026',
+                                resident: 'Elena Rodriguez',
+                                residentAvatar: 'ER',
+                                residentAddress: 'Blk 3 Lot 7, Phase 1',
+                                contact: '0933-555-6666',
+                                email: 'elena.r@email.com',
+                                documentType: 'residency',
+                                documentName: 'Certificate of Residency',
+                                purpose: 'School enrollment requirement',
+                                priority: 'low',
+                                status: 'approved',
+                                submitted: '2026-03-14',
+                                submittedAgo: '2 days ago',
+                                dueDate: '2026-03-21',
+                                progress: 100,
+                                requirements: [
+                                    { name: 'Valid ID', status: 'verified' },
+                                    { name: 'Proof of Billing', status: 'verified' },
+                                    { name: 'Voters ID', status: 'verified' }
+                                ],
+                                notes: 'For college enrollment, ready for printing.',
+                                assignedTo: 'Maria Santos'
+                            },
+                            {
+                                id: 'REQ-2026-005',
+                                trackingCode: 'TRK-005-2026',
+                                resident: 'Ramon Bautista',
+                                residentAvatar: 'RB',
+                                residentAddress: 'Blk 6 Lot 3, Phase 2',
+                                contact: '0944-777-8888',
+                                email: 'ramon.b@email.com',
+                                documentType: 'clearance',
+                                documentName: 'Barangay Clearance',
+                                purpose: 'Travel abroad requirement',
+                                priority: 'high',
+                                status: 'completed',
+                                submitted: '2026-03-10',
+                                submittedAgo: '6 days ago',
+                                dueDate: '2026-03-17',
+                                progress: 100,
+                                requirements: [
+                                    { name: 'Passport', status: 'verified' },
+                                    { name: 'Valid ID', status: 'verified' },
+                                    { name: 'Community Tax', status: 'verified' }
+                                ],
+                                notes: 'Released on March 17, 2026.',
+                                assignedTo: 'Juan Reyes'
+                            },
+                            {
+                                id: 'REQ-2026-006',
+                                trackingCode: 'TRK-006-2026',
+                                resident: 'Cynthia Villar',
+                                residentAvatar: 'CV',
+                                residentAddress: 'Blk 10 Lot 15, Phase 4',
+                                contact: '0955-888-9999',
+                                email: 'cynthia.v@email.com',
+                                documentType: 'permit',
+                                documentName: 'Building Permit',
+                                purpose: 'House renovation',
+                                priority: 'medium',
+                                status: 'hold',
+                                submitted: '2026-03-12',
+                                submittedAgo: '4 days ago',
+                                dueDate: '2026-04-02',
+                                progress: 40,
+                                requirements: [
+                                    { name: 'Architectural Plan', status: 'verified' },
+                                    { name: 'Structural Plan', status: 'pending' },
+                                    { name: 'Contractors License', status: 'pending' }
+                                ],
+                                notes: 'Waiting for structural plan approval from engineer.',
+                                assignedTo: 'Maria Santos'
+                            },
+                            {
+                                id: 'REQ-2026-007',
+                                trackingCode: 'TRK-007-2026',
+                                resident: 'Jose Rizal',
+                                residentAvatar: 'JR',
+                                residentAddress: 'Blk 1 Lot 1, Phase 1',
+                                contact: '0966-111-2222',
+                                email: 'jose.r@email.com',
+                                documentType: 'certificate',
+                                documentName: 'Good Moral Character',
+                                purpose: 'Employment requirement',
+                                priority: 'low',
+                                status: 'rejected',
+                                submitted: '2026-03-13',
+                                submittedAgo: '3 days ago',
+                                dueDate: '2026-03-20',
+                                progress: 0,
+                                requirements: [
+                                    { name: 'Valid ID', status: 'rejected' },
+                                    { name: 'Recommendation Letter', status: 'missing' }
+                                ],
+                                notes: 'Rejected due to incomplete requirements. Contacted resident to resubmit.',
+                                assignedTo: 'Juan Reyes'
+                            },
+                            {
+                                id: 'REQ-2026-008',
+                                trackingCode: 'TRK-008-2026',
+                                resident: 'Andres Bonifacio',
+                                residentAvatar: 'AB',
+                                residentAddress: 'Blk 4 Lot 9, Phase 3',
+                                contact: '0977-333-4444',
+                                email: 'andres.b@email.com',
+                                documentType: 'indigency',
+                                documentName: 'Certificate of Indigency',
+                                purpose: 'Government assistance',
+                                priority: 'urgent',
+                                status: 'processing',
+                                submitted: '2026-03-16',
+                                submittedAgo: '2 hours ago',
+                                dueDate: '2026-03-19',
+                                progress: 50,
+                                requirements: [
+                                    { name: 'Barangay Clearance', status: 'verified' },
+                                    { name: 'Social Case Study', status: 'processing' }
+                                ],
+                                notes: 'Senior citizen, priority processing.',
+                                assignedTo: 'Maria Santos'
+                            }
+                        ];
+                        %>
+                        <% requests.forEach(function(req) { %>
+                        <tr class="table-row-hover" data-request-id="<%= req.id %>">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="request-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="<%= req.id %>">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900"><%= req.id %></p>
+                                    <p class="text-xs text-gray-500">Track: <%= req.trackingCode %></p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                                        <%= req.residentAvatar %>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900"><%= req.resident %></p>
+                                        <p class="text-xs text-gray-500"><%= req.residentAddress %></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs rounded-full 
+                                    <%= req.documentType === 'clearance' ? 'doc-clearance' : '' %>
+                                    <%= req.documentType === 'indigency' ? 'doc-indigency' : '' %>
+                                    <%= req.documentType === 'permit' ? 'doc-permit' : '' %>
+                                    <%= req.documentType === 'residency' ? 'doc-residency' : '' %>
+                                    <%= req.documentType === 'business' ? 'doc-business' : '' %>
+                                    <%= req.documentType === 'certificate' ? 'doc-certificate' : '' %>">
+                                    <i class="fas 
+                                        <%= req.documentType === 'clearance' ? 'fa-id-card' : '' %>
+                                        <%= req.documentType === 'indigency' ? 'fa-hand-holding-heart' : '' %>
+                                        <%= req.documentType === 'permit' ? 'fa-hard-hat' : '' %>
+                                        <%= req.documentType === 'residency' ? 'fa-home' : '' %>
+                                        <%= req.documentType === 'business' ? 'fa-store' : '' %>
+                                        <%= req.documentType === 'certificate' ? 'fa-certificate' : '' %> mr-1"></i>
+                                    <%= req.documentName %>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <% if (req.priority === 'low') { %>
+                                    <span class="priority-low px-3 py-1 rounded-full text-xs font-medium">Low</span>
+                                <% } else if (req.priority === 'medium') { %>
+                                    <span class="priority-medium px-3 py-1 rounded-full text-xs font-medium">Medium</span>
+                                <% } else if (req.priority === 'high') { %>
+                                    <span class="priority-high px-3 py-1 rounded-full text-xs font-medium">High</span>
+                                <% } else if (req.priority === 'urgent') { %>
+                                    <span class="priority-urgent px-3 py-1 rounded-full text-xs font-medium">🚨 Urgent</span>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <% if (req.status === 'pending') { %>
+                                    <span class="status-pending px-3 py-1 rounded-full text-xs font-medium">Pending</span>
+                                <% } else if (req.status === 'processing') { %>
+                                    <span class="status-processing px-3 py-1 rounded-full text-xs font-medium">Processing</span>
+                                <% } else if (req.status === 'review') { %>
+                                    <span class="status-review px-3 py-1 rounded-full text-xs font-medium">Under Review</span>
+                                <% } else if (req.status === 'approved') { %>
+                                    <span class="status-approved px-3 py-1 rounded-full text-xs font-medium">Approved</span>
+                                <% } else if (req.status === 'rejected') { %>
+                                    <span class="status-rejected px-3 py-1 rounded-full text-xs font-medium">Rejected</span>
+                                <% } else if (req.status === 'completed') { %>
+                                    <span class="status-completed px-3 py-1 rounded-full text-xs font-medium">Completed</span>
+                                <% } else if (req.status === 'hold') { %>
+                                    <span class="status-hold px-3 py-1 rounded-full text-xs font-medium">On Hold</span>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div><%= req.submittedAgo %></div>
+                                <div class="text-xs text-gray-400"><%= req.submitted %></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm <%= new Date(req.dueDate) < new Date() ? 'text-red-600 font-medium' : 'text-gray-600' %>">
+                                    <%= req.dueDate %>
+                                </span>
+                                <% if (new Date(req.dueDate) < new Date() && req.status !== 'completed') { %>
+                                    <span class="ml-1 text-xs text-red-500">(Overdue)</span>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: <%= req.progress %>%"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-600"><%= req.progress %>%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center gap-1">
+                                    <button class="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition" title="View Details" onclick='openViewModal("<%= req.id %>")'>
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-700 hover:bg-green-50 p-2 rounded-lg transition" title="Process" onclick='openProcessModal("<%= req.id %>")'>
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-lg transition" title="Update Status" onclick='openStatusModal("<%= req.id %>")'>
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-2 rounded-lg transition" title="Print Form" onclick='printRequest("<%= req.id %>")'>
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition" title="Reject" onclick='openRejectModal("<%= req.id %>")'>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Table Footer with Pagination -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-gray-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">8</span> of <span class="font-medium">847</span> requests
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm">1</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">2</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">3</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">4</button>
+                    <span class="text-gray-400">...</span>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">106</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- View Request Modal -->
+    <div id="viewModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto modal-content">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-file-alt text-blue-600"></i>
+                    Document Request Details
+                </h3>
+                <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6" id="viewModalContent">
+                <!-- Content will be dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Request Modal -->
+    <div id="processModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full modal-content">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-play-circle text-green-600"></i>
+                    Process Request
+                </h3>
+                <button onclick="closeProcessModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <!-- Progress Tracker -->
+                <div class="mb-8">
+                    <h4 class="text-sm font-medium text-gray-700 mb-4">Request Progress</h4>
+                    <div class="relative flex justify-between">
+                        <div class="progress-line" id="progressLine"></div>
+                        <div class="progress-step completed text-center">
+                            <div class="step-indicator w-10 h-10 rounded-full bg-green-600 border-2 border-green-600 flex items-center justify-center text-white font-bold mb-2 mx-auto">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <span class="text-xs text-gray-600">Submitted</span>
+                        </div>
+                        <div class="progress-step active text-center">
+                            <div class="step-indicator w-10 h-10 rounded-full bg-blue-600 border-2 border-blue-600 flex items-center justify-center text-white font-bold mb-2 mx-auto">
+                                2
+                            </div>
+                            <span class="text-xs text-gray-600">Processing</span>
+                        </div>
+                        <div class="progress-step text-center">
+                            <div class="step-indicator w-10 h-10 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold mb-2 mx-auto">
+                                3
+                            </div>
+                            <span class="text-xs text-gray-600">Review</span>
+                        </div>
+                        <div class="progress-step text-center">
+                            <div class="step-indicator w-10 h-10 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold mb-2 mx-auto">
+                                4
+                            </div>
+                            <span class="text-xs text-gray-600">Approval</span>
+                        </div>
+                        <div class="progress-step text-center">
+                            <div class="step-indicator w-10 h-10 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold mb-2 mx-auto">
+                                5
+                            </div>
+                            <span class="text-xs text-gray-600">Release</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Form -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Update Status</label>
+                        <select id="processStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+                            <option value="processing">Processing</option>
+                            <option value="review">Under Review</option>
+                            <option value="approved">Approved</option>
+                            <option value="completed">Ready for Release</option>
+                            <option value="hold">On Hold</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+                        <select id="assignTo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+                            <option value="maria">Maria Santos</option>
+                            <option value="juan">Juan Reyes</option>
+                            <option value="ana">Ana Lopez</option>
+                            <option value="pedro">Pedro Cruz</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Processing Notes</label>
+                        <textarea id="processNotes" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Add notes about the processing..."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Completion</label>
+                            <input type="date" id="estimatedDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Priority Level</label>
+                            <select id="priorityLevel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <button onclick="closeProcessModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button id="saveProcessBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Save & Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div id="statusModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full modal-content">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Update Request Status</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="updateStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="review">Under Review</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                            <option value="hold">On Hold</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                        <textarea id="statusRemarks" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Add remarks..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="notifyResident" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                            <span class="text-sm text-gray-700">Notify resident of status update</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button onclick="closeStatusModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button id="updateStatusBtn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal with Reason -->
+    <div id="rejectModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full modal-content">
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-times-circle text-red-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Reject Request</h3>
+                    <p class="text-gray-600">Please provide a reason for rejection</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rejection Reason</label>
+                        <select id="rejectReasonSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400">
+                            <option value="incomplete">Incomplete Requirements</option>
+                            <option value="invalid">Invalid Documents</option>
+                            <option value="not-eligible">Not Eligible</option>
+                            <option value="insufficient">Insufficient Information</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Additional Comments</label>
+                        <textarea id="rejectComments" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400" placeholder="Explain why the request is being rejected..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="allowResubmit" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                            <span class="text-sm text-gray-700">Allow resident to resubmit with corrections</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button onclick="closeRejectModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button id="confirmRejectBtn" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Confirm Reject</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requirements Checklist Modal -->
+    <div id="requirementsModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full modal-content">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Verify Requirements</h3>
+                
+                <div class="space-y-3 mb-6">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-id-card text-gray-400"></i>
+                            <span class="text-sm text-gray-700">Valid ID</span>
+                        </div>
+                        <select class="text-sm border border-gray-300 rounded-lg px-2 py-1">
+                            <option>Verified</option>
+                            <option>Pending</option>
+                            <option>Rejected</option>
+                            <option>Missing</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-file-alt text-gray-400"></i>
+                            <span class="text-sm text-gray-700">Proof of Residency</span>
+                        </div>
+                        <select class="text-sm border border-gray-300 rounded-lg px-2 py-1">
+                            <option>Verified</option>
+                            <option selected>Pending</option>
+                            <option>Rejected</option>
+                            <option>Missing</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-receipt text-gray-400"></i>
+                            <span class="text-sm text-gray-700">Community Tax</span>
+                        </div>
+                        <select class="text-sm border border-gray-300 rounded-lg px-2 py-1">
+                            <option>Verified</option>
+                            <option>Pending</option>
+                            <option>Rejected</option>
+                            <option>Missing</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeRequirementsModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    <button class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Save Verification</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 min-w-[300px]">
+        <div class="flex items-center gap-3">
+            <i id="toastIcon" class="fas fa-check-circle text-green-500 text-xl"></i>
+            <div>
+                <p id="toastTitle" class="font-medium text-gray-800">Success</p>
+                <p id="toastMessage" class="text-sm text-gray-600">Action completed successfully</p>
+            </div>
+            <button onclick="hideToast()" class="ml-auto text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Include chatbot -->
+    <%- include('../Partials/chatbot') %>
+    <!-- Include footer -->
+    <%- include('../Partials/footer') %>
+
+    <textarea id="requestsDataJson" class="hidden"><%- JSON.stringify(requests) %></textarea>
+    <script>
+        // Store requests data for JavaScript access
+        const requestsDataElement = document.getElementById('requestsDataJson');
+        const requestsData = requestsDataElement ? JSON.parse(requestsDataElement.textContent || '[]') : [];
+        let currentRequestId = null;
+        let selectedRequests = new Set();
+
+        // ========== MODAL FUNCTIONS ==========
+        
+        // View Modal
+        function openViewModal(requestId) {
+            currentRequestId = requestId;
+            const request = requestsData.find(r => r.id === requestId);
+            
+            if (request) {
+                const modalContent = document.getElementById('viewModalContent');
+                
+                // Generate requirements list
+                const requirementsList = request.requirements.map(req => `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-gray-700">${req.name}</span>
+                        <span class="text-xs px-2 py-1 rounded-full 
+                            ${req.status === 'verified' ? 'bg-green-100 text-green-700' : 
+                              req.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                              req.status === 'rejected' ? 'bg-red-100 text-red-700' : 
+                              'bg-gray-100 text-gray-700'}">
+                            ${req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                        </span>
+                    </div>
+                `).join('');
+                
+                modalContent.innerHTML = `
+                    <div class="grid grid-cols-3 gap-6">
+                        <!-- Left Column - Resident Info -->
+                        <div class="col-span-1">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Resident Information</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-amber-600 flex items-center justify-center text-white font-bold">
+                                            ${request.residentAvatar}
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-800">${request.resident}</p>
+                                            <p class="text-xs text-gray-500">${request.residentAddress}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <p class="flex items-center gap-2 text-gray-600"><i class="fas fa-phone w-4 text-blue-500"></i> ${request.contact}</p>
+                                        <p class="flex items-center gap-2 text-gray-600"><i class="fas fa-envelope w-4 text-blue-500"></i> ${request.email}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4 mt-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Tracking Information</h4>
+                                <div class="space-y-2 text-sm">
+                                    <p><span class="text-gray-500">Request ID:</span> <span class="font-medium">${request.id}</span></p>
+                                    <p><span class="text-gray-500">Tracking Code:</span> <span class="font-medium">${request.trackingCode}</span></p>
+                                    <p><span class="text-gray-500">Submitted:</span> ${request.submitted} (${request.submittedAgo})</p>
+                                    <p><span class="text-gray-500">Due Date:</span> <span class="${new Date(request.dueDate) < new Date() ? 'text-red-600 font-medium' : ''}">${request.dueDate}</span></p>
+                                    <p><span class="text-gray-500">Assigned To:</span> ${request.assignedTo}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column - Request Details -->
+                        <div class="col-span-2">
+                            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-medium text-gray-700">Document Request</h4>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold 
+                                        ${request.documentType === 'clearance' ? 'doc-clearance' : ''}
+                                        ${request.documentType === 'indigency' ? 'doc-indigency' : ''}
+                                        ${request.documentType === 'permit' ? 'doc-permit' : ''}
+                                        ${request.documentType === 'residency' ? 'doc-residency' : ''}
+                                        ${request.documentType === 'business' ? 'doc-business' : ''}">
+                                        ${request.documentName}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2"><span class="font-medium">Purpose:</span> ${request.purpose}</p>
+                                <p class="text-sm text-gray-600"><span class="font-medium">Notes:</span> ${request.notes}</p>
+                            </div>
+                            
+                            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Requirements Checklist</h4>
+                                <div class="space-y-2">
+                                    ${requirementsList}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Progress & Status</h4>
+                                <div class="mb-3">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm text-gray-600">Overall Progress</span>
+                                        <span class="text-sm font-medium">${request.progress}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${request.progress}%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-gray-600">Current Status:</span>
+                                    ${request.status === 'pending' ? '<span class="status-pending px-3 py-1 rounded-full text-xs font-medium">Pending</span>' : ''}
+                                    ${request.status === 'processing' ? '<span class="status-processing px-3 py-1 rounded-full text-xs font-medium">Processing</span>' : ''}
+                                    ${request.status === 'review' ? '<span class="status-review px-3 py-1 rounded-full text-xs font-medium">Under Review</span>' : ''}
+                                    ${request.status === 'approved' ? '<span class="status-approved px-3 py-1 rounded-full text-xs font-medium">Approved</span>' : ''}
+                                    ${request.status === 'completed' ? '<span class="status-completed px-3 py-1 rounded-full text-xs font-medium">Completed</span>' : ''}
+                                    ${request.status === 'rejected' ? '<span class="status-rejected px-3 py-1 rounded-full text-xs font-medium">Rejected</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                        <button onclick="closeViewModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">Close</button>
+                        <button onclick="openProcessModal('${request.id}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Process Request</button>
+                        <button onclick="printRequest('${request.id}')" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Print Form</button>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+        
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+        }
+        
+        // Process Modal
+        function openProcessModal(requestId) {
+            currentRequestId = requestId;
+            document.getElementById('processModal').classList.remove('hidden');
+        }
+        
+        function closeProcessModal() {
+            document.getElementById('processModal').classList.add('hidden');
+        }
+        
+        // Status Modal
+        function openStatusModal(requestId) {
+            currentRequestId = requestId;
+            document.getElementById('statusModal').classList.remove('hidden');
+        }
+        
+        function closeStatusModal() {
+            document.getElementById('statusModal').classList.add('hidden');
+            document.getElementById('statusRemarks').value = '';
+        }
+        
+        // Reject Modal
+        function openRejectModal(requestId) {
+            currentRequestId = requestId;
+            document.getElementById('rejectModal').classList.remove('hidden');
+        }
+        
+        function closeRejectModal() {
+            document.getElementById('rejectModal').classList.add('hidden');
+            document.getElementById('rejectComments').value = '';
+            document.getElementById('rejectReasonSelect').value = 'incomplete';
+        }
+        
+        // Requirements Modal
+        function openRequirementsModal(requestId) {
+            currentRequestId = requestId;
+            document.getElementById('requirementsModal').classList.remove('hidden');
+        }
+        
+        function closeRequirementsModal() {
+            document.getElementById('requirementsModal').classList.add('hidden');
+        }
+        
+        // Print Request
+        function printRequest(requestId) {
+            showToast('info', 'Print', `Preparing print for request ${requestId}`);
+            // In real implementation, this would open a print-friendly version
+        }
+
+        // ========== BULK ACTIONS ==========
+        
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function(e) {
+            const checkboxes = document.querySelectorAll('.request-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+                if (e.target.checked) {
+                    selectedRequests.add(cb.value);
+                } else {
+                    selectedRequests.delete(cb.value);
+                }
+            });
+            updateBulkActionsBar();
+        });
+
+        // Individual checkbox selection
+        document.querySelectorAll('.request-checkbox').forEach(cb => {
+            cb.addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    selectedRequests.add(e.target.value);
+                } else {
+                    selectedRequests.delete(e.target.value);
+                }
+                updateBulkActionsBar();
+                
+                // Update select all checkbox
+                const allCheckboxes = document.querySelectorAll('.request-checkbox');
+                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                document.getElementById('selectAll').checked = allChecked;
+            });
+        });
+
+        // Clear selection
+        document.getElementById('clearSelection').addEventListener('click', function() {
+            document.querySelectorAll('.request-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            selectedRequests.clear();
+            document.getElementById('selectAll').checked = false;
+            updateBulkActionsBar();
+        });
+
+        function updateBulkActionsBar() {
+            const bar = document.getElementById('bulkActionsBar');
+            const countSpan = document.getElementById('selectedCount');
+            const count = selectedRequests.size;
+            
+            if (count > 0) {
+                countSpan.textContent = count;
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        // ========== FILTERS ==========
+        
+        // Quick filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tab').forEach(t => {
+                    t.classList.remove('active', 'bg-blue-600', 'text-white');
+                });
+                this.classList.add('active', 'bg-blue-600', 'text-white');
+                
+                const filter = this.dataset.filter;
+                applyQuickFilter(filter);
+            });
+        });
+
+        function applyQuickFilter(filter) {
+            // Show loading spinner
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+            document.getElementById('requestsTable').classList.add('hidden');
+            
+            // Simulate API call
+            setTimeout(() => {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('requestsTable').classList.remove('hidden');
+                
+                showToast('success', 'Filter Applied', `Showing ${filter} requests`);
+            }, 500);
+        }
+
+        // Apply filters button
+        document.getElementById('applyFilters').addEventListener('click', function() {
+            const status = document.getElementById('statusFilter').value;
+            const docType = document.getElementById('documentFilter').value;
+            const priority = document.getElementById('priorityFilter').value;
+            const date = document.getElementById('dateFilter').value;
+            const search = document.getElementById('searchInput').value;
+            
+            showToast('info', 'Filters Applied', `Status: ${status}, Type: ${docType}, Priority: ${priority}`);
+        });
+
+        // Reset filters
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('documentFilter').value = 'all';
+            document.getElementById('priorityFilter').value = 'all';
+            document.getElementById('dateFilter').value = 'newest';
+            document.getElementById('searchInput').value = '';
+            
+            showToast('info', 'Filters Reset', 'All filters have been cleared');
+        });
+
+        // Search with debounce
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                showToast('info', 'Searching', `Searching for: ${e.target.value}`);
+            }, 500);
+        });
+
+        // ========== BULK ACTION BUTTONS ==========
+        
+        document.getElementById('bulkProcess').addEventListener('click', function() {
+            if (selectedRequests.size === 0) return;
+            showToast('success', 'Bulk Process', `${selectedRequests.size} requests marked for processing`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkApprove').addEventListener('click', function() {
+            if (selectedRequests.size === 0) return;
+            showToast('success', 'Bulk Approve', `${selectedRequests.size} requests approved`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkComplete').addEventListener('click', function() {
+            if (selectedRequests.size === 0) return;
+            showToast('success', 'Bulk Complete', `${selectedRequests.size} requests marked as complete`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkReject').addEventListener('click', function() {
+            if (selectedRequests.size === 0) return;
+            showToast('error', 'Bulk Reject', `${selectedRequests.size} requests rejected`);
+            clearSelection();
+        });
+
+        document.getElementById('bulkPrint').addEventListener('click', function() {
+            if (selectedRequests.size === 0) return;
+            showToast('info', 'Bulk Print', `Preparing ${selectedRequests.size} forms for printing`);
+            clearSelection();
+        });
+
+        // ========== CONFIRMATION BUTTONS ==========
+        
+        document.getElementById('saveProcessBtn').addEventListener('click', function() {
+            const status = document.getElementById('processStatus').value;
+            const assignTo = document.getElementById('assignTo').value;
+            const notes = document.getElementById('processNotes').value;
+            const estimatedDate = document.getElementById('estimatedDate').value;
+            const priority = document.getElementById('priorityLevel').value;
+            
+            showToast('success', 'Request Updated', `Request ${currentRequestId} updated successfully`);
+            closeProcessModal();
+        });
+
+        document.getElementById('updateStatusBtn').addEventListener('click', function() {
+            const status = document.getElementById('updateStatus').value;
+            const remarks = document.getElementById('statusRemarks').value;
+            const notify = document.getElementById('notifyResident').checked;
+            
+            showToast('success', 'Status Updated', `Request ${currentRequestId} marked as ${status}`);
+            closeStatusModal();
+        });
+
+        document.getElementById('confirmRejectBtn').addEventListener('click', function() {
+            const reason = document.getElementById('rejectReasonSelect').value;
+            const comments = document.getElementById('rejectComments').value;
+            const allowResubmit = document.getElementById('allowResubmit').checked;
+            
+            showToast('error', 'Request Rejected', `Request ${currentRequestId} rejected: ${reason}`);
+            closeRejectModal();
+        });
+
+        // ========== TOAST NOTIFICATION ==========
+        
+        function showToast(type, title, message) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // Set colors based on type
+            if (type === 'success') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-check-circle text-green-500 text-xl';
+            } else if (type === 'error') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-times-circle text-red-500 text-xl';
+            } else if (type === 'warning') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-yellow-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-exclamation-triangle text-yellow-500 text-xl';
+            } else if (type === 'info') {
+                toast.className = 'toast hidden bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 min-w-[300px]';
+                icon.className = 'fas fa-info-circle text-blue-500 text-xl';
+            }
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            toast.classList.remove('hidden');
+            
+            // Auto hide after 3 seconds
+            setTimeout(hideToast, 3000);
+        }
+        
+        function hideToast() {
+            document.getElementById('toast').classList.add('hidden');
+        }
+
+        // Clear selection helper
+        function clearSelection() {
+            document.querySelectorAll('.request-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            selectedRequests.clear();
+            document.getElementById('selectAll').checked = false;
+            updateBulkActionsBar();
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                closeViewModal();
+                closeProcessModal();
+                closeStatusModal();
+                closeRejectModal();
+                closeRequirementsModal();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Escape key closes modals
+            if (e.key === 'Escape') {
+                closeViewModal();
+                closeProcessModal();
+                closeStatusModal();
+                closeRejectModal();
+                closeRequirementsModal();
+            }
+        });
+    </script>
+</body>
+</html>
