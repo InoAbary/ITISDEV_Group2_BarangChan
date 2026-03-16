@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · File a Complaint</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+        /* Complaint card hover */
+        .complaint-card {
+            transition: all 0.2s ease;
+        }
+        .complaint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        /* Status badges */
+        .status-pending { background-color: #fff3e0; color: #ef6c00; }
+        .status-investigating { background-color: #e3f2fd; color: #0d47a1; }
+        .status-resolved { background-color: #e8f5e8; color: #2e7d32; }
+        .status-dismissed { background-color: #ffebee; color: #c62828; }
+        .status-escalated { background-color: #fce4ec; color: #880e4f; animation: pulse 2s infinite; }
+        /* Category badges */
+        .category-noise { background-color: #fff3e0; color: #ef6c00; }
+        .category-waste { background-color: #e0f2f1; color: #00695c; }
+        .category-animal { background-color: #f3e5f5; color: #6a1b9a; }
+        .category-peace { background-color: #ffebee; color: #c62828; }
+        .category-infrastructure { background-color: #e3f2fd; color: #0d47a1; }
+        .category-others { background-color: #e0e0e0; color: #424242; }
+        /* Urgency badges */
+        .urgency-low { background-color: #e6f7e6; color: #2e7d32; }
+        .urgency-medium { background-color: #fff3e0; color: #ef6c00; }
+        .urgency-high { background-color: #ffebee; color: #c62828; }
+        .urgency-emergency { 
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        /* Evidence upload area */
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.2s ease;
+        }
+        .upload-area:hover {
+            border-color: #fbbf24;
+            background-color: #fffbeb;
+        }
+        /* Filipino pattern */
+        .filipino-sun {
+            background: radial-gradient(circle at 20% 50%, #fbbf24 2px, transparent 3px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col" data-page-context="complaints">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/client/complaints', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-900 to-amber-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            File a Complaint / Report
+                        </h1>
+                        <p class="text-blue-100 mt-1 text-sm">
+                            <i class="fas fa-gavel mr-1"></i> 
+                            Magsumite ng reklamo o ulat sa barangay (Submit complaints or reports to the barangay)
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-clock mr-2"></i>Response time: 24-48 hours
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Quick Actions Alert for Emergencies -->
+        <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-100 p-2 rounded-full">
+                    <i class="fas fa-phone-alt text-red-600"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-red-700">For emergencies, please call immediately:</p>
+                    <p class="text-sm text-red-600">911 (PNP) • 160 (BFP) • 8123-4567 (Barangay Hall)</p>
+                </div>
+            </div>
+            <button onclick="openComplaintModal('emergency')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                <i class="fas fa-exclamation-circle mr-2"></i>File Emergency Report
+            </button>
+        </div>
+
+        <!-- Main Grid: Complaint Categories + My Complaints -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN - Complaint Categories -->
+            <div class="lg:col-span-7 space-y-5">
+                
+                <!-- Category Tabs -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-1 flex flex-wrap">
+                    <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white">All Categories</button>
+                    <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Peace & Order</button>
+                    <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Environmental</button>
+                    <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Infrastructure</button>
+                </div>
+
+                <!-- Complaint Categories Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Noise Complaint -->
+                    <div class="complaint-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-volume-up text-orange-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">Noise</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Noise Complaint</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Loud parties, karaoke, construction noise, or other disturbances.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-info-circle text-blue-500"></i> Common issues:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Karaoke after 10 PM</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Construction noise</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Loud parties/events</li>
+                                </ul>
+                            </div>
+                            
+                            <button onclick="openComplaintModal('noise')" 
+                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                File Noise Complaint
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Waste Management -->
+                    <div class="complaint-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-trash-alt text-green-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Waste</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Waste Management</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Improper garbage disposal, illegal dumping, or missed collection.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-info-circle text-blue-500"></i> Common issues:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Illegal dumping</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Uncollected garbage</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Burning of waste</li>
+                                </ul>
+                            </div>
+                            
+                            <button onclick="openComplaintModal('waste')" 
+                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                File Waste Complaint
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Animal Control -->
+                    <div class="complaint-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-paw text-purple-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Animals</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Animal Control</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Stray animals, barking dogs, or animal neglect/abuse.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-info-circle text-blue-500"></i> Common issues:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Stray dogs/cats</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Excessive barking</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Animal neglect</li>
+                                </ul>
+                            </div>
+                            
+                            <button onclick="openComplaintModal('animal')" 
+                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                File Animal Complaint
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Peace and Order -->
+                    <div class="complaint-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-shield-alt text-red-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Peace & Order</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Peace and Order</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Disturbances, altercations, or suspicious activities.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-info-circle text-blue-500"></i> Common issues:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Fights/arguments</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Suspicious persons</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Vandalism</li>
+                                </ul>
+                            </div>
+                            
+                            <button onclick="openComplaintModal('peace')" 
+                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                File Peace Order Complaint
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Infrastructure -->
+                    <div class="complaint-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-road text-blue-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Infrastructure</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Infrastructure Issues</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Damaged roads, broken street lights, or drainage problems.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-info-circle text-blue-500"></i> Common issues:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Broken street lights</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Potholes/road damage</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Clogged drainage</li>
+                                </ul>
+                            </div>
+                            
+                            <button onclick="openComplaintModal('infrastructure')" 
+                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                File Infrastructure Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Others -->
+                    <div class="complaint-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:border-amber-300">
+                        <div class="p-5">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-ellipsis-h text-gray-600 text-2xl"></i>
+                                </div>
+                                <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Other</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">Other Concerns</h3>
+                            <p class="text-sm text-gray-600 mt-1 mb-3">Complaints not covered by other categories.</p>
+                            
+                            <div class="space-y-1 mb-4">
+                                <p class="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                                    <i class="fas fa-info-circle text-blue-500"></i> Examples:
+                                </p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Business violations</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Harassment</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Other concerns</li>
+                                </ul>
+                            </div>
+                            
+                            <button onclick="openComplaintModal('others')" 
+                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                File Other Complaint
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN - My Complaints & Info -->
+            <div class="lg:col-span-5 space-y-5">
+                
+                <!-- Active Complaints Summary -->
+                <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-xl shadow-lg overflow-hidden">
+                    <div class="px-5 py-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm opacity-90">Your Active Complaints</p>
+                                <p class="text-3xl font-bold">2</p>
+                            </div>
+                            <div class="bg-white/20 p-3 rounded-lg">
+                                <i class="fas fa-exclamation-triangle text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-3 text-xs">
+                            <span class="bg-white/20 px-2 py-1 rounded-full">1 Pending</span>
+                            <span class="bg-white/20 px-2 py-1 rounded-full">1 Investigating</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Complaints List -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3">
+                        <h3 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-history"></i> My Complaint History
+                        </h3>
+                    </div>
+                    
+                    <div class="divide-y divide-gray-100">
+                        <!-- Complaint Item 1 - Noise Complaint -->
+                        <div class="p-4 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-semibold text-gray-800">Noise Complaint</h4>
+                                        <span class="category-noise text-xs px-2 py-0.5 rounded-full">Noise</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Filed: March 15, 2026 • Ref: NC-2026-0241</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="status-investigating text-xs px-2 py-1 rounded-full">Investigating</span>
+                                        <span class="urgency-medium text-xs px-2 py-1 rounded-full">Medium Priority</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-2">
+                                        <i class="fas fa-map-marker-alt text-amber-600 mr-1"></i>
+                                        Phase 2, near basketball court
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Last update</p>
+                                    <p class="text-sm font-medium text-gray-700">March 16, 2026</p>
+                                    <button class="text-amber-600 text-xs hover:text-amber-700 mt-2">View Details <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Complaint Item 2 - Waste Management -->
+                        <div class="p-4 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-semibold text-gray-800">Waste Management</h4>
+                                        <span class="category-waste text-xs px-2 py-0.5 rounded-full">Waste</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Filed: March 14, 2026 • Ref: WM-2026-0189</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="status-pending text-xs px-2 py-1 rounded-full">Pending</span>
+                                        <span class="urgency-low text-xs px-2 py-1 rounded-full">Low Priority</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-2">
+                                        <i class="fas fa-map-marker-alt text-amber-600 mr-1"></i>
+                                        Corner of Mabini St. and Rizal Ave.
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Last update</p>
+                                    <p class="text-sm font-medium text-gray-700">March 14, 2026</p>
+                                    <button class="text-amber-600 text-xs hover:text-amber-700 mt-2">View Details <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Complaint Item 3 - Resolved -->
+                        <div class="p-4 bg-green-50 hover:bg-green-100 transition">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-semibold text-gray-800">Infrastructure Issue</h4>
+                                        <span class="category-infrastructure text-xs px-2 py-0.5 rounded-full">Infra</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Filed: March 10, 2026 • Ref: INF-2026-0123</p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="status-resolved text-xs px-2 py-1 rounded-full">Resolved</span>
+                                        <span class="urgency-medium text-xs px-2 py-1 rounded-full">Medium Priority</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-2">
+                                        <i class="fas fa-map-marker-alt text-amber-600 mr-1"></i>
+                                        Broken street light, Phase 3
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Resolved on</p>
+                                    <p class="text-sm font-medium text-green-700">March 15, 2026</p>
+                                    <button class="text-green-600 text-xs hover:text-green-700 mt-2">View Resolution <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-t border-gray-100 text-center">
+                        <a href="#" class="text-sm text-amber-600 hover:text-amber-700">
+                            View All Complaints <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Complaint Process Info -->
+                <div class="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                    <h3 class="font-semibold text-blue-800 flex items-center gap-2 mb-3">
+                        <i class="fas fa-clipboard-list"></i> Complaint Process
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">1</div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">File Complaint</p>
+                                <p class="text-xs text-gray-600">Submit your complaint with details and evidence</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">2</div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Initial Assessment</p>
+                                <p class="text-xs text-gray-600">Barangay evaluates and assigns priority (24 hours)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">3</div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Investigation</p>
+                                <p class="text-xs text-gray-600">Barangay investigates and mediates if needed</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">4</div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Resolution</p>
+                                <p class="text-xs text-gray-600">Complaint is resolved or escalated if necessary</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anonymous Reporting Notice -->
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-secret text-amber-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-amber-800">Anonymous Reporting Available</p>
+                            <p class="text-xs text-amber-700">You can file complaints anonymously. Your identity will be protected.</p>
+                            <button onclick="toggleAnonymous()" class="text-xs text-amber-600 hover:text-amber-700 mt-1 font-medium">
+                                <i class="fas fa-check-circle mr-1"></i> File Anonymously
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- COMPLAINT MODAL -->
+    <div id="complaintModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-red-800 to-red-600 p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold flex items-center gap-2" id="complaintModalTitle">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            File a Complaint
+                        </h3>
+                        <p class="text-red-100 text-sm mt-1" id="complaintModalSubtitle">Fill in the details of your complaint</p>
+                    </div>
+                    <button onclick="closeComplaintModal()" class="text-white/80 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <form action="/user/complaints/create" method="POST" enctype="multipart/form-data" id="complaintForm">
+                    <input type="hidden" name="complaintType" id="complaintType">
+                    <input type="hidden" name="isAnonymous" id="isAnonymous" value="false">
+
+                    <!-- Anonymous Toggle -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-user-secret text-gray-600"></i>
+                            <span class="text-sm text-gray-700">File this complaint anonymously</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="anonymousCheckbox" class="sr-only peer" onchange="toggleAnonymousField()">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Personal Information Section (hidden if anonymous) -->
+                    <div id="personalInfoSection" class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-user-circle text-red-600"></i> Your Information
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                <input type="text" name="complainantName" id="complainantName" value="<%= user ? user.fullName : '' %>"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                       placeholder="Juan Dela Cruz">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                                <input type="tel" name="complainantContact" id="complainantContact"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                       placeholder="0917 123 4567">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <input type="email" name="complainantEmail" id="complainantEmail" value="<%= user ? user.email : '' %>"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                       placeholder="juandelacruz@email.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Complaint Details -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-pen text-red-600"></i> Complaint Details
+                        </h4>
+                        
+                        <!-- Category (pre-filled based on selection) -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <input type="text" name="category" id="complaintCategory" readonly
+                                   class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                        </div>
+
+                        <!-- Urgency Level -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Urgency Level</label>
+                            <select name="urgency" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400">
+                                <option value="low">🟢 Low - Non-urgent concern</option>
+                                <option value="medium">🟡 Medium - Needs attention soon</option>
+                                <option value="high">🟠 High - Urgent matter</option>
+                                <option value="emergency">🔴 Emergency - Immediate danger or threat</option>
+                            </select>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-map-marker-alt text-red-600 mr-1"></i> Location of Incident
+                            </label>
+                            <input type="text" name="location" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                   placeholder="e.g., Phase 2, near basketball court, 123 Mabini St.">
+                        </div>
+
+                        <!-- Date and Time of Incident -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Incident</label>
+                                <input type="date" name="incidentDate" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Time of Incident</label>
+                                <input type="time" name="incidentTime" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400">
+                            </div>
+                        </div>
+
+                        <!-- Complaint Title -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Complaint Title</label>
+                            <input type="text" name="title" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                   placeholder="Brief summary of your complaint">
+                        </div>
+
+                        <!-- Detailed Description -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+                            <textarea name="description" rows="5" required
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                                      placeholder="Please provide as much detail as possible about the incident..."></textarea>
+                        </div>
+
+                        <!-- Involved Parties -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-users text-red-600 mr-1"></i> Involved Parties (if any)
+                            </label>
+                            <textarea name="involvedParties" rows="2"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                                      placeholder="Names or descriptions of people involved (leave blank if none)"></textarea>
+                        </div>
+
+                        <!-- Witnesses -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-eye text-red-600 mr-1"></i> Witnesses
+                            </label>
+                            <textarea name="witnesses" rows="2"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                                      placeholder="Names and contact information of witnesses (if any)"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Upload -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-camera text-red-600"></i> Evidence (Photos/Videos)
+                        </h4>
+                        
+                        <div class="upload-area p-6 rounded-lg text-center">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 mb-1">Drag and drop files here or click to upload</p>
+                            <p class="text-xs text-gray-400 mb-3">Supported: JPG, PNG, MP4 (Max 10MB per file)</p>
+                            <input type="file" name="evidence" multiple accept="image/*,video/*" class="hidden" id="evidenceUpload">
+                            <button type="button" onclick="document.getElementById('evidenceUpload').click()" 
+                                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-folder-open mr-2"></i>Browse Files
+                            </button>
+                        </div>
+                        <div id="fileList" class="mt-2 text-xs text-gray-600"></div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-info-circle text-red-600"></i> Additional Information
+                        </h4>
+                        
+                        <!-- Previous Reports -->
+                        <div class="mb-3">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="previouslyReported" class="rounded text-red-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-700">This has been previously reported to the barangay</span>
+                            </label>
+                        </div>
+
+                        <!-- Immediate Action Needed -->
+                        <div class="mb-3">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="immediateAction" class="rounded text-red-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-700">Immediate action is required</span>
+                            </label>
+                        </div>
+
+                        <!-- Preferred Contact Method -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Preferred contact method for updates</label>
+                            <div class="flex items-center gap-4">
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="contactMethod" value="email" checked class="text-red-600 focus:ring-red-500">
+                                    <span class="text-sm text-gray-700">Email</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="contactMethod" value="sms" class="text-red-600 focus:ring-red-500">
+                                    <span class="text-sm text-gray-700">SMS</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="contactMethod" value="none" class="text-red-600 focus:ring-red-500">
+                                    <span class="text-sm text-gray-700">No contact (view online)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Conditions -->
+                    <div class="mb-6">
+                        <label class="flex items-start gap-2">
+                            <input type="checkbox" name="agreeTerms" required class="mt-1 rounded text-red-600 focus:ring-red-500">
+                            <span class="text-sm text-gray-600">I affirm that the information provided is true and correct to the best of my knowledge. I understand that filing a false complaint may result in legal consequences.</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="flex items-center justify-end gap-3 border-t pt-4">
+                        <button type="button" onclick="closeComplaintModal()"
+                                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Complaint
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include chatbot partial -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- JavaScript for Complaints Page -->
+    <script>
+        // Complaint type configurations
+        const complaintConfigs = {
+            'noise': {
+                title: 'File Noise Complaint',
+                subtitle: 'Report noise disturbances in your area',
+                category: 'Noise Complaint'
+            },
+            'waste': {
+                title: 'File Waste Management Complaint',
+                subtitle: 'Report improper garbage disposal or waste issues',
+                category: 'Waste Management'
+            },
+            'animal': {
+                title: 'File Animal Control Complaint',
+                subtitle: 'Report stray animals or animal-related concerns',
+                category: 'Animal Control'
+            },
+            'peace': {
+                title: 'File Peace and Order Complaint',
+                subtitle: 'Report disturbances or threats to peace',
+                category: 'Peace and Order'
+            },
+            'infrastructure': {
+                title: 'File Infrastructure Report',
+                subtitle: 'Report damaged facilities or infrastructure issues',
+                category: 'Infrastructure'
+            },
+            'others': {
+                title: 'File Other Complaint',
+                subtitle: 'Report other concerns not in the categories',
+                category: 'Other Concerns'
+            },
+            'emergency': {
+                title: '🚨 EMERGENCY REPORT',
+                subtitle: 'For immediate attention - response within minutes',
+                category: 'Emergency'
+            }
+        };
+
+        function openComplaintModal(type) {
+            const modal = document.getElementById('complaintModal');
+            const config = complaintConfigs[type];
+            
+            if (!config) return;
+
+            // Set complaint type
+            document.getElementById('complaintType').value = type;
+            
+            // Update modal title
+            document.getElementById('complaintModalTitle').innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${config.title}`;
+            document.getElementById('complaintModalSubtitle').textContent = config.subtitle;
+            
+            // Set category
+            document.getElementById('complaintCategory').value = config.category;
+
+            // If emergency, set urgency to emergency and highlight
+            if (type === 'emergency') {
+                const urgencySelect = document.querySelector('select[name="urgency"]');
+                urgencySelect.value = 'emergency';
+                urgencySelect.style.backgroundColor = '#fee2e2';
+            }
+
+            // Show modal
+            modal.classList.remove('hidden');
+        }
+
+        function closeComplaintModal() {
+            document.getElementById('complaintModal').classList.add('hidden');
+            document.getElementById('complaintForm').reset();
+            document.getElementById('isAnonymous').value = 'false';
+            document.getElementById('personalInfoSection').style.display = 'block';
+            document.getElementById('anonymousCheckbox').checked = false;
+        }
+
+        function toggleAnonymousField() {
+            const isAnonymous = document.getElementById('anonymousCheckbox').checked;
+            document.getElementById('isAnonymous').value = isAnonymous ? 'true' : 'false';
+            
+            const personalInfoSection = document.getElementById('personalInfoSection');
+            const requiredFields = ['complainantName', 'complainantContact', 'complainantEmail'];
+            
+            if (isAnonymous) {
+                personalInfoSection.style.display = 'none';
+                requiredFields.forEach(field => {
+                    document.getElementById(field).required = false;
+                });
+            } else {
+                personalInfoSection.style.display = 'block';
+                requiredFields.forEach(field => {
+                    document.getElementById(field).required = true;
+                });
+            }
+        }
+
+        // File upload handling
+        document.getElementById('evidenceUpload')?.addEventListener('change', function(e) {
+            const fileList = document.getElementById('fileList');
+            const files = e.target.files;
+            
+            if (files.length > 0) {
+                let html = '<p class="font-semibold mt-2">Selected files:</p><ul class="list-disc pl-4">';
+                for (let i = 0; i < files.length; i++) {
+                    html += `<li>${files[i].name} (${(files[i].size / 1024).toFixed(1)} KB)</li>`;
+                }
+                html += '</ul>';
+                fileList.innerHTML = html;
+            } else {
+                fileList.innerHTML = '';
+            }
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('complaintModal');
+            if (event.target === modal) {
+                closeComplaintModal();
+            }
+        });
+
+        // Add quick actions for chatbot
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickActionsContainer = document.getElementById('quickActionsContainer');
+            if (quickActionsContainer) {
+                quickActionsContainer.innerHTML = `
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What types of complaints can I file?">
+                        📋 Complaint types
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I file an anonymous complaint?">
+                        🕵️ Anonymous filing
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What evidence should I provide?">
+                        📸 Evidence needed
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How long does investigation take?">
+                        ⏱️ Process time
+                    </button>
+                `;
+            }
+        });
+
+        // Toggle anonymous reporting from sidebar
+        function toggleAnonymous() {
+            openComplaintModal('others');
+            setTimeout(() => {
+                document.getElementById('anonymousCheckbox').checked = true;
+                toggleAnonymousField();
+            }, 100);
+        }
+    </script>
+</body>
+</html>

@@ -486,6 +486,29 @@ app.post('/client/requests/create', (req, res) => {
     res.redirect('/client/requests');
 });
 
+app.get('/client/complaints', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    
+    const userRequests = documentRequests.filter(r => r.user_id === req.session.user.id);
+    
+    res.render('complaints', {  // Note: just 'requests' not 'client/requests'
+        title: 'File a Complaint - BarangChan',
+        user: req.session.user,
+        requests: userRequests
+    });
+});
+
+app.get('/client/govforms', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    
+    const userRequests = documentRequests.filter(r => r.user_id === req.session.user.id);
+    
+    res.render('govforms', {  // Note: just 'requests' not 'client/requests'
+        title: 'Government Forms - BarangChan',
+        user: req.session.user,
+        requests: userRequests
+    });
+});
 // ==================== MODERATOR ROUTES ====================
 app.get('/moderator/dashboard', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
@@ -502,7 +525,7 @@ app.get('/moderator/dashboard', (req, res) => {
         pendingRequests: documentRequests.filter(r => r.status === 'pending').length
     };
     
-    res.render('moderatordashboard', {  // Note: special name to avoid conflict
+    res.render('dashboard_mod', {  // Note: special name to avoid conflict
         title: 'Moderator Dashboard - BarangChan',
         user: req.session.user,
         stats: stats,

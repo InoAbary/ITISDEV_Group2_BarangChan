@@ -1,0 +1,631 @@
+<!-- moderator/dashboard.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Moderator Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Status badges */
+        .status-pending { background-color: #fff3e0; color: #ef6c00; }
+        .status-in-progress { background-color: #e3f2fd; color: #1565c0; }
+        .status-completed { background-color: #e8f5e8; color: #2e7d32; }
+        .status-rejected { background-color: #ffebee; color: #c62828; }
+
+        /* Urgency badges */
+        .urgency-low { background-color: #e6f7e6; color: #2e7d32; }
+        .urgency-medium { background-color: #fff3e0; color: #ef6c00; }
+        .urgency-high { background-color: #ffebee; color: #c62828; }
+        .urgency-emergency { background-color: #fce4ec; color: #880e4f; animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Card hover effects */
+        .stat-card {
+            transition: all 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Table row hover */
+        .table-row-hover:hover {
+            background-color: #f9fafb;
+        }
+        
+        /* Chart container to prevent overflow */
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/moderator/dashboard', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Welcome Banner (Moderator Version) -->
+        <div class="bg-gradient-to-r from-amber-800 to-amber-700 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <i class="fas fa-shield-alt"></i> 
+                        Moderator Command Center
+                    </h1>
+                    <p class="text-amber-100 mt-1 text-sm md:text-base">
+                        <i class="fas fa-map-marker-alt mr-1"></i> 
+                        <%= user.barangay || 'Barangay San Antonio' %>, <%= user.city || 'Quezon City' %>
+                    </p>
+                </div>
+                <div class="mt-3 md:mt-0 flex items-center gap-3">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-clock mr-2"></i>Last login: Today, 8:30 AM
+                    </span>
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-user-check mr-2"></i>Moderator Level 2
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Pending Posts</p>
+                        <p class="text-3xl font-bold text-gray-800">24</p>
+                        <p class="text-xs text-amber-600 mt-2"><i class="fas fa-clock"></i> 8 awaiting review</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-lg">
+                        <i class="fas fa-comments text-amber-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Document Requests</p>
+                        <p class="text-3xl font-bold text-gray-800">17</p>
+                        <p class="text-xs text-blue-600 mt-2"><i class="fas fa-hourglass-half"></i> 12 in progress</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Urgent Issues</p>
+                        <p class="text-3xl font-bold text-gray-800">6</p>
+                        <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-triangle"></i> 2 emergencies</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Resolved This Week</p>
+                        <p class="text-3xl font-bold text-gray-800">43</p>
+                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> +12 from last week</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-check-double text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid: Left Analytics + Right Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN - Analytics and Charts -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- Activity Chart - FIXED VERSION -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-amber-600"></i>
+                            Weekly Activity Overview
+                        </h3>
+                        <select id="chartTimeRange" class="text-sm border border-gray-300 rounded-lg px-3 py-1 bg-white">
+                            <option value="7">Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="this">This month</option>
+                        </select>
+                    </div>
+                    <!-- Chart container with fixed ID and proper sizing -->
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Document Requests (Table) -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                        <h3 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-file-signature text-blue-600"></i>
+                            Recent Document Requests
+                        </h3>
+                        <a href="/moderator/requests" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                            View All <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resident</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <% 
+                                const sampleRequests = [
+                                    { id: 'DOC-2026-001', resident: 'Maria Santos', type: 'Barangay Clearance', date: '2026-03-16', status: 'pending' },
+                                    { id: 'DOC-2026-002', resident: 'Juan Dela Cruz', type: 'Certificate of Indigency', date: '2026-03-16', status: 'in-progress' },
+                                    { id: 'DOC-2026-003', resident: 'Elena Rodriguez', type: 'Business Permit', date: '2026-03-15', status: 'completed' },
+                                    { id: 'DOC-2026-004', resident: 'Pedro Santos', type: 'Barangay Clearance', date: '2026-03-15', status: 'pending' },
+                                    { id: 'DOC-2026-005', resident: 'Ana Lopez', type: 'Residency Certificate', date: '2026-03-14', status: 'rejected' }
+                                ];
+                                %>
+                                <% sampleRequests.forEach(function(req) { %>
+                                <tr class="table-row-hover">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= req.id %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.resident %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.type %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.date %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <% if (req.status === 'pending') { %>
+                                            <span class="status-pending px-3 py-1 rounded-full text-xs font-medium">Pending</span>
+                                        <% } else if (req.status === 'in-progress') { %>
+                                            <span class="status-in-progress px-3 py-1 rounded-full text-xs font-medium">In Progress</span>
+                                        <% } else if (req.status === 'completed') { %>
+                                            <span class="status-completed px-3 py-1 rounded-full text-xs font-medium">Completed</span>
+                                        <% } else if (req.status === 'rejected') { %>
+                                            <span class="status-rejected px-3 py-1 rounded-full text-xs font-medium">Rejected</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button class="text-amber-600 hover:text-amber-700 mr-2" title="Update Status">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-blue-600 hover:text-blue-700" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Posts Requiring Moderation -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                        <h3 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-flag text-amber-600"></i>
+                            Posts Awaiting Review
+                        </h3>
+                        <a href="/moderator/posts" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                            Manage All <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        <% 
+                        const pendingPosts = [
+                            { id: 101, author: 'John Smith', content: 'Complaint about noise in Phase 3...', time: '10 mins ago', urgency: 'medium', reports: 2 },
+                            { id: 102, author: 'Lisa Marie', content: 'Suspicious activity near the covered court...', time: '25 mins ago', urgency: 'high', reports: 5 },
+                            { id: 103, author: 'Ramon Bautista', content: 'Request for additional street lights...', time: '1 hour ago', urgency: 'low', reports: 0 },
+                            { id: 104, author: 'Cynthia Villar', content: 'EMERGENCY: Fallen tree blocking road...', time: '2 hours ago', urgency: 'emergency', reports: 8 }
+                        ];
+                        %>
+                        <% pendingPosts.forEach(function(post) { %>
+                        <div class="p-4 hover:bg-gray-50 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-medium text-gray-800"><%= post.author %></span>
+                                        <% if (post.urgency === 'low') { %>
+                                            <span class="urgency-low px-2 py-0.5 rounded-full text-xs">Low</span>
+                                        <% } else if (post.urgency === 'medium') { %>
+                                            <span class="urgency-medium px-2 py-0.5 rounded-full text-xs">Medium</span>
+                                        <% } else if (post.urgency === 'high') { %>
+                                            <span class="urgency-high px-2 py-0.5 rounded-full text-xs">High</span>
+                                        <% } else if (post.urgency === 'emergency') { %>
+                                            <span class="urgency-emergency px-2 py-0.5 rounded-full text-xs">🚨 EMERGENCY</span>
+                                        <% } %>
+                                        <% if (post.reports > 0) { %>
+                                            <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">
+                                                <i class="fas fa-flag mr-1"></i><%= post.reports %> reports
+                                            </span>
+                                        <% } %>
+                                    </div>
+                                    <p class="text-sm text-gray-700 mb-2"><%= post.content %></p>
+                                    <div class="flex items-center gap-3 text-xs text-gray-500">
+                                        <span><i class="far fa-clock"></i> <%= post.time %></span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 ml-4">
+                                    <button class="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <button class="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Review">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <% }) %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN - Quick Actions and Status Overview -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Moderator Quick Actions -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3">
+                        <h3 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-bolt"></i> Quick Actions
+                        </h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-amber-50 rounded-lg text-gray-700 transition group">
+                            <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-200">
+                                <i class="fas fa-check-double text-amber-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm">Bulk Approve Posts</p>
+                                <p class="text-xs text-gray-500">Approve multiple pending posts</p>
+                            </div>
+                        </a>
+                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg text-gray-700 transition group">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200">
+                                <i class="fas fa-file-pdf text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm">Generate Reports</p>
+                                <p class="text-xs text-gray-500">Weekly/Monthly activity report</p>
+                            </div>
+                        </a>
+                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-green-50 rounded-lg text-gray-700 transition group">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200">
+                                <i class="fas fa-user-shield text-green-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm">Assign Tasks</p>
+                                <p class="text-xs text-gray-500">Delegate to other moderators</p>
+                            </div>
+                        </a>
+                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-purple-50 rounded-lg text-gray-700 transition group">
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200">
+                                <i class="fas fa-bell text-purple-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm">Send Announcement</p>
+                                <p class="text-xs text-gray-500">Broadcast to all residents</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Urgent Issues Summary -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 bg-red-50">
+                        <h3 class="font-semibold text-red-700 flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Urgent Issues (6)
+                        </h3>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        <div class="p-3 flex items-start gap-2">
+                            <div class="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Broken street light - Phase 2</p>
+                                <p class="text-xs text-gray-500">Reported 2 hours ago • 12 residents affected</p>
+                            </div>
+                            <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">High</span>
+                        </div>
+                        <div class="p-3 flex items-start gap-2">
+                            <div class="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Flooding in Phase 4</p>
+                                <p class="text-xs text-gray-500">Reported 5 hours ago • 25 residents affected</p>
+                            </div>
+                            <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">High</span>
+                        </div>
+                        <div class="p-3 flex items-start gap-2">
+                            <div class="w-2 h-2 bg-purple-600 rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Suspicious person near school</p>
+                                <p class="text-xs text-gray-500">Reported 30 mins ago • Immediate attention needed</p>
+                            </div>
+                            <span class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">Emergency</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-50">
+                        <a href="#" class="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center justify-center gap-1">
+                            View All Urgent Issues <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- System Status / Performance -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                        <i class="fas fa-server text-amber-600"></i>
+                        System Status
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Response Time</span>
+                            <span class="text-sm font-medium text-green-600">98 ms</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Active Users</span>
+                            <span class="text-sm font-medium">245 online</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">AI Chatbot Load</span>
+                            <span class="text-sm font-medium text-green-600">Normal</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Server Uptime</span>
+                            <span class="text-sm font-medium">99.9%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Moderator Activity -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                        <i class="fas fa-history text-amber-600"></i>
+                        Recent Activity
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-2 text-sm">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+                            <div>
+                                <p class="text-gray-700"><span class="font-medium">You</span> approved 5 posts</p>
+                                <p class="text-xs text-gray-500">10 minutes ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-2 text-sm">
+                            <i class="fas fa-flag text-amber-500 mt-0.5"></i>
+                            <div>
+                                <p class="text-gray-700"><span class="font-medium">Maria</span> flagged a post</p>
+                                <p class="text-xs text-gray-500">25 minutes ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-2 text-sm">
+                            <i class="fas fa-file-signature text-blue-500 mt-0.5"></i>
+                            <div>
+                                <p class="text-gray-700"><span class="font-medium">John</span> processed a clearance</p>
+                                <p class="text-xs text-gray-500">1 hour ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Include chatbot -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- Chart.js Script - FIXED VERSION -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store chart instance globally to destroy it later if needed
+            let activityChart = null;
+            
+            // Function to initialize or update chart
+            function initChart() {
+                const ctx = document.getElementById('activityChart').getContext('2d');
+                
+                // Destroy existing chart if it exists (prevents duplication)
+                if (activityChart) {
+                    activityChart.destroy();
+                }
+                
+                // Create new chart
+                activityChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [
+                            {
+                                label: 'Posts',
+                                data: [65, 72, 80, 78, 85, 55, 42],
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointBackgroundColor: '#f59e0b',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Document Requests',
+                                data: [45, 52, 48, 55, 60, 35, 28],
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointBackgroundColor: '#3b82f6',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Resolved',
+                                data: [40, 45, 52, 48, 58, 30, 25],
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointBackgroundColor: '#10b981',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { 
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: '#1f2937',
+                                titleColor: '#f3f4f6',
+                                bodyColor: '#e5e7eb',
+                                borderColor: '#f59e0b',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(156, 163, 175, 0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        elements: {
+                            line: {
+                                borderWidth: 2
+                            }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                });
+            }
+            
+            // Initialize chart
+            initChart();
+            
+            // Handle window resize to prevent chart distortion
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    if (activityChart) {
+                        activityChart.resize();
+                    }
+                }, 250);
+            });
+            
+            // Handle time range change (example of updating chart data)
+            document.getElementById('chartTimeRange')?.addEventListener('change', function(e) {
+                // This is just an example of how you would update chart data
+                // In a real app, you would fetch new data based on the selected range
+                const range = e.target.value;
+                
+                // Simulate different data for different ranges
+                if (range === '30') {
+                    activityChart.data.datasets[0].data = [650, 720, 800, 780, 850, 550, 420];
+                    activityChart.data.datasets[1].data = [450, 520, 480, 550, 600, 350, 280];
+                    activityChart.data.datasets[2].data = [400, 450, 520, 480, 580, 300, 250];
+                } else if (range === 'this') {
+                    activityChart.data.datasets[0].data = [320, 380, 410, 390, 430, 280, 210];
+                    activityChart.data.datasets[1].data = [230, 260, 240, 280, 300, 180, 140];
+                    activityChart.data.datasets[2].data = [200, 230, 260, 240, 290, 150, 130];
+                } else {
+                    activityChart.data.datasets[0].data = [65, 72, 80, 78, 85, 55, 42];
+                    activityChart.data.datasets[1].data = [45, 52, 48, 55, 60, 35, 28];
+                    activityChart.data.datasets[2].data = [40, 45, 52, 48, 58, 30, 25];
+                }
+                
+                activityChart.update();
+            });
+        });
+    </script>
+</body>
+</html>
