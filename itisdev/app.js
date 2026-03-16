@@ -534,6 +534,78 @@ app.get('/moderator/dashboard', (req, res) => {
     });
 });
 
+app.get('/moderator/posts', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
+        return res.status(403).send('Access denied.');
+    }
+    
+    const stats = {
+        totalPosts: posts.length,
+        pendingPosts: posts.filter(p => p.status === 'pending').length,
+        openPosts: posts.filter(p => p.status === 'open').length,
+        closedPosts: posts.filter(p => p.status === 'closed').length,
+        totalRequests: documentRequests.length,
+        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
+    };
+    
+    res.render('posts_mod', {  // Note: special name to avoid conflict
+        title: 'Moderator Posts - BarangChan',
+        user: req.session.user,
+        stats: stats,
+        recentPosts: posts.slice(0, 10),
+        recentRequests: documentRequests.slice(0, 10)
+    });
+});
+
+app.get('/moderator/requests', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
+        return res.status(403).send('Access denied.');
+    }
+    
+    const stats = {
+        totalPosts: posts.length,
+        pendingPosts: posts.filter(p => p.status === 'pending').length,
+        openPosts: posts.filter(p => p.status === 'open').length,
+        closedPosts: posts.filter(p => p.status === 'closed').length,
+        totalRequests: documentRequests.length,
+        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
+    };
+    
+    res.render('requests_mod', {  // Note: special name to avoid conflict
+        title: 'Moderator Requests - BarangChan',
+        user: req.session.user,
+        stats: stats,
+        recentPosts: posts.slice(0, 10),
+        recentRequests: documentRequests.slice(0, 10)
+    });
+});
+
+app.get('/moderator/status_updates', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
+        return res.status(403).send('Access denied.');
+    }
+    
+    const stats = {
+        totalPosts: posts.length,
+        pendingPosts: posts.filter(p => p.status === 'pending').length,
+        openPosts: posts.filter(p => p.status === 'open').length,
+        closedPosts: posts.filter(p => p.status === 'closed').length,
+        totalRequests: documentRequests.length,
+        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
+    };
+    
+    res.render('status_updates_mod', {  // Note: special name to avoid conflict
+        title: 'Moderator Status Updates - BarangChan',
+        user: req.session.user,
+        stats: stats,
+        recentPosts: posts.slice(0, 10),
+        recentRequests: documentRequests.slice(0, 10)
+    });
+});
+
 // ==================== ADMINISTRATOR ROUTES ====================
 app.get('/administrator/dashboard', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
