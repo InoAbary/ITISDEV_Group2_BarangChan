@@ -112,11 +112,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Set EJS as templating engine - points to multiple folders
 app.set('view engine', 'ejs');
 app.set('views', [
-    path.join(__dirname, 'views'),        // for login, register
+    path.join(__dirname, 'views'),         // for login, register
     path.join(__dirname, 'client'),        // for client pages
-    path.join(__dirname, 'moderator'),     // for moderator pages
+    path.join(__dirname, 'Moderator'),     // for moderator pages
     path.join(__dirname, 'administrator'), // for admin pages
-    path.join(__dirname, 'partials')       // for partials
+    path.join(__dirname, 'Partials')       // for partials
 ]);
 
 // ==================== MIDDLEWARE TO MAKE USER AVAILABLE ====================
@@ -159,7 +159,7 @@ app.get('/login', (req, res) => {
     const error = req.session.error;
     req.session.error = null;
     
-    res.render('login', { 
+    res.render('LOGIN', {
         title: 'BarangChan - Login',
         error: error,
         year: new Date().getFullYear()
@@ -263,7 +263,7 @@ app.get('/logout', (req, res) => {
 app.get('/register', (req, res) => {
     const err = req.session.error;
     req.session.error = null;
-    res.render('register', { 
+    res.render('REGISTER', {
         title: 'BarangChan - Register',
         error: err,
         year: new Date().getFullYear()
@@ -525,7 +525,7 @@ app.get('/moderator/dashboard', (req, res) => {
         pendingRequests: documentRequests.filter(r => r.status === 'pending').length
     };
     
-    res.render('dashboard_mod', {  // Note: special name to avoid conflict
+    res.render('Dashboard_mod', {
         title: 'Moderator Dashboard - BarangChan',
         user: req.session.user,
         stats: stats,
@@ -622,7 +622,7 @@ app.get('/administrator/dashboard', (req, res) => {
         totalRequests: documentRequests.length
     };
     
-    res.render('admindashboard', {  // Note: special name to avoid conflict
+    res.render('Dashboard_admin', {
         title: 'Admin Dashboard - BarangChan',
         user: req.session.user,
         stats: stats,
