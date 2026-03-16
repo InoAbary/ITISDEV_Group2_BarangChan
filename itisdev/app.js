@@ -631,6 +631,51 @@ app.get('/administrator/dashboard', (req, res) => {
     });
 });
 
+app.get('/administrator/users', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (req.session.user.role !== 'administrator') {
+        return res.status(403).send('Access denied.');
+    }
+    
+    const stats = {
+        totalUsers: users.length,
+        residents: users.filter(u => u.role === 'resident').length,
+        moderators: users.filter(u => u.role === 'moderator').length,
+        admins: users.filter(u => u.role === 'administrator').length,
+        totalPosts: posts.length,
+        totalRequests: documentRequests.length
+    };
+    
+    res.render('users_admin', {
+        title: 'Manage Users - BarangChan',
+        user: req.session.user,
+        stats: stats,
+        recentUsers: users.slice(0, 5)
+    });
+});
+
+app.get('/administrator/moderators', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (req.session.user.role !== 'administrator') {
+        return res.status(403).send('Access denied.');
+    }
+    
+    const stats = {
+        totalUsers: users.length,
+        residents: users.filter(u => u.role === 'resident').length,
+        moderators: users.filter(u => u.role === 'moderator').length,
+        admins: users.filter(u => u.role === 'administrator').length,
+        totalPosts: posts.length,
+        totalRequests: documentRequests.length
+    };
+    
+    res.render('moderators_admin', {
+        title: 'Manage Users - BarangChan',
+        user: req.session.user,
+        stats: stats,
+        recentUsers: users.slice(0, 5)
+    });
+});
 // ==================== PROFILE ================
 
 // app.js - Profile routes (Session-based, no database)
@@ -769,6 +814,33 @@ app.post('/profile/password', (req, res) => {
     req.session.success = 'Password changed successfully';
     
     res.redirect('/profile');
+});
+
+app.get('/contacts', (req, res) => {
+    // Check if user is logged in via session
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    
+    const user = req.session.user;
+    
+    // Determine which dashboard to redirect to based on role
+    let contactsPath = '/views/contacts';
+    
+    
+    // Get success/error messages from session and clear them
+    const success = req.session.success;
+    const error = req.session.error;
+    delete req.session.success;
+    delete req.session.error;
+    
+    res.render('contacts', { 
+        user: user,
+        contactsPath: contactsPath,
+        currentPath: '/contacts',
+        success: success,
+        error: error
+    });
 });
 
 // ==================== 404 ====================

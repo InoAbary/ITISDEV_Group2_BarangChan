@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Manage Moderators</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Moderator card hover effects */
+        .mod-card {
+            transition: all 0.2s ease;
+        }
+        .mod-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Status badges */
+        .status-active { background-color: #dcfce7; color: #166534; border-left: 3px solid #16a34a; }
+        .status-inactive { background-color: #fee2e2; color: #991b1b; border-left: 3px solid #dc2626; }
+        .status-on-leave { background-color: #fff3e0; color: #9a3412; border-left: 3px solid #ea580c; }
+        .status-training { background-color: #e0f2fe; color: #075985; border-left: 3px solid #0284c7; }
+
+        /* Level badges */
+        .level-senior { background-color: #8b5cf6; color: white; }
+        .level-junior { background-color: #3b82f6; color: white; }
+        .level-trainee { background-color: #9ca3af; color: white; }
+
+        /* Performance indicators */
+        .perf-excellent { color: #16a34a; }
+        .perf-good { color: #ca8a04; }
+        .perf-needs-improvement { color: #dc2626; }
+
+        /* Filipino pattern */
+        .filipino-divider {
+            background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
+            height: 2px;
+            width: 100%;
+        }
+
+        /* Table row hover */
+        .table-row-hover:hover {
+            background-color: #f9fafb;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/admin/manage-moderators', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-900 to-amber-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold flex items-center gap-2">
+                            <i class="fas fa-user-shield"></i> 
+                            Manage Moderators
+                        </h1>
+                        <p class="text-blue-100 mt-1 text-sm">
+                            <i class="fas fa-users-cog mr-1"></i> 
+                            Promote, demote, and manage moderator accounts
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-shield-alt mr-2"></i>Total Moderators: 24
+                        </span>
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-user-check text-green-300 mr-2"></i>Active: 18
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Active Moderators</p>
+                        <p class="text-3xl font-bold text-gray-800">18</p>
+                        <p class="text-xs text-green-600 mt-2">75% of total</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-user-check text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Senior Moderators</p>
+                        <p class="text-3xl font-bold text-gray-800">8</p>
+                        <p class="text-xs text-blue-600 mt-2">Leadership team</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-crown text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">In Training</p>
+                        <p class="text-3xl font-bold text-gray-800">4</p>
+                        <p class="text-xs text-amber-600 mt-2">Probationary period</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-lg">
+                        <i class="fas fa-graduation-cap text-amber-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">On Leave / Inactive</p>
+                        <p class="text-3xl font-bold text-gray-800">2</p>
+                        <p class="text-xs text-red-600 mt-2">Temporarily unavailable</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and Search Bar -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchModerators" placeholder="Search by name, email, or username..." 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <select id="statusFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="on-leave">On Leave</option>
+                        <option value="training">In Training</option>
+                    </select>
+                    <select id="levelFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Levels</option>
+                        <option value="senior">Senior</option>
+                        <option value="junior">Junior</option>
+                        <option value="trainee">Trainee</option>
+                    </select>
+                    <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                    <button onclick="openPromoteModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        <i class="fas fa-user-plus mr-2"></i>Add Moderator
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Senior Moderators Section -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-crown text-amber-500"></i>
+                    Senior Moderators (8)
+                </h2>
+                <a href="#" class="text-sm text-amber-600 hover:text-amber-700">View all seniors</a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Senior Moderator Card 1 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Senior Moderator</span>
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-lg">
+                                MS
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Maria Santos</h3>
+                                <p class="text-xs text-gray-500">@maria.santos</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">1,247</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">98%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">2.3 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-active text-xs px-2 py-1 rounded-full">Active</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2024</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button onclick="openModDetails(1001)" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </button>
+                            <button onclick="openDemoteModal(1001)" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-down mr-1"></i> Demote
+                            </button>
+                            <button onclick="openDeactivateModal(1001)" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Senior Moderator Card 2 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Senior Moderator</span>
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">
+                                JR
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Juan Reyes</h3>
+                                <p class="text-xs text-gray-500">@juan.reyes</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">982</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">95%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">2.8 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-active text-xs px-2 py-1 rounded-full">Active</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2024</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </button>
+                            <button class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-down mr-1"></i> Demote
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Senior Moderator Card 3 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Senior Moderator</span>
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-lg">
+                                AL
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Anna Lopez</h3>
+                                <p class="text-xs text-gray-500">@anna.lopez</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">1,102</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">97%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">2.5 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-on-leave text-xs px-2 py-1 rounded-full">On Leave</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2023</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </button>
+                            <button class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-down mr-1"></i> Demote
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Senior Moderator Card 4 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Senior Moderator</span>
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-lg">
+                                PD
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Pedro Diaz</h3>
+                                <p class="text-xs text-gray-500">@pedro.diaz</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">845</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">94%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">3.1 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-active text-xs px-2 py-1 rounded-full">Active</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2024</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </button>
+                            <button class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-down mr-1"></i> Demote
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Junior Moderators Section -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-user-shield text-blue-600"></i>
+                    Junior Moderators (12)
+                </h2>
+                <a href="#" class="text-sm text-amber-600 hover:text-amber-700">View all juniors</a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Junior Moderator Card 1 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Junior Moderator</span>
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">
+                                KC
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Karen Cruz</h3>
+                                <p class="text-xs text-gray-500">@karen.cruz</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">342</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">92%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">4.2 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-active text-xs px-2 py-1 rounded-full">Active</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2025</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button onclick="openPromoteModal(2001)" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-up mr-1"></i> Promote
+                            </button>
+                            <button onclick="openDeactivateModal(2001)" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Junior Moderator Card 2 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Junior Moderator</span>
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg">
+                                MT
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Mike Tan</h3>
+                                <p class="text-xs text-gray-500">@mike.tan</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">287</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">90%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">4.8 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-active text-xs px-2 py-1 rounded-full">Active</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2025</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-up mr-1"></i> Promote
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Junior Moderator Card 3 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Junior Moderator</span>
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-lg">
+                                CV
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Carla Villar</h3>
+                                <p class="text-xs text-gray-500">@carla.villar</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">156</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-yellow-600">85%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-orange-600">5.5 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-training text-xs px-2 py-1 rounded-full">In Training</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2026</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-up mr-1"></i> Promote
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Junior Moderator Card 4 -->
+                <div class="mod-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">Junior Moderator</span>
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 font-bold text-lg">
+                                RM
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Rosa Mendoza</h3>
+                                <p class="text-xs text-gray-500">@rosa.mendoza</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Tickets Resolved:</span>
+                                <span class="font-bold text-gray-800">412</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Satisfaction:</span>
+                                <span class="font-bold text-green-600">94%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">Response Time:</span>
+                                <span class="font-bold text-blue-600">3.8 min</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="status-active text-xs px-2 py-1 rounded-full">Active</span>
+                            <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Since 2025</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-arrow-up mr-1"></i> Promote
+                            </button>
+                            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Deact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filipino Pattern Divider -->
+        <div class="filipino-divider my-8"></div>
+
+        <!-- All Moderators Table -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-list"></i>
+                    All Moderators (24)
+                </h2>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moderator</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Satisfaction</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Since</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr class="table-row-hover">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-sm">MS</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Maria Santos</p>
+                                        <p class="text-xs text-gray-500">maria.santos@email.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="level-senior px-3 py-1 rounded-full text-xs font-medium">Senior</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1,247</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-green-600 font-medium">98%</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.3 min</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-amber-600 hover:text-amber-700 mr-2" title="Promote" onclick="openPromoteModal(1001)">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button class="text-yellow-600 hover:text-yellow-700 mr-2" title="Demote" onclick="openDemoteModal(1001)">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                                <button class="text-red-600 hover:text-red-700" title="Deactivate" onclick="openDeactivateModal(1001)">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="table-row-hover">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">KC</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Karen Cruz</p>
+                                        <p class="text-xs text-gray-500">karen.cruz@email.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="level-junior px-3 py-1 rounded-full text-xs font-medium">Junior</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">342</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-green-600 font-medium">92%</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4.2 min</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2025</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-amber-600 hover:text-amber-700 mr-2"><i class="fas fa-arrow-up"></i></button>
+                                <button class="text-yellow-600 hover:text-yellow-700 mr-2"><i class="fas fa-arrow-down"></i></button>
+                                <button class="text-red-600 hover:text-red-700"><i class="fas fa-ban"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    Showing 1 to 10 of 24 moderators
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">Previous</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition text-sm">1</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">2</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">3</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">Next</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PROMOTE MODAL -->
+    <div id="promoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-green-600 p-6 text-white rounded-t-2xl">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-arrow-up"></i>
+                    Promote Moderator
+                </h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 mb-4">Are you sure you want to promote <span class="font-bold" id="promoteUserName">Karen Cruz</span>?</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Level</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent">
+                        <option value="junior">Junior Moderator</option>
+                        <option value="senior" selected>Senior Moderator</option>
+                        <option value="admin">Admin (Full Access)</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Promotion</label>
+                    <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent" placeholder="e.g., Excellent performance, leadership qualities..."></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" class="rounded text-green-600 focus:ring-green-500">
+                        <span class="text-sm text-gray-600">Send notification email to moderator</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="closePromoteModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmPromote()" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        <i class="fas fa-check mr-2"></i>Confirm Promote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEMOTE MODAL -->
+    <div id="demoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-yellow-600 p-6 text-white rounded-t-2xl">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-arrow-down"></i>
+                    Demote Moderator
+                </h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 mb-4">Are you sure you want to demote <span class="font-bold" id="demoteUserName">Maria Santos</span>?</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Level</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent">
+                        <option value="junior">Junior Moderator</option>
+                        <option value="trainee">Trainee</option>
+                        <option value="user">Regular User (Remove Mod Status)</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Demotion</label>
+                    <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent" placeholder="e.g., Performance issues, policy violations..."></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" class="rounded text-yellow-600 focus:ring-yellow-500">
+                        <span class="text-sm text-gray-600">Send notification email to moderator</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="closeDemoteModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDemote()" class="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition">
+                        <i class="fas fa-check mr-2"></i>Confirm Demote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEACTIVATE MODAL -->
+    <div id="deactivateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-red-600 p-6 text-white rounded-t-2xl">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-ban"></i>
+                    Deactivate Moderator
+                </h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 mb-4">Are you sure you want to deactivate <span class="font-bold" id="deactivateUserName">Karen Cruz</span>?</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Deactivation</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent">
+                        <option value="voluntary">Voluntary resignation</option>
+                        <option value="performance">Performance issues</option>
+                        <option value="violation">Policy violation</option>
+                        <option value="inactivity">Prolonged inactivity</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+                    <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent" placeholder="Enter any additional context..."></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" class="rounded text-red-600 focus:ring-red-500">
+                        <span class="text-sm text-gray-600">Send exit email and collect feedback</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="closeDeactivateModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDeactivate()" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                        <i class="fas fa-check mr-2"></i>Confirm Deactivate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD MODERATOR MODAL -->
+    <div id="addModeratorModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-6 text-white rounded-t-2xl">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-user-plus"></i>
+                    Add New Moderator
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
+                        <option value="">Search for user...</option>
+                        <option value="1005">Robert Lim (robert.lim@email.com)</option>
+                        <option value="1006">Jennifer Yu (jennifer.yu@email.com)</option>
+                        <option value="1007">Carlos Reyes (carlos.reyes@email.com)</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Moderator Level</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
+                        <option value="trainee">Trainee (Probationary)</option>
+                        <option value="junior">Junior Moderator</option>
+                        <option value="senior">Senior Moderator</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" class="rounded text-amber-600 focus:ring-amber-500">
+                        <span class="text-sm text-gray-600">Send welcome email with guidelines</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="closeAddModeratorModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmAddModerator()" class="flex-1 px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg hover:from-amber-700 hover:to-amber-800 transition">
+                        <i class="fas fa-user-plus mr-2"></i>Add Moderator
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS TOAST -->
+    <div id="successToast" class="fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg hidden z-50" style="max-width: 350px;">
+        <div class="flex items-start gap-3">
+            <i class="fas fa-check-circle text-green-600 mt-0.5"></i>
+            <div>
+                <p class="font-bold" id="successTitle">Success</p>
+                <p class="text-sm" id="successMessage">Action completed successfully.</p>
+            </div>
+            <button onclick="closeSuccessToast()" class="text-green-700 hover:text-green-800">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Include chatbot -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- JavaScript for Manage Moderators Page -->
+    <script>
+        let currentModId = null;
+        let currentAction = null;
+
+        // Promote functions
+        function openPromoteModal(modId) {
+            currentModId = modId;
+            currentAction = 'promote';
+            document.getElementById('promoteModal').classList.remove('hidden');
+        }
+
+        function closePromoteModal() {
+            document.getElementById('promoteModal').classList.add('hidden');
+        }
+
+        function confirmPromote() {
+            // Here you would make an API call to promote the moderator
+            console.log('Promoting moderator:', currentModId);
+            showSuccess('Moderator promoted successfully', 'The moderator has been promoted to the new level.');
+            closePromoteModal();
+        }
+
+        // Demote functions
+        function openDemoteModal(modId) {
+            currentModId = modId;
+            currentAction = 'demote';
+            document.getElementById('demoteModal').classList.remove('hidden');
+        }
+
+        function closeDemoteModal() {
+            document.getElementById('demoteModal').classList.add('hidden');
+        }
+
+        function confirmDemote() {
+            // Here you would make an API call to demote the moderator
+            console.log('Demoting moderator:', currentModId);
+            showSuccess('Moderator demoted successfully', 'The moderator has been demoted to the selected level.');
+            closeDemoteModal();
+        }
+
+        // Deactivate functions
+        function openDeactivateModal(modId) {
+            currentModId = modId;
+            currentAction = 'deactivate';
+            document.getElementById('deactivateModal').classList.remove('hidden');
+        }
+
+        function closeDeactivateModal() {
+            document.getElementById('deactivateModal').classList.add('hidden');
+        }
+
+        function confirmDeactivate() {
+            // Here you would make an API call to deactivate the moderator
+            console.log('Deactivating moderator:', currentModId);
+            showSuccess('Moderator deactivated', 'The moderator account has been deactivated successfully.');
+            closeDeactivateModal();
+        }
+
+        // Add moderator functions
+        function openPromoteModal() {
+            document.getElementById('addModeratorModal').classList.remove('hidden');
+        }
+
+        function closeAddModeratorModal() {
+            document.getElementById('addModeratorModal').classList.add('hidden');
+        }
+
+        function confirmAddModerator() {
+            // Here you would make an API call to add a new moderator
+            console.log('Adding new moderator');
+            showSuccess('Moderator added', 'New moderator has been added successfully.');
+            closeAddModeratorModal();
+        }
+
+        // Success toast
+        function showSuccess(title, message) {
+            document.getElementById('successTitle').textContent = title;
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successToast').classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('successToast').classList.add('hidden');
+            }, 3000);
+        }
+
+        function closeSuccessToast() {
+            document.getElementById('successToast').classList.add('hidden');
+        }
+
+        // Search functionality
+        document.getElementById('searchModerators')?.addEventListener('keyup', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.mod-card');
+            const rows = document.querySelectorAll('tbody tr');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Filter functionality
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const levelFilter = document.getElementById('levelFilter').value;
+            
+            console.log('Applying filters:', { status: statusFilter, level: levelFilter });
+            // Implement actual filtering logic here
+        }
+
+        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('levelFilter')?.addEventListener('change', applyFilters);
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const promoteModal = document.getElementById('promoteModal');
+            const demoteModal = document.getElementById('demoteModal');
+            const deactivateModal = document.getElementById('deactivateModal');
+            const addModal = document.getElementById('addModeratorModal');
+            
+            if (event.target === promoteModal) closePromoteModal();
+            if (event.target === demoteModal) closeDemoteModal();
+            if (event.target === deactivateModal) closeDeactivateModal();
+            if (event.target === addModal) closeAddModeratorModal();
+        });
+
+        // Add quick actions for chatbot
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickActionsContainer = document.getElementById('quickActionsContainer');
+            if (quickActionsContainer) {
+                quickActionsContainer.innerHTML = `
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I promote a moderator?">
+                        ⬆️ Promote moderator
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I demote a moderator?">
+                        ⬇️ Demote moderator
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How to add a new moderator?">
+                        ➕ Add moderator
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Show moderator performance">
+                        📊 Performance
+                    </button>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

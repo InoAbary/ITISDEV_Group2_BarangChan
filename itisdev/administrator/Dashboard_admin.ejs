@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Admin Analytics Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- ApexCharts for advanced analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Analytics card hover effects */
+        .analytics-card {
+            transition: all 0.2s ease;
+        }
+        .analytics-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Metric animations */
+        .metric-value {
+            animation: countUp 1s ease-out;
+        }
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Filipino pattern */
+        .filipino-divider {
+            background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
+            height: 2px;
+            width: 100%;
+        }
+
+        /* Status badges */
+        .status-online { background-color: #dcfce7; color: #166534; }
+        .status-offline { background-color: #fee2e2; color: #991b1b; }
+        .status-away { background-color: #fff3e0; color: #9a3412; }
+
+        /* Progress bars */
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+
+        /* Filipino ornament */
+        .filipino-sun {
+            background: radial-gradient(circle at 30% 50%, #fbbf24 2px, transparent 3px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col" data-page-context="admin">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/admin/dashboard', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-900 to-amber-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold flex items-center gap-2">
+                            <i class="fas fa-chart-pie"></i> 
+                            Admin Analytics Dashboard
+                        </h1>
+                        <p class="text-blue-100 mt-1 text-sm">
+                            <i class="fas fa-chart-line mr-1"></i> 
+                            Prescriptive • Predictive • Descriptive • Diagnostic Analytics
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-calendar-alt mr-2"></i><span id="currentDate"></span>
+                        </span>
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-clock mr-2"></i><span id="currentTime"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+
+        <!-- KEY METRICS SECTION (Descriptive Analytics) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Users Registered -->
+            <div class="analytics-card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                            <i class="fas fa-users text-blue-500"></i> Total Registered Users
+                        </p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value" id="totalUsers">2,547</p>
+                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-arrow-up"></i> +12.5% from last month</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-user-plus text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500">
+                    <span class="font-medium">Active:</span> 1,892 • <span class="font-medium">Inactive:</span> 655
+                </div>
+            </div>
+
+            <!-- Users Logged In Today -->
+            <div class="analytics-card bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                            <i class="fas fa-sign-in-alt text-green-500"></i> Users Logged In Today
+                        </p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value" id="usersLoggedIn">847</p>
+                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-arrow-up"></i> +5.2% from yesterday</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-user-check text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500">
+                    <span class="font-medium">Peak hour:</span> 9:00 AM - 11:00 AM
+                </div>
+            </div>
+
+            <!-- Moderators Online -->
+            <div class="analytics-card bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                            <i class="fas fa-user-shield text-amber-500"></i> Moderators Online
+                        </p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value" id="moderatorsOnline">18</p>
+                        <p class="text-xs text-amber-600 mt-2">of 24 total moderators</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-lg">
+                        <i class="fas fa-shield-alt text-amber-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center gap-1">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-xs text-gray-500">18 online • 4 away • 2 offline</span>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="analytics-card bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                            <i class="fas fa-heartbeat text-purple-500"></i> System Health
+                        </p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value">98.5%</p>
+                        <p class="text-xs text-green-600 mt-2">Uptime: 99.9%</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-server text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500">
+                    Response time: 124ms • Load: 42%
+                </div>
+            </div>
+        </div>
+
+        <!-- Filipino Pattern Divider -->
+        <div class="filipino-divider my-8"></div>
+
+        <!-- DESCRIPTIVE ANALYTICS SECTION (What happened?) -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-chart-bar text-blue-600"></i>
+                Descriptive Analytics
+                <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">What happened?</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- User Growth Chart -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-700">User Growth (Last 6 Months)</h3>
+                        <select class="text-sm border border-gray-300 rounded-lg px-3 py-1 bg-white">
+                            <option>Daily</option>
+                            <option selected>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Activity Distribution -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-700">Platform Activity Distribution</h3>
+                        <span class="text-xs bg-gray-100 px-3 py-1 rounded-full">Last 30 days</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="activityDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIAGNOSTIC ANALYTICS SECTION (Why did it happen?) -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-search text-amber-600"></i>
+                Diagnostic Analytics
+                <span class="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full">Why did it happen?</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- User Drop-off Analysis -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-4">User Drop-off Analysis</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Registration Funnel</span>
+                                <span class="font-medium">78% completion rate</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: 78%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Drop-off at email verification: 22%</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Document Request Completion</span>
+                                <span class="font-medium">64% completion rate</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-amber-600 h-2.5 rounded-full" style="width: 64%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Drop-off at requirements submission: 36%</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Complaint Resolution Rate</span>
+                                <span class="font-medium">92% resolution rate</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-green-600 h-2.5 rounded-full" style="width: 92%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Average resolution time: 3.2 days</p>
+                        </div>
+                    </div>
+
+                    <!-- Root Cause Analysis -->
+                    <div class="mt-6 p-4 bg-red-50 rounded-lg">
+                        <h4 class="font-semibold text-red-700 text-sm mb-2">⚠️ Identified Issues</h4>
+                        <ul class="space-y-2 text-xs text-red-600">
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-circle text-[6px] mt-1.5"></i>
+                                <span>High drop-off at mobile verification (34% of users)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-circle text-[6px] mt-1.5"></i>
+                                <span>Peak server load causing slow response (2-4 PM)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-circle text-[6px] mt-1.5"></i>
+                                <span>Chatbot escalation rate increased 15% this week</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Performance Bottlenecks -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-4">System Performance Analysis</h3>
+                    
+                    <!-- Response Time by Feature -->
+                    <div class="space-y-3 mb-6">
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Dashboard Load Time</span>
+                                <span class="font-medium text-green-600">1.2s</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 30%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Document Processing</span>
+                                <span class="font-medium text-amber-600">2.8s</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-amber-500 h-2 rounded-full" style="width: 70%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Search Queries</span>
+                                <span class="font-medium text-red-600">3.5s</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 88%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span>Chatbot Response</span>
+                                <span class="font-medium text-green-600">0.8s</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 20%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Rate Analysis -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs text-gray-500">API Error Rate</p>
+                            <p class="text-xl font-bold text-red-600">2.4%</p>
+                            <p class="text-xs text-gray-400">↑ 0.5% from last week</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs text-gray-500">Database Queries</p>
+                            <p class="text-xl font-bold text-amber-600">1.8k/s</p>
+                            <p class="text-xs text-gray-400">Peak: 2.4k/s</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PREDICTIVE ANALYTICS SECTION (What will happen?) -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-chart-line text-green-600"></i>
+                Predictive Analytics
+                <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">What will happen?</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- User Growth Prediction -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3">User Growth Forecast</h3>
+                    <div class="flex items-end gap-2 mb-4">
+                        <p class="text-3xl font-bold text-blue-600">3,842</p>
+                        <p class="text-sm text-gray-500 mb-1">by end of Q2</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Current:</span>
+                            <span class="font-medium">2,547 users</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Projected growth:</span>
+                            <span class="font-medium text-green-600">+51%</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Confidence interval:</span>
+                            <span class="font-medium">95%</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 h-20">
+                        <!-- Mini sparkline would go here -->
+                        <div class="flex items-end h-16 gap-1">
+                            <div class="w-1/6 bg-blue-200 h-8 rounded-t"></div>
+                            <div class="w-1/6 bg-blue-300 h-10 rounded-t"></div>
+                            <div class="w-1/6 bg-blue-400 h-12 rounded-t"></div>
+                            <div class="w-1/6 bg-blue-500 h-14 rounded-t"></div>
+                            <div class="w-1/6 bg-blue-600 h-16 rounded-t"></div>
+                            <div class="w-1/6 bg-blue-700 h-20 rounded-t"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Peak Usage Prediction -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3">Peak Usage Prediction</h3>
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-500">Next peak expected:</p>
+                        <p class="text-xl font-bold text-amber-600">Monday, 9:00 AM</p>
+                        <p class="text-xs text-gray-400">March 23, 2026</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Predicted concurrent users:</span>
+                            <span class="font-medium">1,247</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Server load estimate:</span>
+                            <span class="font-medium text-amber-600">78%</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-amber-50 rounded-lg">
+                        <p class="text-xs text-amber-700">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            Recommendation: Scale up servers by Sunday
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Document Request Forecast -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3">Document Request Forecast</h3>
+                    <div class="flex items-end gap-2 mb-4">
+                        <p class="text-3xl font-bold text-green-600">1,245</p>
+                        <p class="text-sm text-gray-500 mb-1">requests next week</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Barangay Clearance:</span>
+                            <span class="font-medium">+23%</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Business Permit:</span>
+                            <span class="font-medium">+12%</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span>Certificate of Indigency:</span>
+                            <span class="font-medium">+8%</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center gap-2">
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                        </div>
+                        <span class="text-xs text-gray-500">85% confidence</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRESCRIPTIVE ANALYTICS SECTION (What should we do?) -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-tasks text-purple-600"></i>
+                Prescriptive Analytics
+                <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">What should we do?</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recommendations -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-4">AI-Generated Recommendations</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-database text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-sm text-blue-800">Scale database resources</p>
+                                    <p class="text-xs text-blue-600 mt-1">Predicted 51% user growth requires additional capacity. Recommended: Upgrade to premium tier by April 15.</p>
+                                    <p class="text-xs text-blue-500 mt-2">Priority: High • ROI: +32% performance</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-500">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-robot text-amber-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-sm text-amber-800">Optimize chatbot responses</p>
+                                    <p class="text-xs text-amber-600 mt-1">Chatbot escalation rate increased 15%. Retrain model on recent FAQs to reduce human intervention.</p>
+                                    <p class="text-xs text-amber-500 mt-2">Priority: Medium • ROI: -25% moderator load</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-file-alt text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-sm text-green-800">Simplify document requirements</p>
+                                    <p class="text-xs text-green-600 mt-1">36% drop-off at requirements stage. Consider accepting digital copies and reducing requirements.</p>
+                                    <p class="text-xs text-green-500 mt-2">Priority: High • ROI: +28% completion rate</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Items -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-700 mb-4">Recommended Actions</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" class="rounded text-amber-600">
+                                <span class="text-sm">Increase moderator staff during peak hours (9-11 AM)</span>
+                            </div>
+                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Urgent</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" class="rounded text-amber-600">
+                                <span class="text-sm">Implement CDN for faster document delivery</span>
+                            </div>
+                            <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">This week</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" class="rounded text-amber-600">
+                                <span class="text-sm">Send push notification for barangay clearance reminder</span>
+                            </div>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Scheduled</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" class="rounded text-amber-600">
+                                <span class="text-sm">Update chatbot knowledge base with new forms</span>
+                            </div>
+                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">In progress</span>
+                        </div>
+                    </div>
+
+                    <!-- Impact Simulation -->
+                    <div class="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+                        <h4 class="font-semibold text-purple-700 text-sm mb-2">Expected Impact if Implemented</h4>
+                        <div class="grid grid-cols-2 gap-2 text-center">
+                            <div>
+                                <p class="text-lg font-bold text-green-600">+28%</p>
+                                <p class="text-xs text-gray-600">Completion Rate</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-green-600">-35%</p>
+                                <p class="text-xs text-gray-600">Response Time</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-green-600">+42%</p>
+                                <p class="text-xs text-gray-600">User Satisfaction</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-green-600">-25%</p>
+                                <p class="text-xs text-gray-600">Moderator Load</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Moderator Online Status Table -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-user-shield"></i>
+                    Moderator Status Dashboard
+                </h2>
+            </div>
+            
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moderator</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets Assigned</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolution Rate</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Response</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white font-bold text-sm">MS</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-900">Maria Santos</p>
+                                            <p class="text-xs text-gray-500">Senior Moderator</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="status-online px-3 py-1 rounded-full text-xs font-medium">Online</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Now</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium">98%</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: 98%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.3 min</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">JR</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-900">Juan Reyes</p>
+                                            <p class="text-xs text-gray-500">Moderator</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="status-online px-3 py-1 rounded-full text-xs font-medium">Online</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Now</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">8</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium">92%</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.1 min</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">AL</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-900">Anna Lopez</p>
+                                            <p class="text-xs text-gray-500">Moderator</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="status-away px-3 py-1 rounded-full text-xs font-medium">Away</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15 mins ago</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium">88%</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-amber-500 h-2 rounded-full" style="width: 88%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4.2 min</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-sm">PD</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-900">Pedro Diaz</p>
+                                            <p class="text-xs text-gray-500">Moderator</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="status-offline px-3 py-1 rounded-full text-xs font-medium">Offline</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium">-</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-gray-300 h-2 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600">18 Online</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600">4 Away</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                            <span class="text-xs text-gray-600">2 Offline</span>
+                        </div>
+                    </div>
+                    <a href="/admin/moderators" class="text-sm text-amber-600 hover:text-amber-700">Manage Moderators <i class="fas fa-arrow-right ml-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export & Report Section -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-semibold text-gray-700">Generate Analytics Report</h3>
+                    <p class="text-xs text-gray-500">Download comprehensive analytics for your records</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
+                        <i class="fas fa-file-pdf text-red-500"></i>
+                        PDF
+                    </button>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
+                        <i class="fas fa-file-excel text-green-600"></i>
+                        Excel
+                    </button>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
+                        <i class="fas fa-file-csv text-blue-600"></i>
+                        CSV
+                    </button>
+                    <button class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg text-sm hover:from-amber-700 hover:to-amber-800 transition flex items-center gap-2">
+                        <i class="fas fa-envelope"></i>
+                        Email Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Include chatbot -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- JavaScript for Charts and Analytics -->
+    <script>
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', dateOptions);
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', timeOptions);
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // User Growth Chart (Descriptive)
+        const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+        new Chart(userGrowthCtx, {
+            type: 'line',
+            data: {
+                labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+                datasets: [
+                    {
+                        label: 'New Users',
+                        data: [245, 320, 412, 389, 456, 512],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Active Users',
+                        data: [189, 245, 312, 356, 412, 478],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Activity Distribution Chart (Descriptive)
+        const activityCtx = document.getElementById('activityDistributionChart').getContext('2d');
+        new Chart(activityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Posts', 'Document Requests', 'Complaints', 'Chatbot Inquiries', 'Profile Updates'],
+                datasets: [{
+                    data: [35, 28, 15, 12, 10],
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Simulate real-time updates
+        setInterval(() => {
+            // Randomize some values to simulate live data
+            const usersLoggedIn = document.getElementById('usersLoggedIn');
+            const moderatorsOnline = document.getElementById('moderatorsOnline');
+            
+            if (usersLoggedIn) {
+                const current = parseInt(usersLoggedIn.textContent);
+                const change = Math.floor(Math.random() * 10) - 3;
+                usersLoggedIn.textContent = Math.max(800, current + change);
+            }
+            
+            if (moderatorsOnline) {
+                const current = parseInt(moderatorsOnline.textContent);
+                const change = Math.floor(Math.random() * 3) - 1;
+                moderatorsOnline.textContent = Math.max(15, Math.min(22, current + change));
+            }
+        }, 30000); // Update every 30 seconds
+    </script>
+</body>
+</html>

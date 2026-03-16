@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Manage Users</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* User card hover effects */
+        .user-card {
+            transition: all 0.2s ease;
+        }
+        .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Status badges */
+        .status-active { background-color: #dcfce7; color: #166534; border-left: 3px solid #16a34a; }
+        .status-inactive { background-color: #fee2e2; color: #991b1b; border-left: 3px solid #dc2626; }
+        .status-suspended { background-color: #fef3c7; color: #92400e; border-left: 3px solid #d97706; }
+        .status-pending { background-color: #e0f2fe; color: #075985; border-left: 3px solid #0284c7; }
+
+        /* Report level indicators */
+        .report-low { background-color: #e6f7e6; color: #2e7d32; }
+        .report-medium { background-color: #fff3e0; color: #ef6c00; }
+        .report-high { background-color: #ffebee; color: #c62828; animation: pulse 2s infinite; }
+        .report-critical { 
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            animation: criticalPulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes criticalPulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
+        /* Filipino pattern */
+        .filipino-divider {
+            background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
+            height: 2px;
+            width: 100%;
+        }
+
+        /* Table row hover */
+        .table-row-hover:hover {
+            background-color: #f9fafb;
+        }
+
+        /* Alert banners */
+        .alert-banner {
+            border-left: 4px solid;
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/admin/manage-users', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-900 to-amber-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold flex items-center gap-2">
+                            <i class="fas fa-users-cog"></i> 
+                            Manage Users
+                        </h1>
+                        <p class="text-blue-100 mt-1 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> 
+                            Monitor, moderate, and manage user accounts
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-users mr-2"></i>Total Users: 2,547
+                        </span>
+                        <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-flag text-red-300 mr-2"></i>Flagged: 23
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Alert Banner for Unusual Activity -->
+        <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md alert-banner">
+            <div class="flex items-start justify-between">
+                <div class="flex items-start gap-3">
+                    <div class="bg-red-100 p-2 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-red-800">⚠️ Unusual Activity Detected</h3>
+                        <p class="text-sm text-red-700 mt-1">
+                            <span class="font-bold">8 users</span> have received an unusually high number of reports in the last 24 hours. 
+                            <a href="#high-report-users" class="underline font-medium">Review now</a>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <span class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold">CRITICAL</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and Search Bar -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchUsers" placeholder="Search by name, email, or username..." 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <select id="statusFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                    <select id="reportFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Report Levels</option>
+                        <option value="low">Low (0-3)</option>
+                        <option value="medium">Medium (4-7)</option>
+                        <option value="high">High (8-15)</option>
+                        <option value="critical">Critical (15+)</option>
+                    </select>
+                    <select id="roleFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
+                        <option value="all">All Roles</option>
+                        <option value="user">Resident</option>
+                        <option value="moderator">Moderator</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Active Users</p>
+                        <p class="text-3xl font-bold text-gray-800">1,892</p>
+                        <p class="text-xs text-green-600 mt-2">74% of total users</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-user-check text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Flagged Users</p>
+                        <p class="text-3xl font-bold text-gray-800">23</p>
+                        <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-circle"></i> +8 today</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-flag text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Suspended Accounts</p>
+                        <p class="text-3xl font-bold text-gray-800">12</p>
+                        <p class="text-xs text-amber-600 mt-2">Last 30 days</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-lg">
+                        <i class="fas fa-ban text-amber-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">New Today</p>
+                        <p class="text-3xl font-bold text-gray-800">24</p>
+                        <p class="text-xs text-blue-600 mt-2">Awaiting verification</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-user-plus text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- High Report Users Section (Unusual Activity) -->
+        <div id="high-report-users" class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    Users with Unusual Report Activity
+                    <span class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full">8 flagged</span>
+                </h2>
+                <a href="#" class="text-sm text-amber-600 hover:text-amber-700">View all reported users</a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- User Card 1 - Critical Reports -->
+                <div class="user-card bg-white rounded-xl shadow-md border-l-4 border-red-600 overflow-hidden">
+                    <div class="p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-lg">
+                                    JD
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-gray-800">Juan Dela Cruz</h3>
+                                        <span class="status-active text-xs px-2 py-0.5 rounded-full">Active</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500">@juandelacruz • Registered Jan 2026</p>
+                                    <p class="text-xs text-gray-600 mt-1">juan.dela.cruz@email.com • 0917 123 4567</p>
+                                </div>
+                            </div>
+                            <span class="report-critical px-3 py-1 rounded-full text-xs font-bold">CRITICAL</span>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p class="text-lg font-bold text-red-600">18</p>
+                                <p class="text-xs text-gray-500">Reports</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-gray-700">12</p>
+                                <p class="text-xs text-gray-500">Posts</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-gray-700">5</p>
+                                <p class="text-xs text-gray-500">Warnings</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Reports -->
+                        <div class="mt-4 p-3 bg-red-50 rounded-lg">
+                            <p class="text-xs font-semibold text-red-700 mb-2">Recent Reports (last 24h):</p>
+                            <ul class="space-y-2">
+                                <li class="text-xs flex items-start gap-2">
+                                    <i class="fas fa-circle text-red-500 text-[6px] mt-1.5"></i>
+                                    <span class="text-gray-700"><span class="font-medium">Harassment:</span> Inappropriate comments on multiple posts</span>
+                                </li>
+                                <li class="text-xs flex items-start gap-2">
+                                    <i class="fas fa-circle text-red-500 text-[6px] mt-1.5"></i>
+                                    <span class="text-gray-700"><span class="font-medium">Spam:</span> Repeated posting of advertisements</span>
+                                </li>
+                                <li class="text-xs flex items-start gap-2">
+                                    <i class="fas fa-circle text-red-500 text-[6px] mt-1.5"></i>
+                                    <span class="text-gray-700"><span class="font-medium">Misinformation:</span> Spreading false information</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-4 flex items-center gap-2">
+                            <button onclick="openUserModal(1001)" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-eye mr-1"></i> Review
+                            </button>
+                            <button onclick="showWarning(1001)" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Warn
+                            </button>
+                            <button onclick="openSuspendModal(1001)" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Suspend
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Card 2 - High Reports -->
+                <div class="user-card bg-white rounded-xl shadow-md border-l-4 border-orange-500 overflow-hidden">
+                    <div class="p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">
+                                    MS
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-gray-800">Maria Santos</h3>
+                                        <span class="status-active text-xs px-2 py-0.5 rounded-full">Active</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500">@maria.santos • Registered Feb 2026</p>
+                                    <p class="text-xs text-gray-600 mt-1">maria.santos@email.com • 0918 765 4321</p>
+                                </div>
+                            </div>
+                            <span class="report-high px-3 py-1 rounded-full text-xs font-bold">HIGH</span>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p class="text-lg font-bold text-orange-600">12</p>
+                                <p class="text-xs text-gray-500">Reports</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-gray-700">8</p>
+                                <p class="text-xs text-gray-500">Posts</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-gray-700">2</p>
+                                <p class="text-xs text-gray-500">Warnings</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Reports -->
+                        <div class="mt-4 p-3 bg-orange-50 rounded-lg">
+                            <p class="text-xs font-semibold text-orange-700 mb-2">Recent Reports:</p>
+                            <ul class="space-y-2">
+                                <li class="text-xs flex items-start gap-2">
+                                    <i class="fas fa-circle text-orange-500 text-[6px] mt-1.5"></i>
+                                    <span class="text-gray-700"><span class="font-medium">Inappropriate content:</span> Offensive language</span>
+                                </li>
+                                <li class="text-xs flex items-start gap-2">
+                                    <i class="fas fa-circle text-orange-500 text-[6px] mt-1.5"></i>
+                                    <span class="text-gray-700"><span class="font-medium">Harassment:</span> Targeting specific user</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-4 flex items-center gap-2">
+                            <button onclick="openUserModal(1002)" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-eye mr-1"></i> Review
+                            </button>
+                            <button onclick="showWarning(1002)" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Warn
+                            </button>
+                            <button onclick="openSuspendModal(1002)" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-ban mr-1"></i> Suspend
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filipino Pattern Divider -->
+        <div class="filipino-divider my-8"></div>
+
+        <!-- All Users Table -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-list"></i>
+                    All Users (2,547)
+                </h2>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reports</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr class="table-row-hover">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-sm">JD</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Juan Dela Cruz</p>
+                                        <p class="text-xs text-gray-500">juan@email.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">Resident</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="report-critical px-3 py-1 rounded-full text-xs font-bold">18</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 mins ago</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 15, 2026</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-amber-600 hover:text-amber-700 mr-2" title="View Details" onclick="openUserModal(1001)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="text-yellow-600 hover:text-yellow-700 mr-2" title="Send Warning" onclick="showWarning(1001)">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </button>
+                                <button class="text-red-600 hover:text-red-700" title="Suspend Account" onclick="openSuspendModal(1001)">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="table-row-hover">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm">MS</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Maria Santos</p>
+                                        <p class="text-xs text-gray-500">maria@email.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">Resident</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="report-high px-3 py-1 rounded-full text-xs font-bold">12</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15 mins ago</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Feb 3, 2026</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-amber-600 hover:text-amber-700 mr-2"><i class="fas fa-eye"></i></button>
+                                <button class="text-yellow-600 hover:text-yellow-700 mr-2"><i class="fas fa-exclamation-triangle"></i></button>
+                                <button class="text-red-600 hover:text-red-700"><i class="fas fa-ban"></i></button>
+                            </td>
+                        </tr>
+                        <tr class="table-row-hover">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-sm">PR</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Pedro Reyes</p>
+                                        <p class="text-xs text-gray-500">pedro@email.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs">Moderator</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="report-low px-3 py-1 rounded-full text-xs">0</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 hour ago</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Dec 10, 2025</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-amber-600 hover:text-amber-700 mr-2"><i class="fas fa-eye"></i></button>
+                                <button class="text-yellow-600 hover:text-yellow-700 mr-2"><i class="fas fa-exclamation-triangle"></i></button>
+                                <button class="text-red-600 hover:text-red-700"><i class="fas fa-ban"></i></button>
+                            </td>
+                        </tr>
+                        <tr class="table-row-hover">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-sm">AL</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">Ana Lopez</p>
+                                        <p class="text-xs text-gray-500">ana@email.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">Admin</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="report-low px-3 py-1 rounded-full text-xs">0</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5 mins ago</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nov 5, 2025</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="text-amber-600 hover:text-amber-700 mr-2"><i class="fas fa-eye"></i></button>
+                                <button class="text-yellow-600 hover:text-yellow-700 mr-2"><i class="fas fa-exclamation-triangle"></i></button>
+                                <button class="text-red-600 hover:text-red-700"><i class="fas fa-ban"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    Showing 1 to 10 of 2,547 users
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">Previous</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition text-sm">1</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">2</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">3</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-sm">Next</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- USER DETAILS MODAL -->
+    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold flex items-center gap-2">
+                            <i class="fas fa-user-circle"></i>
+                            User Details
+                        </h3>
+                        <p class="text-blue-100 text-sm mt-1">View and manage user information</p>
+                    </div>
+                    <button onclick="closeUserModal()" class="text-white/80 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-3xl">
+                        JD
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Juan Dela Cruz</h2>
+                        <p class="text-gray-600">@juandelacruz</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="status-active px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">Resident</span>
+                            <span class="report-critical px-3 py-1 rounded-full text-xs font-bold">18 Reports</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="text-xs text-gray-500">Email</p>
+                        <p class="font-medium">juan.dela.cruz@email.com</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Phone</p>
+                        <p class="font-medium">0917 123 4567</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Registered</p>
+                        <p class="font-medium">January 15, 2026</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Last Active</p>
+                        <p class="font-medium">2 minutes ago</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4 mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Recent Activity</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2 text-sm">
+                            <i class="fas fa-circle text-green-500 text-[8px]"></i>
+                            <span>Posted a complaint about noise in Phase 2</span>
+                            <span class="text-xs text-gray-400 ml-auto">2 hours ago</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <i class="fas fa-circle text-red-500 text-[8px]"></i>
+                            <span>Received 3 new reports</span>
+                            <span class="text-xs text-gray-400 ml-auto">5 hours ago</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <i class="fas fa-circle text-amber-500 text-[8px]"></i>
+                            <span>Commented on Maria's post</span>
+                            <span class="text-xs text-gray-400 ml-auto">1 day ago</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">All Reports (18)</h4>
+                    <div class="space-y-3 max-h-60 overflow-y-auto">
+                        <div class="p-3 bg-red-50 rounded-lg">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-red-800">Harassment</p>
+                                    <p class="text-xs text-gray-600">Reported by: Maria Santos • 2 hours ago</p>
+                                    <p class="text-xs text-gray-700 mt-1">"User made inappropriate comments on my post about the barangay event."</p>
+                                </div>
+                                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">New</span>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-red-50 rounded-lg">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-red-800">Spam</p>
+                                    <p class="text-xs text-gray-600">Reported by: Pedro Reyes • 5 hours ago</p>
+                                    <p class="text-xs text-gray-700 mt-1">"User keeps posting advertisements for online selling."</p>
+                                </div>
+                                <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Seen</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 border-t pt-6 mt-4">
+                    <button onclick="closeUserModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Close
+                    </button>
+                    <button onclick="showWarning(1001)" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Send Warning
+                    </button>
+                    <button onclick="openSuspendModal(1001)" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                        <i class="fas fa-ban mr-2"></i>Suspend Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUSPEND MODAL -->
+    <div id="suspendModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-red-600 p-6 text-white rounded-t-2xl">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-ban"></i>
+                    Suspend Account
+                </h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 mb-4">Are you sure you want to suspend <span class="font-bold" id="suspendUserName">Juan Dela Cruz</span>?</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for suspension</label>
+                    <select id="suspendReason" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent">
+                        <option value="harassment">Harassment / Bullying</option>
+                        <option value="spam">Spam / Advertisement</option>
+                        <option value="misinformation">Spreading Misinformation</option>
+                        <option value="inappropriate">Inappropriate Content</option>
+                        <option value="multiple">Multiple Violations</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                    <select id="suspendDuration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent">
+                        <option value="1">1 day</option>
+                        <option value="3">3 days</option>
+                        <option value="7">7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30">30 days</option>
+                        <option value="permanent">Permanent</option>
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Additional notes (optional)</label>
+                    <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent" placeholder="Enter any additional context..."></textarea>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="closeSuspendModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmSuspend()" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                        <i class="fas fa-ban mr-2"></i>Confirm Suspend
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WARNING TOAST -->
+    <div id="warningToast" class="fixed bottom-4 right-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-lg hidden z-50" style="max-width: 350px;">
+        <div class="flex items-start gap-3">
+            <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+            <div>
+                <p class="font-bold">Warning Sent</p>
+                <p class="text-sm" id="warningMessage">Warning has been sent to the user.</p>
+            </div>
+            <button onclick="closeToast()" class="text-yellow-700 hover:text-yellow-800">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Include chatbot -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- JavaScript for Manage Users Page -->
+    <script>
+        let currentUserId = null;
+
+        // Open user details modal
+        function openUserModal(userId) {
+            currentUserId = userId;
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        // Open suspend modal
+        function openSuspendModal(userId) {
+            currentUserId = userId;
+            document.getElementById('suspendModal').classList.remove('hidden');
+        }
+
+        function closeSuspendModal() {
+            document.getElementById('suspendModal').classList.add('hidden');
+        }
+
+        function confirmSuspend() {
+            const reason = document.getElementById('suspendReason').value;
+            const duration = document.getElementById('suspendDuration').value;
+            
+            // Here you would make an API call to suspend the user
+            console.log('Suspending user:', currentUserId, 'Reason:', reason, 'Duration:', duration);
+            
+            // Show success message
+            showSuccess('User has been suspended successfully');
+            
+            closeSuspendModal();
+        }
+
+        // Send warning
+        function showWarning(userId) {
+            currentUserId = userId;
+            
+            // Here you would make an API call to send warning
+            console.log('Sending warning to user:', userId);
+            
+            // Show toast
+            const toast = document.getElementById('warningToast');
+            document.getElementById('warningMessage').textContent = 'Warning has been sent to the user.';
+            toast.classList.remove('hidden');
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            // You can implement a success toast here
+            alert(message); // Temporary
+        }
+
+        // Close toast
+        function closeToast() {
+            document.getElementById('warningToast').classList.add('hidden');
+        }
+
+        // Search functionality
+        document.getElementById('searchUsers')?.addEventListener('keyup', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Filter functionality
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const reportFilter = document.getElementById('reportFilter').value;
+            const roleFilter = document.getElementById('roleFilter').value;
+            
+            console.log('Applying filters:', { status: statusFilter, report: reportFilter, role: roleFilter });
+            // Implement actual filtering logic here
+        }
+
+        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('reportFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('roleFilter')?.addEventListener('change', applyFilters);
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const userModal = document.getElementById('userModal');
+            const suspendModal = document.getElementById('suspendModal');
+            
+            if (event.target === userModal) {
+                closeUserModal();
+            }
+            if (event.target === suspendModal) {
+                closeSuspendModal();
+            }
+        });
+
+        // Add quick actions for chatbot
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickActionsContainer = document.getElementById('quickActionsContainer');
+            if (quickActionsContainer) {
+                quickActionsContainer.innerHTML = `
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I suspend a user?">
+                        ⚠️ Suspend user
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What is considered unusual activity?">
+                        📊 Unusual activity
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How to send a warning?">
+                        ⚡ Send warning
+                    </button>
+                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Show users with high reports">
+                        🔥 High report users
+                    </button>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

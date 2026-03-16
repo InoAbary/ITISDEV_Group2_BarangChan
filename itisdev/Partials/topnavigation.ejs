@@ -49,6 +49,9 @@ function isActive(path) {
                         <a href="/client/govforms" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/client/govforms') %> transition duration-150">
                             <i class="fas fa-file-alt mr-1"></i>Government Forms
                         </a>
+                        <a href="/contacts" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/contacts') %> transition duration-150">
+                            <i class="fas fa-file-alt mr-1"></i>Contacts
+                        </a>
                     <% } else if (role === 'moderator') { %>
                         <!-- MODERATOR Navigation -->
                         <a href="/moderator/dashboard" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/dashboard') %> transition duration-150">
@@ -63,6 +66,9 @@ function isActive(path) {
                         <a href="/moderator/help-desk" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/help-desk') %> transition duration-150">
                             <i class="fas fa-clock mr-1"></i>Help Desk
                         </a>
+                        <a href="/contacts" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/contacts') %> transition duration-150">
+                            <i class="fas fa-file-alt mr-1"></i>Contacts
+                        </a>
                     <% } else if (role === 'administrator') { %>
                         <!-- ADMINISTRATOR Navigation -->
                         <a href="/administrator/dashboard" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/administrator/dashboard') %> transition duration-150">
@@ -73,6 +79,9 @@ function isActive(path) {
                         </a>
                         <a href="/administrator/moderators" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/administrator/moderators') %> transition duration-150">
                             <i class="fas fa-user-shield mr-1"></i>Moderators
+                        </a>
+                        <a href="/contacts" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/contacts') %> transition duration-150">
+                            <i class="fas fa-file-alt mr-1"></i>Contacts
                         </a>
                         
                     <% } %>
