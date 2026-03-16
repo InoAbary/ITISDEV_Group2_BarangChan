@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · Help Desk</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Status badges */
+        .status-new { background-color: #fee2e2; color: #b91c1c; animation: pulse 2s infinite; }
+        .status-open { background-color: #fff3e0; color: #ef6c00; }
+        .status-in-progress { background-color: #e3f2fd; color: #1565c0; }
+        .status-resolved { background-color: #e8f5e8; color: #2e7d32; }
+        .status-closed { background-color: #e0e0e0; color: #424242; }
+
+        /* Priority badges */
+        .priority-low { background-color: #e6f7e6; color: #2e7d32; }
+        .priority-medium { background-color: #fff3e0; color: #ef6c00; }
+        .priority-high { background-color: #ffebee; color: #c62828; }
+        .priority-urgent { background-color: #fce4ec; color: #880e4f; animation: pulse 2s infinite; }
+
+        /* Source badges */
+        .source-chatbot { background-color: #e0f2fe; color: #0369a1; }
+        .source-web { background-color: #f3e8ff; color: #6b21a8; }
+        .source-mobile { background-color: #dcfce7; color: #166534; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Card hover effects */
+        .ticket-card {
+            transition: all 0.2s ease;
+        }
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chat-like message bubbles */
+        .message-bubble-user {
+            background-color: #e3f2fd;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 80%;
+        }
+        .message-bubble-moderator {
+            background-color: #f3e8ff;
+            border-radius: 18px 18px 18px 4px;
+            max-width: 80%;
+        }
+        .message-bubble-system {
+            background-color: #e0e0e0;
+            border-radius: 18px;
+            max-width: 80%;
+            margin: 0 auto;
+        }
+
+        /* Typing indicator */
+        .typing-indicator span {
+            animation: blink 1.4s infinite;
+            animation-fill-mode: both;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0% { opacity: 0.1; }
+            20% { opacity: 1; }
+            100% { opacity: 0.1; }
+        }
+
+        /* Filipino pattern */
+        .filipino-divider {
+            background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
+            height: 2px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col" data-page-context="helpdesk">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/moderator/helpdesk', currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Page Header -->
+        <div class="bg-gradient-to-r from-blue-800 to-blue-700 rounded-2xl shadow-lg mb-6 overflow-hidden">
+            <div class="px-6 py-5 text-white flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <i class="fas fa-headset"></i> 
+                        Help Desk
+                    </h1>
+                    <p class="text-blue-100 mt-1 text-sm md:text-base">
+                        <i class="fas fa-robot mr-1"></i> 
+                        Tumulong sa mga residenteng gumagamit ng chatbot (Assist residents using the chatbot)
+                    </p>
+                </div>
+                <div class="mt-3 md:mt-0 flex items-center gap-3">
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-clock mr-2"></i><span id="currentTime"></span>
+                    </span>
+                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-user-check mr-2"></i>Online as <%= user.full_name || 'Moderator' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">New Tickets</p>
+                        <p class="text-3xl font-bold text-gray-800">8</p>
+                        <p class="text-xs text-red-600 mt-2"><i class="fas fa-clock"></i> 3 unassigned</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Open Tickets</p>
+                        <p class="text-3xl font-bold text-gray-800">15</p>
+                        <p class="text-xs text-amber-600 mt-2"><i class="fas fa-hourglass-half"></i> 6 in progress</p>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-lg">
+                        <i class="fas fa-ticket-alt text-amber-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Resolved Today</p>
+                        <p class="text-3xl font-bold text-gray-800">12</p>
+                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> +4 from yesterday</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-check-double text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Avg Response Time</p>
+                        <p class="text-3xl font-bold text-gray-800">2.4m</p>
+                        <p class="text-xs text-blue-600 mt-2"><i class="fas fa-chart-line"></i> Good</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-stopwatch text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid: Ticket List + Chat Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT COLUMN - Ticket List -->
+            <div class="lg:col-span-5 space-y-4">
+                <!-- Filter Bar -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-3">
+                    <div class="flex flex-wrap gap-2">
+                        <div class="flex-1 min-w-[200px] relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="searchTickets" placeholder="Search tickets..." 
+                                   class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm">
+                        </div>
+                        <select id="statusFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400">
+                            <option value="all">All Status</option>
+                            <option value="new">New</option>
+                            <option value="open">Open</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                        <select id="priorityFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400">
+                            <option value="all">All Priority</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ticket List -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between">
+                        <h3 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-tickets"></i> 
+                            Active Tickets (23)
+                        </h3>
+                        <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full">8 new</span>
+                    </div>
+                    
+                    <div class="divide-y divide-gray-200 max-h-[600px] overflow-y-auto" id="ticketList">
+                        <!-- Ticket Item 1 - New from Chatbot -->
+                        <div class="ticket-card p-4 hover:bg-blue-50 cursor-pointer border-l-4 border-red-500" onclick="selectTicket(1001)">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-robot text-red-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h4 class="font-semibold text-gray-800 truncate">Juan Dela Cruz</h4>
+                                        <span class="text-xs text-gray-500">2 mins ago</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 truncate mb-2">Need help with barangay clearance application...</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="status-new text-xs px-2 py-1 rounded-full">NEW</span>
+                                        <span class="priority-urgent text-xs px-2 py-1 rounded-full">URGENT</span>
+                                        <span class="source-chatbot text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-robot mr-1"></i>Chatbot
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Item 2 - In Progress -->
+                        <div class="ticket-card p-4 hover:bg-blue-50 cursor-pointer border-l-4 border-amber-500" onclick="selectTicket(1002)">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-user text-amber-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h4 class="font-semibold text-gray-800 truncate">Maria Santos</h4>
+                                        <span class="text-xs text-gray-500">15 mins ago</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 truncate mb-2">Question about business permit requirements...</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="status-in-progress text-xs px-2 py-1 rounded-full">IN PROGRESS</span>
+                                        <span class="priority-medium text-xs px-2 py-1 rounded-full">MEDIUM</span>
+                                        <span class="source-web text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-globe mr-1"></i>Web
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Item 3 - From Chatbot (Escalated) -->
+                        <div class="ticket-card p-4 hover:bg-blue-50 cursor-pointer border-l-4 border-purple-500" onclick="selectTicket(1003)">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-robot text-purple-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h4 class="font-semibold text-gray-800 truncate">Pedro Santos</h4>
+                                        <span class="text-xs text-gray-500">1 hour ago</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 truncate mb-2">Chatbot couldn't answer my question about...</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="status-open text-xs px-2 py-1 rounded-full">OPEN</span>
+                                        <span class="priority-high text-xs px-2 py-1 rounded-full">HIGH</span>
+                                        <span class="source-chatbot text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-robot mr-1"></i>Escalated
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Item 4 - Resolved -->
+                        <div class="ticket-card p-4 hover:bg-blue-50 cursor-pointer border-l-4 border-green-500" onclick="selectTicket(1004)">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-user-check text-green-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h4 class="font-semibold text-gray-800 truncate">Ana Lopez</h4>
+                                        <span class="text-xs text-gray-500">3 hours ago</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 truncate mb-2">Thanks for the help with my cedula...</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="status-resolved text-xs px-2 py-1 rounded-full">RESOLVED</span>
+                                        <span class="priority-low text-xs px-2 py-1 rounded-full">LOW</span>
+                                        <span class="source-mobile text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-mobile-alt mr-1"></i>Mobile
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Item 5 - New from Chatbot -->
+                        <div class="ticket-card p-4 hover:bg-blue-50 cursor-pointer border-l-4 border-red-500" onclick="selectTicket(1005)">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-robot text-red-600"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h4 class="font-semibold text-gray-800 truncate">Ramon Bautista</h4>
+                                        <span class="text-xs text-gray-500">4 hours ago</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 truncate mb-2">How to request certificate of indigency online?...</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="status-new text-xs px-2 py-1 rounded-full">NEW</span>
+                                        <span class="priority-medium text-xs px-2 py-1 rounded-full">MEDIUM</span>
+                                        <span class="source-chatbot text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-robot mr-1"></i>Chatbot
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-blue-700">4.8</p>
+                            <p class="text-xs text-blue-600">Avg Rating</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-700">92%</p>
+                            <p class="text-xs text-blue-600">Satisfaction</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-700">15</p>
+                            <p class="text-xs text-blue-600">Open Tickets</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN - Chat Interface -->
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col h-[700px]">
+                    
+                    <!-- Chat Header with Ticket Info -->
+                    <div id="chatHeader" class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    JD
+                                </div>
+                                <div>
+                                    <h3 class="font-bold flex items-center gap-2">
+                                        Juan Dela Cruz
+                                        <span class="text-xs bg-green-400 text-green-900 px-2 py-0.5 rounded-full">Online</span>
+                                    </h3>
+                                    <p class="text-sm text-blue-100 flex items-center gap-2">
+                                        <span>Ticket #TKT-2026-0241</span>
+                                        <span>•</span>
+                                        <span>Started 2 mins ago via Chatbot</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="p-2 hover:bg-white/20 rounded-lg transition" title="Mark as Resolved">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                                <button class="p-2 hover:bg-white/20 rounded-lg transition" title="Escalate">
+                                    <i class="fas fa-level-up-alt"></i>
+                                </button>
+                                <button class="p-2 hover:bg-white/20 rounded-lg transition" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div class="flex-1 overflow-y-auto p-6 bg-gray-50" id="chatMessages">
+                        
+                        <!-- System Message - Chatbot Escalation -->
+                        <div class="flex justify-center mb-4">
+                            <div class="message-bubble-system p-3 text-xs text-gray-600">
+                                <i class="fas fa-robot mr-1"></i> 
+                                Ticket escalated from chatbot - User requested human assistance
+                            </div>
+                        </div>
+
+                        <!-- User Message (Original from Chatbot) -->
+                        <div class="flex justify-end mb-4">
+                            <div class="message-bubble-user p-3 text-sm text-gray-700">
+                                <p class="font-semibold text-xs text-blue-700 mb-1">User via Chatbot</p>
+                                <p>Hi! I need help with applying for a Barangay Clearance. The chatbot said I need to fill out a form but I'm not sure where to find it.</p>
+                                <p class="text-xs text-gray-500 mt-1 text-right">2:34 PM</p>
+                            </div>
+                        </div>
+
+                        <!-- Auto-response -->
+                        <div class="flex justify-start mb-4">
+                            <div class="message-bubble-moderator p-3 text-sm text-gray-700">
+                                <p class="font-semibold text-xs text-purple-700 mb-1">Auto-Response</p>
+                                <p>Thank you for your message. A moderator will assist you shortly.</p>
+                                <p class="text-xs text-gray-500 mt-1">2:35 PM</p>
+                            </div>
+                        </div>
+
+                        <!-- Moderator Message (Current) -->
+                        <div class="flex justify-start mb-4">
+                            <div class="message-bubble-moderator p-3 text-sm text-gray-700">
+                                <p class="font-semibold text-xs text-purple-700 mb-1">You (Moderator)</p>
+                                <p>Good afternoon, Juan! I'd be happy to help you with your Barangay Clearance application. You can find the form in the Government Forms section, or I can send you a direct link. Would you prefer that?</p>
+                                <p class="text-xs text-gray-500 mt-1">2:38 PM</p>
+                            </div>
+                        </div>
+
+                        <!-- User Reply (Simulated) -->
+                        <div class="flex justify-end mb-4">
+                            <div class="message-bubble-user p-3 text-sm text-gray-700">
+                                <p class="font-semibold text-xs text-blue-700 mb-1">Juan Dela Cruz</p>
+                                <p>Yes please! That would be very helpful. Also, what requirements do I need to prepare?</p>
+                                <p class="text-xs text-gray-500 mt-1 text-right">2:39 PM</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Response Suggestions -->
+                        <div class="bg-white rounded-lg p-3 mb-4 border border-blue-200">
+                            <p class="text-xs font-semibold text-gray-600 mb-2">QUICK RESPONSES:</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="quick-response text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 transition" 
+                                        onclick="insertQuickResponse('Here is the link to the Barangay Clearance form: [link]. You can download and print it.')">
+                                    📄 Send form link
+                                </button>
+                                <button class="quick-response text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 transition" 
+                                        onclick="insertQuickResponse('Requirements for Barangay Clearance:\n• Valid ID\n• Proof of Residency\n• Cedula\n• 1x1 photo')">
+                                    📋 Requirements list
+                                </button>
+                                <button class="quick-response text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 transition" 
+                                        onclick="insertQuickResponse('Processing takes 1-2 working days. Fee is PHP 50.00.')">
+                                    💰 Fees & processing
+                                </button>
+                                <button class="quick-response text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 transition" 
+                                        onclick="insertQuickResponse('You can track your request status in the \'My Requests\' section of your dashboard.')">
+                                    🔍 How to track
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Typing Indicator (Hidden by default) -->
+                        <div id="typingIndicator" class="flex justify-start mb-4 hidden">
+                            <div class="bg-gray-200 rounded-full px-4 py-2">
+                                <div class="typing-indicator flex space-x-1">
+                                    <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                    <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                    <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message Input Area -->
+                    <div class="border-t border-gray-200 p-4 bg-white">
+                        <!-- Canned Responses Dropdown -->
+                        <div class="mb-2 flex items-center gap-2">
+                            <select id="cannedResponses" class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-400">
+                                <option value="">📋 Insert canned response...</option>
+                                <option value="greeting">👋 Greeting</option>
+                                <option value="clearance">📄 Barangay Clearance Info</option>
+                                <option value="business">🏢 Business Permit Info</option>
+                                <option value="indigency">📋 Certificate of Indigency</option>
+                                <option value="tracking">🔍 How to track requests</option>
+                                <option value="closing">✅ Closing / Thank you</option>
+                            </select>
+                            
+                            <div class="flex items-center gap-1 border-l pl-2">
+                                <button class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Attach file">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <button class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Use template">
+                                    <i class="fas fa-file-alt"></i>
+                                </button>
+                                <button class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Escalate to admin">
+                                    <i class="fas fa-level-up-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="messageInput" placeholder="Type your response here..." 
+                                   class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                            <button id="sendMessage" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg transition flex items-center gap-2">
+                                <i class="fas fa-paper-plane"></i>
+                                <span class="hidden md:inline">Send</span>
+                            </button>
+                        </div>
+
+                        <!-- Chatbot Context Info -->
+                        <div class="mt-3 text-xs text-gray-400 flex items-center gap-2">
+                            <i class="fas fa-info-circle text-blue-400"></i>
+                            <span>This conversation was escalated from the AI chatbot. The user's previous messages with the bot are visible above.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filipino Pattern Divider -->
+        <div class="filipino-divider my-8"></div>
+
+        <!-- Chatbot Analytics Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Top Chatbot Issues -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                    <i class="fas fa-chart-pie text-blue-600"></i>
+                    Top Chatbot Escalation Reasons
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-gray-600">Document Requirements</span>
+                            <span class="font-medium">45%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-gray-600">Application Process</span>
+                            <span class="font-medium">30%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-amber-600 h-2 rounded-full" style="width: 30%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-gray-600">Fees & Payments</span>
+                            <span class="font-medium">15%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: 15%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-gray-600">Tracking Requests</span>
+                            <span class="font-medium">10%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: 10%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moderator Performance -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                    <i class="fas fa-tachometer-alt text-green-600"></i>
+                    Your Performance
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Tickets Resolved Today</span>
+                        <span class="font-bold text-lg">12</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Avg Response Time</span>
+                        <span class="font-bold text-lg">2.4 min</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Customer Satisfaction</span>
+                        <span class="font-bold text-lg">4.8/5.0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Currently Assigned</span>
+                        <span class="font-bold text-lg">5 tickets</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md border border-blue-200 p-4">
+                <h3 class="font-semibold text-blue-800 flex items-center gap-2 mb-3">
+                    <i class="fas fa-lightbulb text-amber-500"></i>
+                    Quick Tips
+                </h3>
+                <ul class="space-y-2 text-sm text-blue-700">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+                        <span>Use canned responses for common questions</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+                        <span>Tag tickets by priority to manage workload</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+                        <span>Escalate complex issues to admin</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+                        <span>Follow up on resolved tickets for feedback</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- Include chatbot -->
+    <%- include('../partials/chatbot') %>
+
+    <!-- Include footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- JavaScript for Help Desk Functionality -->
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true 
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Ticket selection
+        function selectTicket(ticketId) {
+            // Remove highlight from all tickets
+            document.querySelectorAll('.ticket-card').forEach(card => {
+                card.classList.remove('bg-blue-100');
+                card.classList.add('hover:bg-blue-50');
+            });
+            
+            // Highlight selected ticket
+            const selectedCard = event.currentTarget;
+            selectedCard.classList.add('bg-blue-100');
+            selectedCard.classList.remove('hover:bg-blue-50');
+            
+            // Update chat header based on selected ticket
+            updateChatHeader(ticketId);
+        }
+
+        // Update chat header with ticket info
+        function updateChatHeader(ticketId) {
+            // This would normally fetch from server
+            console.log('Selected ticket:', ticketId);
+        }
+
+        // Message sending
+        document.getElementById('sendMessage')?.addEventListener('click', function() {
+            sendMessage();
+        });
+
+        document.getElementById('messageInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                // Add user message to chat
+                const chatMessages = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex justify-start mb-4';
+                messageDiv.innerHTML = `
+                    <div class="message-bubble-moderator p-3 text-sm text-gray-700">
+                        <p class="font-semibold text-xs text-purple-700 mb-1">You (Moderator)</p>
+                        <p>${message.replace(/\n/g, '<br>')}</p>
+                        <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                `;
+                chatMessages.appendChild(messageDiv);
+                
+                // Clear input
+                input.value = '';
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Show typing indicator (simulate user response)
+                document.getElementById('typingIndicator').classList.remove('hidden');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Hide typing indicator after delay
+                setTimeout(() => {
+                    document.getElementById('typingIndicator').classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        // Quick responses
+        function insertQuickResponse(text) {
+            document.getElementById('messageInput').value = text;
+            document.getElementById('messageInput').focus();
+        }
+
+        // Canned responses
+        document.getElementById('cannedResponses')?.addEventListener('change', function(e) {
+            const value = e.target.value;
+            let response = '';
+            
+            switch(value) {
+                case 'greeting':
+                    response = 'Good day! Thank you for contacting BarangChan Help Desk. How may I assist you today?';
+                    break;
+                case 'clearance':
+                    response = 'For Barangay Clearance, you need to:\n1. Fill out the form (available in Government Forms section)\n2. Submit valid ID and proof of residency\n3. Pay PHP 50.00 fee\n4. Wait 1-2 working days for processing';
+                    break;
+                case 'business':
+                    response = 'Business Permit requirements:\n• DTI Registration\n• Barangay Clearance\n• Community Tax Certificate\n• Proof of Business Address\n• Fire Safety Inspection Certificate';
+                    break;
+                case 'indigency':
+                    response = 'Certificate of Indigency is free. Just visit the Barangay Hall with a valid ID and barangay certification.';
+                    break;
+                case 'tracking':
+                    response = 'You can track your request status by logging into your account and visiting the "My Requests" section.';
+                    break;
+                case 'closing':
+                    response = 'Is there anything else I can help you with? If not, I\'ll mark this ticket as resolved. Thank you!';
+                    break;
+                default:
+                    return;
+            }
+            
+            document.getElementById('messageInput').value = response;
+        });
+
+        // Search functionality
+        document.getElementById('searchTickets')?.addEventListener('keyup', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const tickets = document.querySelectorAll('.ticket-card');
+            
+            tickets.forEach(ticket => {
+                const text = ticket.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    ticket.style.display = 'block';
+                } else {
+                    ticket.style.display = 'none';
+                }
+            });
+        });
+
+        // Filter functionality
+        function filterTickets() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            
+            // This would filter tickets based on selected criteria
+            console.log('Filtering by:', { status: statusFilter, priority: priorityFilter });
+        }
+
+        document.getElementById('statusFilter')?.addEventListener('change', filterTickets);
+        document.getElementById('priorityFilter')?.addEventListener('change', filterTickets);
+    </script>
+</body>
+</html>

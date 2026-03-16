@@ -582,7 +582,7 @@ app.get('/moderator/requests', (req, res) => {
     });
 });
 
-app.get('/moderator/status_updates', (req, res) => {
+app.get('/moderator/help-desk', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
     if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
         return res.status(403).send('Access denied.');
@@ -597,14 +597,15 @@ app.get('/moderator/status_updates', (req, res) => {
         pendingRequests: documentRequests.filter(r => r.status === 'pending').length
     };
     
-    res.render('status_updates_mod', {  // Note: special name to avoid conflict
-        title: 'Moderator Status Updates - BarangChan',
+    res.render('help_desk_mod', {  // Note: special name to avoid conflict
+        title: 'Moderator Help Desk - BarangChan',
         user: req.session.user,
         stats: stats,
         recentPosts: posts.slice(0, 10),
         recentRequests: documentRequests.slice(0, 10)
     });
 });
+
 
 // ==================== ADMINISTRATOR ROUTES ====================
 app.get('/administrator/dashboard', (req, res) => {
@@ -628,6 +629,146 @@ app.get('/administrator/dashboard', (req, res) => {
         stats: stats,
         recentUsers: users.slice(0, 5)
     });
+});
+
+// ==================== PROFILE ================
+
+// app.js - Profile routes (Session-based, no database)
+
+// GET profile page
+app.get('/profile', (req, res) => {
+    // Check if user is logged in via session
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    
+    const user = req.session.user;
+    
+    // Determine which dashboard to redirect to based on role
+    let dashboardPath = '/client/dashboard';
+    if (user.role === 'admin') {
+        dashboardPath = '/administrator/dashboard';
+    } else if (user.role === 'moderator') {
+        dashboardPath = '/moderator/dashboard';
+    }
+    
+    // Get success/error messages from session and clear them
+    const success = req.session.success;
+    const error = req.session.error;
+    delete req.session.success;
+    delete req.session.error;
+    
+    res.render('profile', { 
+        user: user,
+        dashboardPath: dashboardPath,
+        currentPath: '/profile',
+        success: success,
+        error: error
+    });
+});
+
+// POST update profile
+app.post('/profile/update', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    
+    const { 
+        first_name, 
+        last_name, 
+        middle_name, 
+        email, 
+        phone, 
+        street_address, 
+        barangay, 
+        city,
+        current_password,
+        new_password,
+        confirm_password
+    } = req.body;
+    
+    // Get current user from session
+    const user = req.session.user;
+    
+    // Update session user data
+    user.first_name = first_name || user.first_name;
+    user.last_name = last_name || user.last_name;
+    user.middle_name = middle_name || user.middle_name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+    user.street_address = street_address || user.street_address;
+    user.barangay = barangay || user.barangay;
+    user.city = city || user.city;
+    
+    // Handle password change if requested
+    if (new_password) {
+        // Check if current password matches (simple check - in production you'd use bcrypt)
+        if (current_password !== user.password) {
+            req.session.error = 'Current password is incorrect';
+            return res.redirect('/profile');
+        }
+        
+        // Check if new passwords match
+        if (new_password !== confirm_password) {
+            req.session.error = 'New passwords do not match';
+            return res.redirect('/profile');
+        }
+        
+        // Update password in session
+        user.password = new_password;
+    }
+    
+    // Save updated user back to session
+    req.session.user = user;
+    req.session.success = 'Profile updated successfully';
+    
+    res.redirect('/profile');
+});
+
+// POST upload profile photo (simulated)
+app.post('/profile/photo', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    
+    // In a real implementation, you'd handle file upload here
+    // For now, we'll just set a mock photo path
+    
+    const user = req.session.user;
+    user.photo = '/images/default-avatar.png'; // Mock photo path
+    req.session.user = user;
+    req.session.success = 'Profile photo updated';
+    
+    res.redirect('/profile');
+});
+
+// POST change password only (separate endpoint)
+app.post('/profile/password', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    
+    const { current_password, new_password, confirm_password } = req.body;
+    const user = req.session.user;
+    
+    // Check if current password matches
+    if (current_password !== user.password) {
+        req.session.error = 'Current password is incorrect';
+        return res.redirect('/profile');
+    }
+    
+    // Check if new passwords match
+    if (new_password !== confirm_password) {
+        req.session.error = 'New passwords do not match';
+        return res.redirect('/profile');
+    }
+    
+    // Update password in session
+    user.password = new_password;
+    req.session.user = user;
+    req.session.success = 'Password changed successfully';
+    
+    res.redirect('/profile');
 });
 
 // ==================== 404 ====================

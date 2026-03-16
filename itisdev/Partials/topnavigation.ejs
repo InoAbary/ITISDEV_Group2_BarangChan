@@ -60,8 +60,8 @@ function isActive(path) {
                         <a href="/moderator/requests" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/requests') %> transition duration-150">
                             <i class="fas fa-file-signature mr-1"></i>Document Requests
                         </a>
-                        <a href="/moderator/status-updates" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/status-updates') %> transition duration-150">
-                            <i class="fas fa-clock mr-1"></i>Status Updates
+                        <a href="/moderator/help-desk" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/help-desk') %> transition duration-150">
+                            <i class="fas fa-clock mr-1"></i>Help Desk
                         </a>
                     <% } else if (role === 'administrator') { %>
                         <!-- ADMINISTRATOR Navigation -->
@@ -74,9 +74,7 @@ function isActive(path) {
                         <a href="/administrator/moderators" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/administrator/moderators') %> transition duration-150">
                             <i class="fas fa-user-shield mr-1"></i>Moderators
                         </a>
-                        <a href="/administrator/settings" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/administrator/settings') %> transition duration-150">
-                            <i class="fas fa-cog mr-1"></i>Settings
-                        </a>
+                        
                     <% } %>
                 </div>
             </div>
@@ -84,10 +82,19 @@ function isActive(path) {
             <!-- Right side: User menu and notifications -->
             <div class="flex items-center space-x-4">
                 <% if (user) { %>
-                    <!-- User Info and Logout -->
-                    <span class="hidden md:block text-sm text-gray-600">
-                        <i class="fas fa-user mr-1"></i><%= user.full_name || user.email %>
-                    </span>
+                                <!-- User Info and Logout -->
+                                <!-- User Info and Profile Link -->
+                    <a href="/profile" class="hidden md:flex items-center gap-2 text-sm text-gray-600 hover:text-amber-600 transition group">
+                        <div class="w-8 h-8 bg-gradient-to-r from-amber-600 to-amber-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:shadow-lg transition">
+                            <% if (user.photo) { %>
+                                <img src="<%= user.photo %>" alt="Profile" class="w-full h-full rounded-full object-cover">
+                            <% } else { %>
+                                <%= user.first_name ? user.first_name.charAt(0).toUpperCase() : (user.username ? user.username.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')) %>
+                            <% } %>
+                        </div>
+                        <span class="font-medium"><%= user.first_name || user.username || user.email %></span>
+                    </a>
+        
                     <a href="/logout" class="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition duration-150">
                         <i class="fas fa-sign-out-alt mr-1"></i>Logout
                     </a>
