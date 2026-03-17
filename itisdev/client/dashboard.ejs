@@ -204,34 +204,32 @@
                         </h3>
                     </div>
                     <div class="p-4">
-                        <form action="/client/posts/create" method="POST">
+                        <form action="/client/dashboard/create" method="POST">
                             <input type="text" name="title" placeholder="Post title (optional)" 
-                                   class="w-full px-4 py-2 mb-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                                class="w-full px-4 py-2 mb-3 border border-gray-300 rounded-lg">
                             <textarea name="content" rows="3" 
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 resize-none"
-                                      placeholder="Share a concern, suggestion, or update with your barangay..." required></textarea>
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                                    placeholder="Share a concern, suggestion, or update..." required></textarea>
                             
                             <div class="flex flex-wrap items-center justify-between mt-3 gap-2">
                                 <div class="flex items-center gap-2">
-                                    <select name="type" class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-amber-400">
+                                    <select name="type" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
                                         <option value="update">📢 Update</option>
                                         <option value="query">❓ Question</option>
                                         <option value="suggestion">💡 Suggestion</option>
                                         <option value="complaint">⚠️ Concern</option>
                                     </select>
-                                    <select name="urgency" class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-amber-400">
+                                    <select name="urgency" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
                                         <option value="low">🟢 Low</option>
                                         <option value="medium">🟡 Medium</option>
                                         <option value="high">🟠 High</option>
                                         <option value="emergency">🔴 Emergency</option>
                                     </select>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="submit" 
-                                            class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-1 transition">
-                                        <i class="fas fa-paper-plane"></i> Post
-                                    </button>
-                                </div>
+                                <button type="submit" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg">
+                                    <i class="fas fa-paper-plane"></i> Post
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -245,176 +243,162 @@
                     <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Near You</button>
                 </div>
 
-                <!-- POSTS FEED (Original format) -->
+               
+                <!-- POSTS FEED -->
                 <div class="space-y-4">
-                    <% 
-                    // Sample posts data
-                    const displayPosts = posts || [
-                        {
-                            id: 1,
-                            user_name: 'Maria Santos',
-                            user_role: 'Barangay Secretary',
-                            user_avatar: 'M',
-                            time_ago: '2 hours ago',
-                            type: 'announcement',
-                            urgency: 'medium',
-                            title: 'Barangay Clearance Processing Update',
-                            content: 'Good news! We now have a faster processing time for Barangay Clearances. Please expect your documents within 2-3 working days. Walk-in applications are accepted from 8AM to 3PM only.',
-                            likes: 24,
-                            comments: 7,
-                            shares: 3,
-                            is_official: true
-                        },
-                        {
-                            id: 2,
-                            user_name: 'Juan Dela Cruz',
-                            user_role: 'Resident',
-                            user_avatar: 'J',
-                            time_ago: '5 hours ago',
-                            type: 'concern',
-                            urgency: 'high',
-                            title: 'Broken Street Light in Phase 2',
-                            content: 'The street light near the basketball court in Phase 2 has been broken for 3 days now. It\'s very dark at night and poses a safety risk. Can the barangay please look into this?',
-                            likes: 15,
-                            comments: 4,
-                            shares: 2,
-                            is_official: false
-                        },
-                        {
-                            id: 3,
-                            user_name: 'Kapitan Reyes',
-                            user_role: 'Barangay Captain',
-                            user_avatar: 'K',
-                            time_ago: '1 day ago',
-                            type: 'announcement',
-                            urgency: 'low',
-                            title: 'Free Medical Mission this Saturday',
-                            content: 'In partnership with DOH, we will be holding a free medical mission at the Barangay Hall this Saturday, March 21, from 8AM to 12NN. Services include check-up, dental, and free medicines. First come, first served!',
-                            likes: 56,
-                            comments: 12,
-                            shares: 23,
-                            is_official: true
-                        },
-                        {
-                            id: 4,
-                            user_name: 'Elena Rodriguez',
-                            user_role: 'Resident',
-                            user_avatar: 'E',
-                            time_ago: '2 days ago',
-                            type: 'suggestion',
-                            urgency: 'low',
-                            title: 'Proposed Weekend Zumba Classes',
-                            content: 'Would anyone be interested in weekend Zumba classes at the covered court? I\'m a certified instructor and could offer free sessions if we get at least 15 participants. Let me know in the comments!',
-                            likes: 32,
-                            comments: 18,
-                            shares: 5,
-                            is_official: false
-                        },
-                        {
-                            id: 5,
-                            user_name: 'Barangay DRRM',
-                            user_role: 'Disaster Risk Reduction',
-                            user_avatar: 'D',
-                            time_ago: '3 days ago',
-                            type: 'emergency',
-                            urgency: 'emergency',
-                            title: '⚠️ Typhoon Preparedness Reminder',
-                            content: 'As Typhoon "Amang" approaches, please secure your homes and prepare emergency kits. Evacuation centers are open at Barangay Hall and San Antonio Elementary School. For emergencies, call 161 or 911.',
-                            likes: 89,
-                            comments: 24,
-                            shares: 67,
-                            is_official: true
-                        }
-                    ];
-                    %>
-
-                    <% displayPosts.forEach(function(post) { %>
-                        <!-- Post Card (Original format) -->
-                        <div class="post-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                            <!-- Post Header -->
-                            <div class="p-4 pb-2">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex items-start gap-3">
-                                        <!-- Avatar -->
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 
-                                            <%= post.is_official ? 'bg-gradient-to-br from-blue-600 to-amber-600' : 'bg-gray-400' %>">
-                                            <%= post.user_avatar || post.user_name.charAt(0) %>
-                                        </div>
-                                        <!-- User Info -->
-                                        <div>
-                                            <div class="flex items-center flex-wrap gap-2">
-                                                <span class="font-semibold text-gray-800"><%= post.user_name %></span>
-                                                <% if (post.is_official) { %>
-                                                    <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                        <i class="fas fa-check-circle text-xs"></i> Official
+                    <% if (posts && posts.length > 0) { %>
+                        <% posts.forEach(function(post) { %>
+                            <!-- Post Card -->
+                            <div class="post-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                                <!-- Post Header -->
+                                <div class="p-4 pb-2">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start gap-3">
+                                            <!-- Avatar -->
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 
+                                                <%= post.is_official ? 'bg-gradient-to-br from-blue-600 to-amber-600' : 'bg-gray-400' %>">
+                                                <%= post.user_avatar || (post.user_name ? post.user_name.charAt(0) : 'U') %>
+                                            </div>
+                                            <!-- User Info -->
+                                            <div>
+                                                <div class="flex items-center flex-wrap gap-2">
+                                                    <span class="font-semibold text-gray-800">
+                                                        <%= post.user_name || 'Unknown User' %>
                                                     </span>
-                                                <% } %>
-                                                <span class="text-xs text-gray-500"><%= post.user_role %></span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                                <span><i class="far fa-clock"></i> <%= post.time_ago %></span>
-                                                <!-- Urgency Badge -->
-                                                <% if (post.urgency === 'low') { %>
-                                                    <span class="urgency-low px-2 py-0.5 rounded-full text-xs font-medium">Low</span>
-                                                <% } else if (post.urgency === 'medium') { %>
-                                                    <span class="urgency-medium px-2 py-0.5 rounded-full text-xs font-medium">Medium</span>
-                                                <% } else if (post.urgency === 'high') { %>
-                                                    <span class="urgency-high px-2 py-0.5 rounded-full text-xs font-medium">High</span>
-                                                <% } else if (post.urgency === 'emergency') { %>
-                                                    <span class="urgency-emergency px-2 py-0.5 rounded-full text-xs font-medium">🚨 EMERGENCY</span>
-                                                <% } %>
+                                                    <% if (post.is_official) { %>
+                                                        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                                                            <i class="fas fa-check-circle"></i> Official
+                                                        </span>
+                                                    <% } %>
+                                                    <span class="text-xs text-gray-500"><%= post.user_role || 'Resident' %></span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                                    <span><i class="far fa-clock"></i> <%= post.time_ago || 'Just now' %></span>
+                                                    <!-- Urgency Badge -->
+                                                    <% if (post.urgency === 'low') { %>
+                                                        <span class="urgency-low px-2 py-0.5 rounded-full">Low</span>
+                                                    <% } else if (post.urgency === 'medium') { %>
+                                                        <span class="urgency-medium px-2 py-0.5 rounded-full">Medium</span>
+                                                    <% } else if (post.urgency === 'high') { %>
+                                                        <span class="urgency-high px-2 py-0.5 rounded-full">High</span>
+                                                    <% } else if (post.urgency === 'emergency') { %>
+                                                        <span class="urgency-emergency px-2 py-0.5 rounded-full">🚨 EMERGENCY</span>
+                                                    <% } %>
+                                                </div>
                                             </div>
                                         </div>
+                                        <!-- Post Type Icon -->
+                                        <div class="text-gray-400">
+                                            <% if (post.type === 'announcement') { %>
+                                                <i class="fas fa-bullhorn text-blue-500"></i>
+                                            <% } else if (post.type === 'complaint') { %>
+                                                <i class="fas fa-exclamation-triangle text-amber-600"></i>
+                                            <% } else if (post.type === 'suggestion') { %>
+                                                <i class="fas fa-lightbulb text-yellow-600"></i>
+                                            <% } else if (post.type === 'emergency') { %>
+                                                <i class="fas fa-exclamation-circle text-red-600"></i>
+                                            <% } else { %>
+                                                <i class="fas fa-comment text-gray-400"></i>
+                                            <% } %>
+                                        </div>
                                     </div>
-                                    <!-- Post Type Icon -->
-                                    <div class="text-gray-400">
-                                        <% if (post.type === 'announcement') { %>
-                                            <i class="fas fa-bullhorn text-blue-500"></i>
-                                        <% } else if (post.type === 'concern') { %>
-                                            <i class="fas fa-exclamation-triangle text-amber-600"></i>
-                                        <% } else if (post.type === 'suggestion') { %>
-                                            <i class="fas fa-lightbulb text-yellow-600"></i>
-                                        <% } else if (post.type === 'emergency') { %>
-                                            <i class="fas fa-exclamation-circle text-red-600"></i>
-                                        <% } else { %>
-                                            <i class="fas fa-comment text-gray-400"></i>
-                                        <% } %>
-                                    </div>
+
+                                    <!-- Post Title -->
+                                    <% if (post.title) { %>
+                                        <h3 class="font-bold text-gray-800 mt-3 text-lg">
+                                            <a href="/client/dashboard/<%= post.id %>" class="hover:text-amber-600 hover:underline">
+                                                <%= post.title %>
+                                            </a>
+                                        </h3>
+                                    <% } %>
+
+                                    <!-- Post Content -->
+                                    <p class="text-gray-700 mt-2 text-sm leading-relaxed"><%= post.content %></p>
                                 </div>
 
-                                <!-- Post Title -->
-                                <% if (post.title) { %>
-                                    <h3 class="font-bold text-gray-800 mt-3 text-lg"><%= post.title %></h3>
-                                <% } %>
+                                <!-- Post Stats -->
+                                <div class="px-4 py-2 border-t border-b border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+                                    <span><i class="far fa-thumbs-up mr-1"></i> <%= post.likes || 0 %> likes</span>
+                                    <span>
+                                        <i class="far fa-comment mr-1"></i> 
+                                        <a href="#comments-<%= post.id %>" class="hover:text-green-600" onclick="toggleComments(<%= post.id %>); return false;">
+                                            <%= post.comments_count || 0 %> comments
+                                        </a>
+                                    </span>
+                                    <span><i class="far fa-share-square mr-1"></i> <%= post.shares || 0 %> shares</span>
+                                </div>
 
-                                <!-- Post Content -->
-                                <p class="text-gray-700 mt-2 text-sm leading-relaxed"><%= post.content %></p>
-                            </div>
+                                <!-- Post Actions -->
+                                <div class="px-4 py-2 flex items-center justify-around text-sm border-b border-gray-100">
+                                    <!-- Like Form -->
+                                    <form action="/client/dashboard/<%= post.id %>/like" method="POST" class="flex-1">
+                                        <button type="submit" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition justify-center py-2 w-full">
+                                            <i class="far fa-thumbs-up"></i>
+                                            <span class="hidden sm:inline">Like (<%= post.likes || 0 %>)</span>
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Comment Button -->
+                                    <button onclick="toggleComments(<%= post.id %>)" 
+                                            class="flex items-center gap-2 text-gray-600 hover:text-green-600 transition flex-1 justify-center py-2">
+                                        <i class="far fa-comment"></i>
+                                        <span class="hidden sm:inline">Comment</span>
+                                    </button>
+                                    
+                                    <!-- Share Button -->
+                                    <button class="flex items-center gap-2 text-gray-600 hover:text-amber-600 transition flex-1 justify-center py-2">
+                                        <i class="far fa-share-square"></i>
+                                        <span class="hidden sm:inline">Share</span>
+                                    </button>
+                                </div>
 
-                            <!-- Post Stats -->
-                            <div class="px-4 py-2 border-t border-b border-gray-100 flex items-center gap-4 text-xs text-gray-500">
-                                <span><i class="far fa-thumbs-up mr-1"></i> <%= post.likes %> likes</span>
-                                <span><i class="far fa-comment mr-1"></i> <%= post.comments %> comments</span>
-                                <span><i class="far fa-share-square mr-1"></i> <%= post.shares %> shares</span>
-                            </div>
+                                <!-- COMMENTS SECTION - Hidden by default -->
+                                <div id="comments-<%= post.id %>" class="hidden bg-gray-50 px-4 py-3">
+                                    <!-- Display Existing Comments -->
+                                    <div class="mb-3 max-h-60 overflow-y-auto space-y-3">
+                                        <% if (post.comments && post.comments.length > 0) { %>
+                                            <% post.comments.forEach(function(comment) { %>
+                                                <div class="flex gap-2 text-sm">
+                                                    <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                                        <%= comment.user_avatar || (comment.user_name ? comment.user_name.charAt(0) : 'U') %>
+                                                    </div>
+                                                    <div class="flex-1 bg-white rounded-lg p-2 shadow-sm">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <span class="font-medium text-gray-800 text-xs">
+                                                                <%= comment.user_name || 'Unknown User' %>
+                                                            </span>
+                                                            <span class="text-xs text-gray-400">
+                                                                <%= comment.time_ago || 'Just now' %>
+                                                            </span>
+                                                        </div>
+                                                        <p class="text-gray-700 text-xs"><%= comment.content %></p>
+                                                    </div>
+                                                </div>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <p class="text-center text-gray-400 text-sm py-2">No comments yet. Be the first to comment!</p>
+                                        <% } %>
+                                    </div>
 
-                            <!-- Post Actions -->
-                            <div class="px-4 py-2 flex items-center justify-around text-sm">
-                                <button class="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition flex-1 justify-center py-2">
-                                    <i class="far fa-thumbs-up"></i>
-                                    <span class="hidden sm:inline">Like</span>
-                                </button>
-                                <button class="flex items-center gap-2 text-gray-600 hover:text-green-600 transition flex-1 justify-center py-2">
-                                    <i class="far fa-comment"></i>
-                                    <span class="hidden sm:inline">Comment</span>
-                                </button>
-                                <button class="flex items-center gap-2 text-gray-600 hover:text-amber-600 transition flex-1 justify-center py-2">
-                                    <i class="far fa-share-square"></i>
-                                    <span class="hidden sm:inline">Share</span>
-                                </button>
+                                    <!-- Add Comment Form -->
+                                    <form action="/client/dashboard/<%= post.id %>/comment" method="POST" class="flex gap-2">
+                                        <input type="text" name="content" placeholder="Write a comment..." 
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                                            required>
+                                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition whitespace-nowrap">
+                                            Post
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
+                        <% }); %>
+                    <% } else { %>
+                        <!-- No posts yet message -->
+                        <div class="bg-white rounded-xl shadow-md p-8 text-center">
+                            <i class="fas fa-pen-alt text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No posts yet. Be the first to share!</p>
                         </div>
-                    <% }) %>
+                    <% } %>
 
                     <!-- Load More Button -->
                     <div class="text-center py-4">
@@ -506,7 +490,28 @@
     <!-- Include footer -->
     <%- include('../partials/footer') %>
 
-   
+   <script>
+        // Toggle comments visibility
+        function toggleComments(postId) {
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            if (commentsSection) {
+                commentsSection.classList.toggle('hidden');
+            }
+        }
+
+        // Auto-expand comments if URL has hash
+        window.addEventListener('load', function() {
+            if (window.location.hash) {
+                const targetId = window.location.hash.substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.classList.remove('hidden');
+                    // Smooth scroll to the comments section
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    </script>
     
 </body>
 </html>

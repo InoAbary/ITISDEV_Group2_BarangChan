@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarangChan · <%= topic.title %></title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        .category-general { background-color: #e6f7e6; color: #2e7d32; }
+        .category-announcement { background-color: #e3f2fd; color: #0d47a1; }
+        .category-concern { background-color: #fff3e0; color: #ef6c00; }
+        .category-suggestion { background-color: #f3e5f5; color: #6a1b9a; }
+        .category-emergency { background-color: #ffebee; color: #c62828; animation: pulse 2s infinite; }
+        .category-event { background-color: #e0f7fa; color: #006064; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        .reply-card {
+            transition: all 0.2s ease;
+        }
+        .reply-card:hover {
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Include navigation -->
+    <%- include('../partials/topnavigation', { currentPath: '/client/forum/topic/' + topic.id, currentUser: user }) %>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Back to Forum Link -->
+        <div class="mb-4">
+            <a href="/client/forum" class="text-amber-600 hover:text-amber-700 flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Back to Forum
+            </a>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
+
+        <!-- Main Topic Card -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-6">
+            <!-- Topic Header -->
+            <div class="p-6 pb-4">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-3">
+                        <!-- Avatar -->
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0 
+                            <%= topic.is_official ? 'bg-gradient-to-br from-blue-600 to-amber-600' : 'bg-gray-400' %>">
+                            <%= topic.user_avatar || 'U' %>
+                        </div>
+                        <!-- User Info -->
+                        <div>
+                            <div class="flex items-center flex-wrap gap-2">
+                                <span class="font-semibold text-gray-800 text-lg">
+                                    <%= topic.user_name %>
+                                </span>
+                                <% if (topic.is_official) { %>
+                                    <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                                        <i class="fas fa-check-circle"></i> Official
+                                    </span>
+                                <% } %>
+                                <span class="text-xs text-gray-500"><%= topic.user_role || 'Resident' %></span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                                <span><i class="far fa-clock"></i> <%= topic.time_ago %></span>
+                                <span><i class="far fa-eye"></i> <%= topic.views %> views</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Category Badge and Pinned -->
+                    <div class="flex items-center gap-2">
+                        <% if (topic.is_pinned) { %>
+                            <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="fas fa-thumbtack mr-1"></i> Pinned
+                            </span>
+                        <% } %>
+                        <span class="category-<%= topic.category %> px-3 py-1 rounded-full text-xs font-medium">
+                            <%= topic.category === 'general' ? 'General Discussion' : 
+                                topic.category === 'announcement' ? 'Announcement' :
+                                topic.category === 'concern' ? 'Community Concern' :
+                                topic.category === 'suggestion' ? 'Suggestion' :
+                                topic.category === 'event' ? 'Event' : 'Emergency Alert' %>
+                        </span>
+                        <% if (topic.urgency === 'high') { %>
+                            <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium">
+                                High Priority
+                            </span>
+                        <% } else if (topic.urgency === 'emergency') { %>
+                            <span class="category-emergency px-3 py-1 rounded-full text-xs font-medium animate-pulse">
+                                🚨 EMERGENCY
+                            </span>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Topic Title -->
+                <h1 class="font-bold text-gray-800 mt-4 text-2xl"><%= topic.title %></h1>
+
+                <!-- Topic Content -->
+                <div class="text-gray-700 mt-4 text-base leading-relaxed whitespace-pre-line">
+                    <%= topic.content %>
+                </div>
+
+                <!-- Tags -->
+                <% if (topic.tags) { %>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <% topic.tags.split(',').forEach(function(tag) { %>
+                            <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-full">
+                                #<%= tag.trim() %>
+                            </span>
+                        <% }); %>
+                    </div>
+                <% } %>
+
+                <!-- Topic Status -->
+                <div class="mt-4 flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-500">Status:</span>
+                    <% if (topic.status === 'active') { %>
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-circle text-xs mr-1"></i> Active
+                        </span>
+                    <% } else if (topic.status === 'closed') { %>
+                        <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-lock mr-1"></i> Closed
+                        </span>
+                    <% } else if (topic.status === 'archived') { %>
+                        <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-archive mr-1"></i> Archived
+                        </span>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Replies Section -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-comments text-amber-600"></i>
+                    Replies (<%= replies.length %>)
+                </h2>
+            </div>
+
+            <!-- Replies List -->
+            <div class="divide-y divide-gray-100">
+                <% if (replies && replies.length > 0) { %>
+                    <% replies.forEach(function(reply) { %>
+                        <div class="reply-card p-6">
+                            <div class="flex gap-3">
+                                <!-- Avatar -->
+                                <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                    <%= reply.user_avatar %>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-gray-800">
+                                                <%= reply.user_name %>
+                                            </span>
+                                            <span class="text-xs text-gray-500">
+                                                <%= reply.time_ago %>
+                                            </span>
+                                            <% if (reply.user_role === 'moderator' || reply.user_role === 'administrator') { %>
+                                                <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                                                    <%= reply.user_role %>
+                                                </span>
+                                            <% } %>
+                                        </div>
+                                        <!-- Delete Reply Button (moderator only) -->
+                                        <% if (user && (user.role === 'moderator' || user.role === 'administrator')) { %>
+                                            <form action="/client/forum/reply/<%= reply.id %>/delete" method="POST" class="inline" onsubmit="return confirm('Delete this reply?');">
+                                                <button type="submit" class="text-red-500 hover:text-red-700 text-sm">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        <% } %>
+                                    </div>
+                                    <p class="text-gray-700 text-sm whitespace-pre-line"><%= reply.content %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="px-6 py-8 text-center">
+                        <i class="far fa-comment-dots text-3xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-500">No replies yet. Be the first to reply!</p>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Add Reply Form (only if topic is active) -->
+            <% if (topic.status === 'active') { %>
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <form action="/client/forum/topic/<%= topic.id %>/reply" method="POST">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-reply mr-1 text-amber-600"></i> Add your reply
+                        </label>
+                        <div class="flex flex-col gap-3">
+                            <textarea name="content" rows="3" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                                      placeholder="Write your reply here..." required></textarea>
+                            <div class="flex justify-end">
+                                <button type="submit" 
+                                        class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
+                                    <i class="fas fa-paper-plane mr-2"></i> Post Reply
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            <% } else { %>
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 text-center text-gray-500">
+                    <i class="fas fa-lock mr-2"></i> This topic is <%= topic.status %>. New replies cannot be added.
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="mt-6 flex justify-between">
+            <a href="/client/forum" class="text-amber-600 hover:text-amber-700 flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Back to Forum
+            </a>
+            <a href="#top" class="text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                <i class="fas fa-arrow-up"></i> Back to Top
+            </a>
+        </div>
+    </main>
+
+    <%- include('../partials/chatbot') %>
+    <%- include('../partials/footer') %>
+
+    <!-- Smooth scroll to reply form if redirected after posting -->
+    <script>
+        if (window.location.hash === '#reply') {
+            document.querySelector('textarea[name="content"]')?.focus();
+        }
+    </script>
+</body>
+</html>

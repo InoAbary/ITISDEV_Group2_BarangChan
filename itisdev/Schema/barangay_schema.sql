@@ -25,6 +25,11 @@ DROP TABLE IF EXISTS user_audit;
 DROP TABLE IF EXISTS request_audit;
 DROP TABLE IF EXISTS complaint_audit;
 
+DROP TABLE IF EXISTS PostComment;
+DROP TABLE IF EXISTS PostLike;
+DROP TABLE IF EXISTS ForumTopic;
+DROP TABLE IF EXISTS ForumReply;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================
@@ -44,7 +49,7 @@ CREATE TABLE User (
 	password VARCHAR(100),
 	last_login DATETIME,
 	status VARCHAR(20) DEFAULT 'Active',
-	role ENUM('admin','user') DEFAULT 'user',
+	role ENUM('resident','moderator', 'administrator') DEFAULT 'resident',
 	photo VARCHAR(100)
 );
 
@@ -72,6 +77,12 @@ CREATE TABLE StatusPost (
 	title VARCHAR(100) NOT NULL,
 	body VARCHAR(250),
 	status ENUM('Pending','Resolved','Closed') DEFAULT 'Pending',
+    type ENUM('update','query','suggestion','complaint','announcement','emergency') DEFAULT 'update',
+    urgency ENUM('low','medium','high','emergency') DEFAULT 'low',
+    likes_count INT DEFAULT 0,
+    comments_count INT DEFAULT 0,
+    shares_count INT DEFAULT 0,
+    is_official BOOLEAN DEFAULT FALSE,
 
 	FOREIGN KEY (user_id)
 	REFERENCES User(user_id)
@@ -91,6 +102,57 @@ CREATE TABLE StatusFiles (
 	FOREIGN KEY (post_id)
 	REFERENCES StatusPost(post_id)
 	ON DELETE CASCADE
+);
+
+
+
+CREATE TABLE PostComment (
+    comment_id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES StatusPost(post_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE PostLike (
+    like_id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_like (post_id, user_id),
+    FOREIGN KEY (post_id) REFERENCES StatusPost(post_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE ForumTopic (
+    topic_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    category ENUM('general','concern','suggestion','event','announcement','emergency') DEFAULT 'general',
+    urgency ENUM('low','medium','high','emergency') DEFAULT 'low',
+    tags VARCHAR(255),
+    views INT DEFAULT 0,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    is_official BOOLEAN DEFAULT FALSE,
+    status ENUM('active','closed','archived') DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE ForumReply (
+    reply_id INT AUTO_INCREMENT PRIMARY KEY,
+    topic_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (topic_id) REFERENCES ForumTopic(topic_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
 );
 
 -- =====================================
@@ -214,4 +276,7 @@ CREATE TABLE complaint_audit (
 	status ENUM('Pending','Resolved','Cancelled')
 );
 
-INSERT INTO User(email) VALUES('test@gmail.com');
+
+
+SELECT * FROM User;
+

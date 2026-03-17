@@ -7,6 +7,8 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
 const conn = require('./config/db');
+const postController = require('./Controllers/postController')
+const forumController = require('./Controllers/forumController')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -180,15 +182,16 @@ app.post('/login', async (req, res) => {
         
         // Try database first
         try {
-            const userQuery = "SELECT id, first_name, last_name, middle_name, email, password, role FROM User WHERE email = ?";
+            const userQuery = "SELECT user_id, first_name, last_name, middle_name, email, password, role FROM User WHERE email = ?";
             const [userRow] = await conn.execute(userQuery, [email]);
 
             if (userRow.length > 0) {
                 const validPass = await bcrypt.compare(password, userRow[0]["password"]);
                 
                 if (validPass) {
+                    
                     const addressQuery = "SELECT city, barangay, street, zip FROM Address WHERE user_id = ?";
-                    const [addressRow] = await conn.execute(addressQuery, [userRow[0].id]);
+                    const [addressRow] = await conn.execute(addressQuery, [userRow[0].user_id]);
                     
                     let fullName = userRow[0].first_name;
                     if (userRow[0].middle_name) {
@@ -197,14 +200,16 @@ app.post('/login', async (req, res) => {
                     fullName += ' ' + userRow[0].last_name;
                     
                     user = {
-                        id: userRow[0].id,
+                        id: userRow[0].user_id,
                         full_name: fullName,
                         first_name: userRow[0].first_name,
                         last_name: userRow[0].last_name,
                         email: userRow[0].email,
                         role: userRow[0].role || 'resident',
                         barangay: addressRow[0]?.barangay || 'Barangay San Antonio',
-                        city: addressRow[0]?.city || 'Quezon City'
+                        city: addressRow[0]?.city || 'Quezon City',
+                        username: userRow[0].email, // Add this
+                        photo: null // Add this
                     };
                     userRole = user.role;
                 }
@@ -221,7 +226,9 @@ app.post('/login', async (req, res) => {
                     email: memoryUser.email,
                     role: memoryUser.role,
                     barangay: memoryUser.barangay,
-                    city: memoryUser.city
+                    city: memoryUser.city,
+                    username: memoryUser.email, // Add this
+                    photo: memoryUser.photo || null // Add this
                 };
                 userRole = memoryUser.role;
             }
@@ -305,6 +312,7 @@ app.post('/register', async (req, res) => {
             if (middle_name) fullName += ' ' + middle_name;
             fullName += ' ' + last_name;
 
+            // Make sure the user object structure matches what dashboard.ejs expects
             req.session.user = {
                 id: user_id,
                 full_name: fullName,
@@ -313,7 +321,10 @@ app.post('/register', async (req, res) => {
                 email: email,
                 role: 'resident',
                 barangay: barangay,
-                city: city
+                city: city,
+                // Add these fields that might be used in the navigation
+                username: email, // or whatever you want as username
+                photo: null
             };
             
             req.session.success = `Welcome to BarangChan, ${first_name}!`;
@@ -322,11 +333,7 @@ app.post('/register', async (req, res) => {
         } catch (dbErr) {
             console.log('Database error during registration:', dbErr.message);
             
-            if (users.find(u => u.email === email)) {
-                req.session.error = 'Email already registered';
-                return res.redirect('/register');
-            }
-
+            // Fallback to memory storage
             const fullName = `${first_name} ${middle_name ? middle_name + ' ' : ''}${last_name}`.trim();
             const newUser = {
                 id: users.length + 1,
@@ -336,12 +343,14 @@ app.post('/register', async (req, res) => {
                 full_name: fullName,
                 email: email,
                 phone: phone,
-                password: password,
+                password: password, // In production, hash this!
                 role: 'resident',
                 barangay: barangay,
                 city: city,
                 street: street,
                 zipcode: zipcode,
+                username: email,
+                photo: null,
                 created_at: new Date()
             };
             
@@ -355,7 +364,9 @@ app.post('/register', async (req, res) => {
                 email: newUser.email,
                 role: 'resident',
                 barangay: barangay,
-                city: city
+                city: city,
+                username: email,
+                photo: null
             };
             
             req.session.success = `Welcome to BarangChan, ${first_name}!`;
@@ -369,90 +380,23 @@ app.post('/register', async (req, res) => {
 });
 
 // ==================== CLIENT ROUTES ====================
-app.get('/client/dashboard', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    const userPosts = posts.filter(p => p.user_id === req.session.user.id).slice(0, 5);
-    const userRequests = documentRequests.filter(r => r.user_id === req.session.user.id).slice(0, 5);
-    
-    const success = req.session.success;
-    req.session.success = null;
-    
-    const allPosts = [
-        {
-            id: 1,
-            user_name: 'Maria Santos',
-            user_role: 'Barangay Secretary',
-            user_avatar: 'M',
-            time_ago: '2 hours ago',
-            type: 'announcement',
-            urgency: 'medium',
-            title: 'Barangay Clearance Processing Update',
-            content: 'Good news! We now have a faster processing time for Barangay Clearances. Please expect your documents within 2-3 working days.',
-            likes: 24,
-            comments: 7,
-            shares: 3,
-            is_official: true
-        },
-        {
-            id: 2,
-            user_name: 'Juan Dela Cruz',
-            user_role: 'Resident',
-            user_avatar: 'J',
-            time_ago: '5 hours ago',
-            type: 'concern',
-            urgency: 'high',
-            title: 'Broken Street Light in Phase 2',
-            content: 'The street light near the basketball court has been broken for 3 days.',
-            likes: 15,
-            comments: 4,
-            shares: 2,
-            is_official: false
-        }
-    ];
-    
-    res.render('dashboard', {  // Note: just 'dashboard' not 'client/dashboard'
-        title: 'Resident Dashboard - BarangChan',
-        user: req.session.user,
-        posts: allPosts,
-        userPosts: userPosts,
-        requests: userRequests,
-        success: success
-    });
-});
+app.get('/client/dashboard', postController.getAllPosts);
 
-app.get('/client/posts', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    res.render('posts', {  // Note: just 'posts' not 'client/posts'
-        title: 'Community Posts - BarangChan',
-        user: req.session.user,
-        posts: posts,
-        filter: req.query.filter || 'all'
-    });
-});
+app.post('/client/dashboard/create', postController.createPost);
 
-app.post('/client/posts/create', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    const { title, content, type, urgency } = req.body;
-    
-    const newPost = {
-        id: posts.length + 1,
-        user_id: req.session.user.id,
-        user_name: req.session.user.full_name,
-        title: title || 'New Post',
-        content: content,
-        type: type || 'update',
-        status: 'open',
-        urgency: urgency || 'low',
-        created_at: new Date()
-    };
-    
-    posts.unshift(newPost);
-    req.session.success = 'Your post has been published!';
-    res.redirect('/client/dashboard');
-});
+app.post('/client/dashboard/:id/like', postController.likePost);
+
+app.post('/client/dashboard/:id/comment', postController.addComment);
+
+app.get('/client/dashboard/:id', postController.getPost);
+
+app.get('/client/forum', forumController.getAllTopics);
+
+app.post('/client/forum/create', forumController.createTopic);
+
+app.get('/client/forum/topic/:id', forumController.getTopic);
+
+app.post('/client/forum/topic/:id/reply', forumController.addReply);
 
 app.get('/client/requests', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
@@ -557,6 +501,9 @@ app.get('/moderator/posts', (req, res) => {
         recentRequests: documentRequests.slice(0, 10)
     });
 });
+
+// Delete reply (moderator only)
+app.post('/client/forum/reply/:replyId/delete', forumController.deleteReply);
 
 app.get('/moderator/requests', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
