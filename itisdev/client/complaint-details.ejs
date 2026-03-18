@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <%- include('../partials/topnavigation', { currentPath: '/client/complaints', currentUser: user }) %>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Back button -->
+        <div class="mb-4">
+            <a href="/client/complaints" class="text-amber-600 hover:text-amber-700">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Complaints
+            </a>
+        </div>
+
+        <!-- Complaint Details -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">Complaint Details</h1>
+                        <p class="text-amber-100">Reference: CMP-<%= complaint.complaint_id %>-2026</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-sm font-semibold
+                        <%= complaint.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : 
+                           complaint.status === 'Resolved' ? 'bg-green-200 text-green-800' : 
+                           'bg-gray-200 text-gray-800' %>">
+                        <%= complaint.status %>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Main Details -->
+                    <div class="md:col-span-2 space-y-6">
+                        <!-- Allegations -->
+                        <div>
+                            <h3 class="font-semibold text-gray-700 mb-2">Complaint Details</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-gray-700 whitespace-pre-line"><%= complaint.allegations %></p>
+                            </div>
+                        </div>
+
+                        <!-- Narration -->
+                        <div>
+                            <h3 class="font-semibold text-gray-700 mb-2">Full Description</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-gray-700 whitespace-pre-line"><%= complaint.narration %></p>
+                            </div>
+                        </div>
+
+                        <!-- Files -->
+                        <% if (files && files.length > 0) { %>
+                        <div>
+                            <h3 class="font-semibold text-gray-700 mb-2">Attached Evidence</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <% files.forEach(file => { %>
+                                <a href="<%= file.file_path %>" target="_blank" 
+                                   class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100">
+                                    <i class="fas fa-file text-amber-600 mr-2"></i>
+                                    <%= file.original_name %>
+                                </a>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <% } %>
+
+                        <!-- Comments Section -->
+                        <div>
+                            <h3 class="font-semibold text-gray-700 mb-2">Updates & Comments</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <!-- Add comment form -->
+                                <form id="commentForm" class="mb-4">
+                                    <textarea id="commentText" rows="3" 
+                                        class="w-full px-3 py-2 border rounded-lg focus:ring-amber-500 focus:border-amber-500"
+                                        placeholder="Add a comment or update..."></textarea>
+                                    <button type="submit" 
+                                        class="mt-2 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700">
+                                        Post Comment
+                                    </button>
+                                </form>
+
+                                <!-- Comments would be fetched separately -->
+                                <p class="text-gray-500 text-sm">Comments feature coming soon...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                   
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-700 mb-3">Complaint Info</h4>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="text-gray-500">Filed:</span> <%= new Date(complaint.complaint_date).toLocaleDateString() %></p>
+                            <p><span class="text-gray-500">Last Updated:</span> <%= new Date().toLocaleDateString() %></p>
+                            <p><span class="text-gray-500">Complainant:</span> 
+                                <% if (complaint.name === 'ANONYMOUS') { %>
+                                    <span class="text-gray-400 italic">Anonymous</span>
+                                <% } else { %>
+                                    <%= complaint.name %>
+                                <% } %>
+                            </p>
+                            <% if (complaint.name !== 'ANONYMOUS') { %>
+                                <p><span class="text-gray-500">Contact:</span> <%= complaint.email || 'Not provided' %></p>
+                                <p><span class="text-gray-500">Phone:</span> <%= complaint.phone || 'Not provided' %></p>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <%- include('../partials/footer') %>
+
+    <script>
+        document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const comment = document.getElementById('commentText').value;
+            
+            if (!comment.trim()) return;
+
+            const response = await fetch(`/client/complaints/<%= complaint.complaint_id %>/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment })
+            });
+
+            if (response.ok) {
+                alert('Comment added successfully');
+                document.getElementById('commentText').value = '';
+            } else {
+                alert('Failed to add comment');
+            }
+        });
+    </script>
+</body>
+</html>

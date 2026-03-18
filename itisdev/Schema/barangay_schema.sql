@@ -161,13 +161,13 @@ CREATE TABLE ForumReply (
 
 CREATE TABLE ComplaintForm (
 	complaint_id INT AUTO_INCREMENT PRIMARY KEY,
-	user_id INT NOT NULL,
+	user_id INT NULL,
 	email VARCHAR(100),
 	phone VARCHAR(100),
 	name VARCHAR(100),
 	address VARCHAR(100),
-	allegations VARCHAR(250),
-	narration VARCHAR(250),
+	allegations VARCHAR(1250),
+	narration VARCHAR(1250),
 	status ENUM('Pending','Resolved','Cancelled') DEFAULT 'Pending',
 
 	FOREIGN KEY (user_id)
@@ -260,7 +260,7 @@ CREATE TABLE request_audit (
 	phone VARCHAR(100),
 	name VARCHAR(100),
 	address VARCHAR(100),
-	document_request VARCHAR(250),
+	document_request VARCHAR(1250),
 	status ENUM('Pending','Accepted','Cancelled')
 );
 
@@ -271,12 +271,12 @@ CREATE TABLE complaint_audit (
 	phone VARCHAR(100),
 	name VARCHAR(100),
 	address VARCHAR(100),
-	allegations VARCHAR(250),
-	narration VARCHAR(250),
+	allegations VARCHAR(1250),
+	narration VARCHAR(1250),
 	status ENUM('Pending','Resolved','Cancelled')
 );
 
 
 
 SELECT * FROM User;
-
+SELECT * FROM ComplaintForm;

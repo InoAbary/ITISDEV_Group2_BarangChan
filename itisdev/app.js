@@ -6,12 +6,71 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
+const multer = require('multer'); 
+const fs = require('fs'); 
+
 const conn = require('./config/db');
 const postController = require('./Controllers/postController')
 const forumController = require('./Controllers/forumController')
+const complaintController = require('./Controllers/complaintController')
+const requestController = require('./Controllers/requestController')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ==================== FILE UPLOAD CONFIGURATION ====================
+// Ensure upload directories exist
+const uploadDirs = [
+    './public/uploads/complaints',
+    './public/uploads/requests',
+    './public/uploads/profile'
+];
+
+uploadDirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+});
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        // Determine destination based on route
+        if (req.path.includes('complaints')) {
+            cb(null, './public/uploads/complaints/');
+        } else if (req.path.includes('requests')) {
+            cb(null, './public/uploads/requests/');
+        } else {
+            cb(null, './public/uploads/');
+        }
+    },
+    filename: function (req, file, cb) {
+        // Create unique filename: timestamp-originalname
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, uniqueSuffix + ext);
+    }
+});
+
+// File filter to restrict file types
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'application/pdf'];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only JPG, PNG, GIF, MP4, MOV, and PDF are allowed.'), false);
+    }
+};
+
+// Create multer upload instance
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB limit per file
+    }
+});
 
 // ==================== IN-MEMORY STORAGE (Fallback) ====================
 const users = [
@@ -398,49 +457,33 @@ app.get('/client/forum/topic/:id', forumController.getTopic);
 
 app.post('/client/forum/topic/:id/reply', forumController.addReply);
 
-app.get('/client/requests', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    const userRequests = documentRequests.filter(r => r.user_id === req.session.user.id);
-    
-    res.render('requests', {  // Note: just 'requests' not 'client/requests'
-        title: 'My Document Requests - BarangChan',
-        user: req.session.user,
-        requests: userRequests
-    });
-});
+app.get('/client/requests', requestController.getUserRequests);
 
-app.post('/client/requests/create', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    const { document_type } = req.body;
-    
-    const newRequest = {
-        id: documentRequests.length + 1,
-        user_id: req.session.user.id,
-        user_name: req.session.user.full_name,
-        document_type: document_type,
-        status: 'pending',
-        progress_notes: 'Request received, waiting for processing',
-        created_at: new Date()
-    };
-    
-    documentRequests.push(newRequest);
-    req.session.success = 'Your document request has been submitted!';
-    res.redirect('/client/requests');
-});
+// Create new request (with file upload support for ID pictures)
+app.post('/client/requests/create', 
+    upload.array('idPicture', 3), // Allow up to 3 files
+    requestController.createRequest
+);
 
-app.get('/client/complaints', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    const userRequests = documentRequests.filter(r => r.user_id === req.session.user.id);
-    
-    res.render('complaints', {  // Note: just 'requests' not 'client/requests'
-        title: 'File a Complaint - BarangChan',
-        user: req.session.user,
-        requests: userRequests
-    });
-});
+// Get single request details
+app.get('/client/requests/:id', requestController.getRequestDetails);
+
+// Cancel request
+app.post('/client/requests/:id/cancel', requestController.cancelRequest);
+
+app.get('/client/complaints', complaintController.getUserComplaints);
+
+// Create new complaint (with file upload support)
+app.post('/client/complaints/create', 
+    upload.array('evidence', 5), // Allow up to 5 files
+    complaintController.createComplaint
+);
+
+// Get single complaint details
+app.get('/client/complaints/:id', complaintController.getComplaintDetails);
+
+// Add comment to complaint
+app.post('/client/complaints/:id/comment', complaintController.addComment);
 
 app.get('/client/govforms', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
