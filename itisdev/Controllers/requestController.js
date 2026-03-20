@@ -76,9 +76,13 @@ const requestController = {
     },
 
     // Create a new document request
+    // requestController.js - Updated createRequest to handle multiple file fields
+
+    // Create a new document request
     createRequest: async (req, res) => {
         if (!req.session.user) {
-            return res.status(401).json({ error: 'Not logged in' });
+            req.session.error = 'Please login to submit a request';
+            return res.redirect('/login');
         }
 
         try {
@@ -115,7 +119,7 @@ const requestController = {
                 return res.redirect('/client/requests');
             }
 
-            // Prepare document request details
+            // Prepare full address
             const fullAddress = `${streetAddress}, ${barangay}, ${city}`;
             
             // Build document_request string with all relevant information
@@ -140,8 +144,8 @@ const requestController = {
             // Insert request into database
             const insertQuery = `
                 INSERT INTO RequestForm 
-                (user_id, email, phone, name, address, document_request, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'Pending')
+                (user_id, email, phone, name, address, document_request, status, request_date)
+                VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())
             `;
 
             const [result] = await conn.execute(insertQuery, [
@@ -155,9 +159,25 @@ const requestController = {
 
             const requestId = result.insertId;
 
-            // Handle file uploads if any (for ID pictures, etc.)
-            if (req.files && req.files.length > 0) {
-                await handleRequestFileUploads(req.files, requestId);
+            // Handle file uploads from multiple fields
+            if (req.files) {
+                const allFiles = [];
+                
+                // Collect all files from different fields
+                for (const [fieldName, files] of Object.entries(req.files)) {
+                    if (files && files.length > 0) {
+                        files.forEach(file => {
+                            allFiles.push({
+                                ...file,
+                                fieldName: fieldName
+                            });
+                        });
+                    }
+                }
+                
+                if (allFiles.length > 0) {
+                    await handleRequestFileUploads(allFiles, requestId);
+                }
             }
 
             req.session.success = 'Your document request has been submitted successfully!';
@@ -327,6 +347,7 @@ const requestController = {
 };
 
 // Helper function to handle file uploads
+
 async function handleRequestFileUploads(files, requestId) {
     if (!files || files.length === 0) return;
     

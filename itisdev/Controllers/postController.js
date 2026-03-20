@@ -125,12 +125,61 @@ exports.getAllPosts = async (req, res) => {
                 is_official: post.is_official === 1 ? true : false
             });
         }
+
+        let barangayInfo = null;
+        try {
+            const [barangayResult] = await conn.execute(`
+                SELECT * FROM BarangayInfo 
+                WHERE barangay_name = ? OR city = 'Baliuag'
+                LIMIT 1
+            `, [req.session.user?.barangay || 'San Antonio']);
+            barangayInfo = barangayResult[0];
+        } catch (err) {
+            console.error('Error fetching barangay info:', err);
+            // Use default values if database query fails
+            barangayInfo = {
+                barangay_captain: 'Hon. Maria Concepcion R. Santos',
+                captain_contact: '0917 123 4567',
+                hall_address: 'Purok 3, Barangay San Antonio, Baliuag, Bulacan',
+                hall_phone: '(044) 123-4567',
+                hall_email: 'barangay@sanantonio.gov.ph',
+                office_hours: '8:00 AM - 5:00 PM (Mon-Fri)',
+                evacuation_center: 'San Antonio Elementary School',
+                evacuation_center_address: 'Purok 4, Barangay San Antonio, Baliuag, Bulacan',
+                facebook_page: '#'
+            };
+        }
         
+        let emergencyHotlines = [];
+        try {
+            const [hotlines] = await conn.execute(`
+                SELECT * FROM EmergencyHotline 
+                WHERE is_active = TRUE 
+                ORDER BY is_national DESC, display_order
+            `);
+            emergencyHotlines = hotlines;
+        } catch (err) {
+            console.error('Error fetching hotlines:', err);
+            // Use default hotlines if database query fails
+            emergencyHotlines = [
+                { id: 1, name: 'National Emergency', number: '911', icon: 'fa-phone-alt', color: 'red' },
+                { id: 2, name: 'PNP Hotline', number: '117', icon: 'fa-shield-alt', color: 'blue' },
+                { id: 3, name: 'BFP Hotline', number: '160', icon: 'fa-fire-extinguisher', color: 'orange' },
+                { id: 4, name: 'Red Cross', number: '143', icon: 'fa-ambulance', color: 'red' }
+            ];
+        }
+
+        // Then update res.render to include emergencyHotlines:
         res.render('dashboard', { 
             posts: transformedPosts,
             user: req.session.user,
             success: req.session.success || req.query.success,
-            error: req.session.error
+            error: req.session.error,
+            barangayInfo: barangayInfo,
+            emergencyHotlines: emergencyHotlines,  // Add this line
+            stats: {
+                totalResidents: 1234
+            }
         });
         
         // Clear session messages

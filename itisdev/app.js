@@ -14,12 +14,26 @@ const postController = require('./Controllers/postController')
 const forumController = require('./Controllers/forumController')
 const complaintController = require('./Controllers/complaintController')
 const requestController = require('./Controllers/requestController')
+const govformController = require('./Controllers/govFormController');
+const contactsController = require('./Controllers/contactsController')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==================== FILE UPLOAD CONFIGURATION ====================
 // Ensure upload directories exist
+
+async function generateHashes() {
+    const residentHash = await bcrypt.hash('resident123', 10);
+    const moderatorHash = await bcrypt.hash('moderator123', 10);
+    const adminHash = await bcrypt.hash('admin123', 10);
+    
+    console.log('resident@barangchan.ph hash:', residentHash);
+    console.log('moderator@barangchan.ph hash:', moderatorHash);
+    console.log('admin@barangchan.ph hash:', adminHash);
+}
+
+generateHashes();
 const uploadDirs = [
     './public/uploads/complaints',
     './public/uploads/requests',
@@ -461,7 +475,19 @@ app.get('/client/requests', requestController.getUserRequests);
 
 // Create new request (with file upload support for ID pictures)
 app.post('/client/requests/create', 
-    upload.array('idPicture', 3), // Allow up to 3 files
+    upload.fields([
+        { name: 'validId', maxCount: 1 },
+        { name: 'proofResidency', maxCount: 1 },
+        { name: 'cedula', maxCount: 1 },
+        { name: 'barangayCert', maxCount: 1 },
+        { name: 'dtiRegistration', maxCount: 1 },
+        { name: 'barangayClearance', maxCount: 1 },
+        { name: 'businessAddress', maxCount: 1 },
+        { name: 'utilityBill', maxCount: 1 },
+        { name: 'birthCertificate', maxCount: 1 },
+        { name: 'idPicture', maxCount: 1 },
+        { name: 'assistanceDocument', maxCount: 1 }
+    ]),
     requestController.createRequest
 );
 
@@ -485,17 +511,21 @@ app.get('/client/complaints/:id', complaintController.getComplaintDetails);
 // Add comment to complaint
 app.post('/client/complaints/:id/comment', complaintController.addComment);
 
-app.get('/client/govforms', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    
-    const userRequests = documentRequests.filter(r => r.user_id === req.session.user.id);
-    
-    res.render('govforms', {  // Note: just 'requests' not 'client/requests'
-        title: 'Government Forms - BarangChan',
-        user: req.session.user,
-        requests: userRequests
-    });
-});
+
+app.post('/client/complaints/:id/cancel', complaintController.cancelComplaint);
+
+app.get('/client/govforms', govformController.getAllForms);
+
+// Download form by ID
+app.get('/client/govforms/download/:id', govformController.downloadForm);
+
+// Get form details (AJAX)
+app.get('/client/govforms/api/form/:id', govformController.getFormDetails);
+
+// Search forms (AJAX)
+app.get('/client/govforms/api/search', govformController.searchForms);
+
+
 // ==================== MODERATOR ROUTES ====================
 app.get('/moderator/dashboard', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
@@ -547,6 +577,17 @@ app.get('/moderator/posts', (req, res) => {
 
 // Delete reply (moderator only)
 app.post('/client/forum/reply/:replyId/delete', forumController.deleteReply);
+
+// Main contacts page
+app.get('/contacts', contactsController.getAllContacts);
+
+// API Routes
+app.get('/api/contacts/category/:categoryId', contactsController.getContactsByCategory);
+app.get('/api/contacts/emergency', contactsController.getEmergencyContacts);
+app.get('/api/contacts/:contactId', contactsController.getContactDetails);
+app.post('/api/contacts/:contactId/favorite', contactsController.toggleFavorite);
+app.get('/api/contacts/search', contactsController.searchContacts);
+app.get('/api/contacts/officials/:barangay', contactsController.getBarangayOfficials);
 
 app.get('/moderator/requests', (req, res) => {
     if (!req.session.user) return res.redirect('/login');

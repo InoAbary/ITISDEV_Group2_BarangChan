@@ -405,6 +405,23 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="status-<%= complaint.status.toLowerCase() %> text-xs px-2 py-1 rounded-full">
+                                        <%= complaint.status %>
+                                    </span>
+                                    <span class="urgency-<%= complaint.urgency %> text-xs px-2 py-1 rounded-full">
+                                        <%= complaint.urgency.charAt(0).toUpperCase() + complaint.urgency.slice(1) %> Priority
+                                    </span>
+                                    
+                                    <!-- Add cancel button for pending complaints -->
+                                    <% if (complaint.status === 'Under Review') { %>
+                                    <button onclick="cancelComplaintFromList(<%= complaint.id %>)" 
+                                            class="text-xs text-red-600 hover:text-red-700 ml-2">
+                                        <i class="fas fa-times-circle"></i> Cancel
+                                    </button>
+                                    <% } %>
+                                </div>
                             <% }); %>
                         <% } else { %>
                             <div class="p-8 text-center text-gray-500">
@@ -521,14 +538,16 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
                                 <input type="tel" name="complainantContact" id="complainantContact"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
-                                       placeholder="0917 123 4567">
+                                    value="<%= user && user.phone ? user.phone : '' %>"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                    placeholder="0917 123 4567">
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <input type="email" name="complainantEmail" id="complainantEmail" value="<%= user ? user.email : '' %>"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
-                                       placeholder="juandelacruz@email.com">
+                                <input type="email" name="complainantEmail" id="complainantEmail" 
+                                    value="<%= user && user.email ? user.email : '' %>"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                                    placeholder="juandelacruz@email.com">
                             </div>
                         </div>
                     </div>
@@ -857,6 +876,30 @@
                 closeComplaintModal();
             }
         });
+
+
+        async function cancelComplaintFromList(complaintId) {
+            if (!confirm('Are you sure you want to cancel this complaint?')) return;
+            
+            try {
+                const response = await fetch(`/client/complaints/${complaintId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Complaint cancelled successfully');
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to cancel complaint');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error cancelling complaint');
+            }
+        }
 
         // Add quick actions for chatbot
         document.addEventListener('DOMContentLoaded', function() {

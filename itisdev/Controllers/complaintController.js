@@ -58,7 +58,7 @@ fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
                 category: getCategoryFromAllegations(c.allegations),
                 referenceNumber: `CMP-${c.complaint_id}-${new Date(c.complaint_date || Date.now()).getFullYear()}`,
                 filedDate: formatDate(c.complaint_date || new Date()),
-                status: c.status || 'Pending',
+                status: c.status || 'Under Review',
                 urgency: getUrgencyFromAllegations(c.allegations),
                 location: c.address || 'Not specified',
                 lastUpdate: formatDate(c.complaint_date || new Date()),
@@ -70,7 +70,7 @@ fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
                 title: 'File a Complaint - BarangChan',
                 user: req.session.user,
                 complaints: formattedComplaints,
-                activeComplaints: complaints.filter(c => c.status === 'Pending' || c.status === 'Investigating').length,
+                activeComplaints: complaints.filter(c => c.status === 'Under Review' || c.status === 'Investigating').length,
                 success: req.session.success,
                 error: req.session.error
             });
@@ -93,115 +93,136 @@ fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
     // Create a new complaint
     // complaintController.js - Updated createComplaint function
 
-createComplaint: async (req, res) => {
-    if (!req.session.user && req.body.isAnonymous !== 'true') {
-        return res.status(401).json({ error: 'Not logged in' });
-    }
-
-    try {
-        const userId = req.session.user ? req.session.user.id : null;
-        const {
-            complaintType,
-            isAnonymous,
-            complainantName,
-            complainantContact,
-            complainantEmail,
-            category,
-            urgency,
-            location,
-            incidentDate,
-            incidentTime,
-            title,
-            description,
-            involvedParties,
-            witnesses,
-            previouslyReported,
-            immediateAction,
-            contactMethod,
-            agreeTerms
-        } = req.body;
-
-        // Validate required fields
-        if (!title || !description || !location) {
-            req.session.error = 'Please fill in all required fields';
-            return res.redirect('/client/complaints');
+    createComplaint: async (req, res) => {
+        if (!req.session.user && req.body.isAnonymous !== 'true') {
+            return res.status(401).json({ error: 'Not logged in' });
         }
 
-        // Check terms agreement
-        if (!agreeTerms) {
-            req.session.error = 'You must agree to the terms and conditions';
-            return res.redirect('/client/complaints');
-        }
+        try {
+            const userId = req.session.user ? req.session.user.id : null;
+            const {
+                complaintType,
+                isAnonymous,
+                complainantName,
+                complainantContact,
+                complainantEmail,
+                category,
+                urgency,
+                location,
+                incidentDate,
+                incidentTime,
+                title,
+                description,
+                involvedParties,
+                witnesses,
+                previouslyReported,
+                immediateAction,
+                contactMethod,
+                agreeTerms
+            } = req.body;
 
-        // Prepare complaint data for anonymous or identified user
-        let complainantInfo;
-        let name, email, phone;
-        
-        if (isAnonymous === 'true') {
-            // Anonymous complaint
-            name = 'ANONYMOUS';
-            email = 'anonymous@barangchan.local';
-            phone = 'N/A';
-            complainantInfo = 'Anonymous Complaint';
-        } else {
-            // Identified complaint - use provided info or session data
-            name = complainantName || (req.session.user ? req.session.user.full_name : 'Unknown');
-            email = complainantEmail || (req.session.user ? req.session.user.email : '');
-            phone = complainantContact || (req.session.user ? req.session.user.phone : '');
-            complainantInfo = `${name} (${phone})`;
-        }
-
-        const allegations = `${title}\nCategory: ${category}\nLocation: ${location}\nDate/Time: ${incidentDate} ${incidentTime}\nUrgency: ${urgency}`;
-        
-        const narration = `
-        Description: ${description}
-        Involved Parties: ${involvedParties || 'None'}
-        Witnesses: ${witnesses || 'None'}
-        Previously Reported: ${previouslyReported ? 'Yes' : 'No'}
-        Immediate Action Required: ${immediateAction ? 'Yes' : 'No'}
-        Contact Method: ${contactMethod || 'Not specified'}
-        Complainant: ${complainantInfo}
-        Anonymous: ${isAnonymous === 'true' ? 'Yes' : 'No'}
-                `.trim();
-
-                // Insert complaint into database
-                let insertQuery;
-                let params;
-                
-                if (userId) {
-                    // User is logged in
-                    insertQuery = `
-                        INSERT INTO ComplaintForm 
-                        (user_id, email, phone, name, address, allegations, narration, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')
-                    `;
-                    params = [userId, email, phone, name, location, allegations, narration];
-                } else {
-                    // Anonymous - no user_id
-                    insertQuery = `
-                        INSERT INTO ComplaintForm 
-                        (email, phone, name, address, allegations, narration, status)
-                        VALUES (?, ?, ?, ?, ?, ?, 'Pending')
-                    `;
-                    params = [email, phone, name, location, allegations, narration];
-                }
-
-                const [result] = await conn.execute(insertQuery, params);
-                const complaintId = result.insertId;
-
-                // Handle file uploads if any
-                if (req.files && req.files.length > 0) {
-                    await handleFileUploads(req.files, complaintId);
-                }
-
-                req.session.success = 'Your complaint has been submitted successfully!';
-                res.redirect('/client/complaints');
-
-            } catch (error) {
-                console.error('Error creating complaint:', error);
-                req.session.error = 'Failed to submit complaint. Please try again.';
-                res.redirect('/client/complaints');
+            // Validate required fields
+            if (!title || !description || !location) {
+                req.session.error = 'Please fill in all required fields';
+                return res.redirect('/client/complaints');
             }
+
+            // Check terms agreement
+            if (!agreeTerms) {
+                req.session.error = 'You must agree to the terms and conditions';
+                return res.redirect('/client/complaints');
+            }
+
+            // Prepare complaint data for anonymous or identified user
+            let complainantInfo;
+            let name, email, phone;
+            
+            if (isAnonymous === 'true') {
+                // Anonymous complaint
+                name = 'ANONYMOUS';
+                email = 'anonymous@barangchan.local';
+                phone = 'N/A';
+                complainantInfo = 'Anonymous Complaint';
+            } else {
+                // Identified complaint - use provided info or session data with null checks
+                name = complainantName || (req.session.user ? req.session.user.full_name : 'Unknown');
+                
+                // Fix: Handle undefined values by converting to null for database
+                email = (complainantEmail || (req.session.user ? req.session.user.email : null)) || null;
+                phone = (complainantContact || (req.session.user ? req.session.user.phone : null)) || null;
+                
+                complainantInfo = `${name} ${phone ? '(' + phone + ')' : ''}`;
+            }
+
+            const allegations = `${title}\nCategory: ${category}\nLocation: ${location}\nDate/Time: ${incidentDate} ${incidentTime}\nUrgency: ${urgency}`;
+            
+            const narration = `
+                Description: ${description}
+                Involved Parties: ${involvedParties || 'None'}
+                Witnesses: ${witnesses || 'None'}
+                Previously Reported: ${previouslyReported ? 'Yes' : 'No'}
+                Immediate Action Required: ${immediateAction ? 'Yes' : 'No'}
+                Contact Method: ${contactMethod || 'Not specified'}
+                Complainant: ${complainantInfo}
+                Anonymous: ${isAnonymous === 'true' ? 'Yes' : 'No'}
+            `.trim();
+
+            // Insert complaint into database
+            let insertQuery;
+            let params;
+            
+            if (userId) {
+                // User is logged in
+                insertQuery = `
+                    INSERT INTO ComplaintForm 
+                    (user_id, email, phone, name, address, allegations, narration, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Under Review')
+                `;
+                params = [
+                    userId, 
+                    email,  // Now guaranteed to be string or null, never undefined
+                    phone,  // Now guaranteed to be string or null, never undefined
+                    name, 
+                    location, 
+                    allegations, 
+                    narration
+                ];
+            } else {
+                // Anonymous - no user_id
+                insertQuery = `
+                    INSERT INTO ComplaintForm 
+                    (email, phone, name, address, allegations, narration, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'Under Review')
+                `;
+                params = [
+                    email,  // Now guaranteed to be string or null, never undefined
+                    phone,  // Now guaranteed to be string or null, never undefined
+                    name, 
+                    location, 
+                    allegations, 
+                    narration
+                ];
+            }
+
+            // Debug log to check values before insertion
+            console.log('Insert params:', params);
+
+            const [result] = await conn.execute(insertQuery, params);
+            const complaintId = result.insertId;
+
+            // Handle file uploads if any
+            if (req.files && req.files.length > 0) {
+                await handleFileUploads(req.files, complaintId);
+            }
+
+            req.session.success = 'Your complaint has been submitted successfully!';
+            res.redirect('/client/complaints');
+
+        } catch (error) {
+            console.error('Error creating complaint:', error);
+            req.session.error = 'Failed to submit complaint. Please try again.';
+            res.redirect('/client/complaints');
+        }
     },
 
     // Get single complaint details
@@ -299,6 +320,65 @@ createComplaint: async (req, res) => {
         }
     },
 
+    
+    cancelComplaint: async (req, res) => {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Not logged in' });
+        }
+
+        try {
+            const complaintId = req.params.id;
+            const userId = req.session.user.id;
+
+            // First check if the complaint exists and belongs to the user and is Under Review
+            const checkQuery = `
+                SELECT status FROM ComplaintForm 
+                WHERE complaint_id = ? AND user_id = ?
+            `;
+            
+            const [complaints] = await conn.execute(checkQuery, [complaintId, userId]);
+
+            if (complaints.length === 0) {
+                return res.status(404).json({ error: 'Complaint not found' });
+            }
+
+            const complaint = complaints[0];
+
+            // Only allow cancellation if status is 'Under Review'
+            if (complaint.status !== 'Under Review') {
+                return res.status(400).json({ 
+                    error: 'Only Under Review complaints can be cancelled' 
+                });
+            }
+
+            // Update complaint status to 'Cancelled'
+            const updateQuery = `
+                UPDATE ComplaintForm 
+                SET status = 'Cancelled'
+                WHERE complaint_id = ? AND user_id = ?
+            `;
+
+            const [result] = await conn.execute(updateQuery, [complaintId, userId]);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Complaint not found' });
+            }
+
+            // Log to audit table
+            const auditQuery = `
+                INSERT INTO complaint_audit 
+                SELECT *, NOW() FROM ComplaintForm WHERE complaint_id = ?
+            `;
+            await conn.execute(auditQuery, [complaintId]);
+
+            res.json({ success: true, message: 'Complaint cancelled successfully' });
+
+        } catch (error) {
+            console.error('Error cancelling complaint:', error);
+            res.status(500).json({ error: 'Error cancelling complaint' });
+        }
+    },
+
     // Add comment to complaint
     addComment: async (req, res) => {
         if (!req.session.user) {
@@ -384,6 +464,8 @@ function getUrgencyFromNarration(narration) {
     if (narration.toLowerCase().includes('asap')) return 'high';
     return 'medium';
 }
+
+
 
 // Helper function to format date
 function formatDate(date) {

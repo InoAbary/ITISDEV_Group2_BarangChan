@@ -1,4 +1,4 @@
-// Controllers/forumController.js
+// Controllers/forumController.js - Updated with Barangay Filter (Fixed)
 const db = require('../config/db');
 
 // Helper function for time formatting
@@ -31,7 +31,7 @@ function formatTimeAgo(date) {
 
 exports.getAllTopics = async (req, res) => {
     try {
-        const { category, search, sort, page = 1 } = req.query;
+        const { category, search, sort, barangay, page = 1 } = req.query;
         const limit = 10;
         const offset = parseInt((page - 1) * limit, 10);
         
@@ -52,8 +52,20 @@ exports.getAllTopics = async (req, res) => {
             filterParams.push(searchTerm, searchTerm, searchTerm);
         }
         
+        // Add barangay filter - join with Address table to get barangay info
+        if (barangay && barangay !== 'All Barangays' && barangay !== '') {
+            whereClause += ` AND a.barangay = ?`;
+            filterParams.push(barangay);
+        }
+        
         // Get total count with filters
-        let countQuery = `SELECT COUNT(*) as total FROM ForumTopic t WHERE 1=1${whereClause}`;
+        let countQuery = `
+            SELECT COUNT(*) as total 
+            FROM ForumTopic t
+            LEFT JOIN User u ON t.user_id = u.user_id
+            LEFT JOIN Address a ON u.user_id = a.user_id
+            WHERE 1=1${whereClause}
+        `;
         
         let countResult;
         if (filterParams.length > 0) {
@@ -65,7 +77,7 @@ exports.getAllTopics = async (req, res) => {
         const totalTopics = countResult[0].total;
         const totalPages = Math.ceil(totalTopics / limit);
         
-        // Main query with filters
+        // Main query with filters and barangay info from Address table
         let query = `
             SELECT 
                 t.topic_id,
@@ -84,15 +96,22 @@ exports.getAllTopics = async (req, res) => {
                 u.first_name,
                 u.last_name,
                 u.username,
-                u.photo
+                u.photo,
+                a.barangay,
+                a.city,
+                a.street,
+                a.zip
             FROM ForumTopic t
             LEFT JOIN User u ON t.user_id = u.user_id
+            LEFT JOIN Address a ON u.user_id = a.user_id
             WHERE 1=1${whereClause}
         `;
         
         // Add sorting
         if (sort === 'Most Viewed') {
             query += ` ORDER BY t.views DESC, t.is_pinned DESC, t.created_at DESC`;
+        } else if (sort === 'Most Replies') {
+            query += ` ORDER BY t.is_pinned DESC, (SELECT COUNT(*) FROM ForumReply WHERE topic_id = t.topic_id) DESC, t.created_at DESC`;
         } else {
             query += ` ORDER BY t.is_pinned DESC, t.created_at DESC`;
         }
@@ -103,11 +122,9 @@ exports.getAllTopics = async (req, res) => {
         // Execute query with appropriate parameters
         let topics;
         if (filterParams.length > 0) {
-            // If we have filters, use them plus pagination
             const queryParams = [...filterParams, parseInt(limit, 10), parseInt(offset, 10)];
             [topics] = await db.query(query, queryParams);
         } else {
-            // If no filters, ONLY use pagination params
             [topics] = await db.query(query, [parseInt(limit, 10), parseInt(offset, 10)]);
         }
         
@@ -123,20 +140,51 @@ exports.getAllTopics = async (req, res) => {
             replies.forEach(r => replyCounts[r.topic_id] = r.count);
         }
         
-        // Get stats
+        // Get all available barangays for filter dropdown from Address table
+        const [barangays] = await db.execute(`
+            SELECT DISTINCT barangay 
+            FROM Address 
+            WHERE barangay IS NOT NULL AND barangay != ''
+            ORDER BY barangay
+        `);
+        
+        // Get stats with barangay breakdown
         const [totalTopicsResult] = await db.execute('SELECT COUNT(*) as count FROM ForumTopic');
         const [totalRepliesResult] = await db.execute('SELECT COUNT(*) as count FROM ForumReply');
         const [totalMembersResult] = await db.execute('SELECT COUNT(*) as count FROM User WHERE role = "resident"');
         
-        // Get newest member
-        const [newestMemberResult] = await db.execute(
-            'SELECT CONCAT(first_name, " ", last_name) as name FROM User ORDER BY user_id DESC LIMIT 1'
-        );
+        // Get barangay-specific stats
+        const [barangayStats] = await db.execute(`
+            SELECT 
+                a.barangay,
+                COUNT(DISTINCT u.user_id) as members,
+                COUNT(DISTINCT t.topic_id) as topics
+            FROM Address a
+            LEFT JOIN User u ON a.user_id = u.user_id AND u.role = 'resident'
+            LEFT JOIN ForumTopic t ON u.user_id = t.user_id
+            WHERE a.barangay IS NOT NULL
+            GROUP BY a.barangay
+            ORDER BY topics DESC
+            LIMIT 5
+        `);
         
-        // Get active users
-        const [activeUsers] = await db.execute(
-            'SELECT first_name FROM User WHERE last_login > DATE_SUB(NOW(), INTERVAL 15 MINUTE) LIMIT 5'
-        );
+        // Get newest member with barangay
+        const [newestMemberResult] = await db.execute(`
+            SELECT CONCAT(u.first_name, ' ', u.last_name) as name, a.barangay 
+            FROM User u 
+            LEFT JOIN Address a ON u.user_id = a.user_id 
+            ORDER BY u.user_id DESC 
+            LIMIT 1
+        `);
+        
+        // Get active users with barangay info
+        const [activeUsers] = await db.execute(`
+            SELECT u.first_name, a.barangay 
+            FROM User u
+            LEFT JOIN Address a ON u.user_id = a.user_id
+            WHERE u.last_login > DATE_SUB(NOW(), INTERVAL 15 MINUTE) 
+            LIMIT 5
+        `);
         
         // Get category counts
         const [categoryCounts] = await db.execute(`
@@ -169,11 +217,13 @@ exports.getAllTopics = async (req, res) => {
             author_name: topic.first_name ? `${topic.first_name} ${topic.last_name || ''}`.trim() : 'Unknown User',
             author_avatar: topic.first_name ? topic.first_name.charAt(0) : 'U',
             user_name: topic.first_name ? `${topic.first_name} ${topic.last_name || ''}`.trim() : 'Unknown User',
+            barangay: topic.barangay || 'Not specified',
+            city: topic.city || 'Baliuag',
             time_ago: formatTimeAgo(topic.created_at),
             last_activity: formatTimeAgo(topic.updated_at || topic.created_at)
         }));
         
-        // Apply sorting based on reply counts or trending
+        // Apply additional sorting for reply counts if needed
         if (sort === 'Most Replies') {
             transformedTopics.sort((a, b) => b.reply_count - a.reply_count);
         } else if (sort === 'Trending') {
@@ -191,8 +241,11 @@ exports.getAllTopics = async (req, res) => {
             totalReplies: totalRepliesResult[0].count,
             totalMembers: totalMembersResult[0].count,
             newestMember: newestMemberResult[0]?.name || 'N/A',
+            newestMemberBarangay: newestMemberResult[0]?.barangay || 'N/A',
             activeUsers: activeUsers,
             categoryCounts: categoryCounts[0],
+            barangays: barangays,
+            barangayStats: barangayStats,
             totalPages,
             currentPage: parseInt(page, 10),
             user: req.session.user,
@@ -262,7 +315,7 @@ exports.getTopic = async (req, res) => {
         // Update view count
         await db.execute('UPDATE ForumTopic SET views = views + 1 WHERE topic_id = ?', [topicId]);
         
-        // Get topic details
+        // Get topic details with barangay info from Address table
         const topicQuery = `
             SELECT 
                 t.*, 
@@ -270,9 +323,13 @@ exports.getTopic = async (req, res) => {
                 u.first_name, 
                 u.last_name, 
                 u.photo,
-                u.role
+                u.role,
+                a.barangay,
+                a.city,
+                a.street
             FROM ForumTopic t
             JOIN User u ON t.user_id = u.user_id
+            LEFT JOIN Address a ON u.user_id = a.user_id
             WHERE t.topic_id = ?
         `;
         
@@ -284,7 +341,7 @@ exports.getTopic = async (req, res) => {
         
         const topic = topicResults[0];
         
-        // Get replies for this topic
+        // Get replies for this topic with user barangay info from Address table
         const repliesQuery = `
             SELECT 
                 r.*, 
@@ -292,9 +349,11 @@ exports.getTopic = async (req, res) => {
                 u.first_name, 
                 u.last_name, 
                 u.photo,
-                u.role
+                u.role,
+                a.barangay
             FROM ForumReply r
             JOIN User u ON r.user_id = u.user_id
+            LEFT JOIN Address a ON u.user_id = a.user_id
             WHERE r.topic_id = ?
             ORDER BY r.created_at ASC
         `;
@@ -318,6 +377,8 @@ exports.getTopic = async (req, res) => {
             user_name: `${topic.first_name} ${topic.last_name}`,
             user_avatar: topic.first_name ? topic.first_name.charAt(0) : 'U',
             user_role: topic.role || 'Resident',
+            barangay: topic.barangay || 'Not specified',
+            city: topic.city || 'Baliuag',
             time_ago: formatTimeAgo(topic.created_at)
         };
         
@@ -329,6 +390,7 @@ exports.getTopic = async (req, res) => {
             user_name: `${reply.first_name} ${reply.last_name}`,
             user_avatar: reply.first_name ? reply.first_name.charAt(0) : 'U',
             user_role: reply.role || 'Resident',
+            barangay: reply.barangay || 'Not specified',
             time_ago: formatTimeAgo(reply.created_at)
         }));
         
@@ -448,5 +510,35 @@ exports.togglePinTopic = async (req, res) => {
         console.error('Error in togglePinTopic:', err);
         req.session.error = 'Failed to update pin status';
         res.redirect('back');
+    }
+};
+
+// New: Get barangay-specific forum stats
+exports.getBarangayStats = async (req, res) => {
+    try {
+        const barangayName = req.params.barangay;
+        
+        const [stats] = await db.execute(`
+            SELECT 
+                COUNT(DISTINCT t.topic_id) as topics,
+                COUNT(DISTINCT r.reply_id) as replies,
+                COUNT(DISTINCT u.user_id) as active_members
+            FROM User u
+            LEFT JOIN Address a ON u.user_id = a.user_id
+            LEFT JOIN ForumTopic t ON u.user_id = t.user_id
+            LEFT JOIN ForumReply r ON t.topic_id = r.topic_id
+            WHERE a.barangay = ?
+        `, [barangayName]);
+        
+        res.json({
+            success: true,
+            stats: stats[0]
+        });
+    } catch (err) {
+        console.error('Error in getBarangayStats:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching barangay stats'
+        });
     }
 };

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= language %>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BarangChan · Emergency & Community Contacts</title>
+    <title><%= title %> · BarangChan</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -15,7 +15,6 @@
             background-repeat: repeat;
         }
         
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -28,11 +27,7 @@
             background: #cbd5e0;
             border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
-        }
-
-        /* Contact card hover effects */
+        
         .contact-card {
             transition: all 0.2s ease;
         }
@@ -40,8 +35,7 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-
-        /* Emergency card pulse animation */
+        
         .emergency-card {
             animation: softPulse 2s infinite;
         }
@@ -50,26 +44,55 @@
             70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
             100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
-
-        /* Filipino pattern */
+        
         .filipino-divider {
             background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
             height: 2px;
             width: 100%;
         }
-
-        /* Category headers */
+        
         .category-header {
             background: linear-gradient(135deg, #1e3a8a, #b45309);
-            color: white;
         }
-
-        /* Quick dial buttons */
+        
         .quick-dial {
             transition: all 0.2s ease;
         }
         .quick-dial:hover {
             transform: scale(1.05);
+        }
+        
+        .baliuag-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+        
+        .favorite-btn {
+            transition: all 0.2s ease;
+        }
+        .favorite-btn:hover {
+            transform: scale(1.1);
+        }
+        .favorite-active {
+            color: #f59e0b;
+        }
+        
+        /* Language toggle */
+        .lang-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border-radius: 9999px;
+            padding: 0.25rem;
+        }
+        .lang-option {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .lang-option.active {
+            background: white;
+            color: #1e3a8a;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -81,23 +104,40 @@
     <!-- Main Content -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        <!-- Page Header -->
+        <!-- Baliuag Header with Language Toggle -->
         <div class="bg-gradient-to-r from-blue-900 to-amber-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
             <div class="px-6 py-5 text-white">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between flex-wrap gap-4">
                     <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-map-marker-alt text-amber-300"></i>
+                            <span class="text-amber-200 text-sm font-semibold">
+                                <%= language === 'tl' ? 'Bayan ng Baliuag, Bulacan' : 'Municipality of Baliuag, Bulacan' %>
+                            </span>
+                        </div>
                         <h1 class="text-2xl font-bold flex items-center gap-2">
                             <i class="fas fa-phone-alt"></i> 
-                            Emergency & Community Contacts
+                            <%= title %>
                         </h1>
                         <p class="text-blue-100 mt-1 text-sm">
                             <i class="fas fa-address-book mr-1"></i> 
-                            Mahahalagang numero at impormasyon para sa barangay (Important numbers and information for the barangay)
+                            <%= language === 'tl' ? 
+                                'Mahahalagang numero at impormasyon para sa Barangay ' + (barangayInfo?.barangay_name || 'San Antonio') : 
+                                'Important numbers and information for Barangay ' + (barangayInfo?.barangay_name || 'San Antonio') %>
                         </p>
                     </div>
                     <div class="flex items-center gap-3">
+                        <!-- Language Toggle -->
+                        <div class="lang-toggle flex">
+                            <div class="lang-option <%= language === 'en' ? 'active' : '' %>" data-lang="en">
+                                EN
+                            </div>
+                            <div class="lang-option <%= language === 'tl' ? 'active' : '' %>" data-lang="tl">
+                                FIL
+                            </div>
+                        </div>
                         <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-clock mr-2"></i>24/7 Emergency Hotlines
+                            <i class="fas fa-clock mr-2"></i><%= language === 'tl' ? '24/7 Emergency Hotlines' : '24/7 Emergency Hotlines' %>
                         </span>
                     </div>
                 </div>
@@ -112,46 +152,33 @@
                         <i class="fas fa-exclamation-triangle text-2xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold">🚨 FOR EMERGENCIES, CALL:</h2>
-                        <p class="text-red-100">Tumawag agad kung may emergency (Call immediately for emergencies)</p>
+                        <h2 class="text-xl font-bold">
+                            <%= language === 'tl' ? '🚨 PARA SA EMERGENCY, TUMAWAG SA:' : '🚨 FOR EMERGENCIES, CALL:' %>
+                        </h2>
+                        <p class="text-red-100">
+                            <%= language === 'tl' ? 'Tumawag agad kung may emergency' : 'Call immediately for emergencies' %>
+                        </p>
                     </div>
                 </div>
                 <div class="mt-3 md:mt-0 flex gap-2">
-                    <a href="tel:911" class="bg-white text-red-600 px-6 py-3 rounded-lg font-bold text-xl hover:bg-red-50 transition quick-dial">
-                        911
-                    </a>
-                    <a href="tel:161" class="bg-white text-red-600 px-6 py-3 rounded-lg font-bold text-xl hover:bg-red-50 transition quick-dial">
-                        161
-                    </a>
-                    <a href="tel:117" class="bg-white text-red-600 px-6 py-3 rounded-lg font-bold text-xl hover:bg-red-50 transition quick-dial">
-                        117
-                    </a>
+                    <% emergencyHotlines.slice(0, 3).forEach(hotline => { %>
+                        <a href="tel:<%= hotline.number %>" class="bg-white text-red-600 px-6 py-3 rounded-lg font-bold text-xl hover:bg-red-50 transition quick-dial">
+                            <%= hotline.number %>
+                        </a>
+                    <% }) %>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- Quick Actions - Emergency Numbers -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <a href="tel:911" class="bg-red-50 hover:bg-red-100 p-4 rounded-xl text-center transition border border-red-200">
-                <i class="fas fa-phone-alt text-red-600 text-2xl mb-2"></i>
-                <p class="font-bold text-red-700">911</p>
-                <p class="text-xs text-red-600">Emergency</p>
-            </a>
-            <a href="tel:136" class="bg-blue-50 hover:bg-blue-100 p-4 rounded-xl text-center transition border border-blue-200">
-                <i class="fas fa-shield-alt text-blue-600 text-2xl mb-2"></i>
-                <p class="font-bold text-blue-700">136</p>
-                <p class="text-xs text-blue-600">PNP</p>
-            </a>
-            <a href="tel:160" class="bg-orange-50 hover:bg-orange-100 p-4 rounded-xl text-center transition border border-orange-200">
-                <i class="fas fa-fire-extinguisher text-orange-600 text-2xl mb-2"></i>
-                <p class="font-bold text-orange-700">160</p>
-                <p class="text-xs text-orange-600">BFP</p>
-            </a>
-            <a href="tel:143" class="bg-green-50 hover:bg-green-100 p-4 rounded-xl text-center transition border border-green-200">
-                <i class="fas fa-ambulance text-green-600 text-2xl mb-2"></i>
-                <p class="font-bold text-green-700">143</p>
-                <p class="text-xs text-green-600">Red Cross</p>
-            </a>
+            <% emergencyHotlines.forEach(hotline => { %>
+                <a href="tel:<%= hotline.number %>" class="bg-<%= hotline.color %>-50 hover:bg-<%= hotline.color %>-100 p-4 rounded-xl text-center transition border border-<%= hotline.color %>-200">
+                    <i class="fas <%= hotline.icon %> text-<%= hotline.color %>-600 text-2xl mb-2"></i>
+                    <p class="font-bold text-<%= hotline.color %>-700"><%= hotline.name %></p>
+                    <p class="text-xs text-<%= hotline.color %>-600"><%= hotline.number %></p>
+                </a>
+            <% }) %>
         </div>
 
         <!-- Filipino Pattern Divider -->
@@ -160,7 +187,7 @@
         <!-- Main Contacts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- LEFT COLUMN - Emergency Services -->
+            <!-- LEFT COLUMN - Emergency & Barangay Services -->
             <div class="lg:col-span-7 space-y-6">
                 
                 <!-- Barangay Hall Section -->
@@ -168,109 +195,62 @@
                     <div class="category-header px-6 py-4">
                         <h2 class="text-xl font-bold flex items-center gap-2">
                             <i class="fas fa-landmark"></i>
-                            Barangay Hall
+                            <%= language === 'tl' ? 'Bulwagang Barangay' : 'Barangay Hall' %>
                         </h2>
-                        <p class="text-blue-100 text-sm mt-1">Barangay <%= user.barangay || 'San Antonio' %>, <%= user.city || 'Quezon City' %></p>
+                        <p class="text-blue-100 text-sm mt-1">
+                            <%= language === 'tl' ? 'Barangay ' + (barangayInfo?.barangay_name || 'San Antonio') : 'Barangay ' + (barangayInfo?.barangay_name || 'San Antonio') %>
+                            , <%= barangayInfo?.city || 'Baliuag' %>, <%= barangayInfo?.province || 'Bulacan' %>
+                        </p>
                     </div>
                     
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Contact 1 - Barangay Captain -->
-                            <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl">
-                                        <i class="fas fa-user-tie"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <h3 class="font-bold text-gray-800">Barangay Captain</h3>
-                                        <p class="text-sm text-gray-600">Hon. Maria Reyes</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234567" class="text-blue-600 hover:text-blue-700">(02) 8123-4567</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
-                                                <a href="tel:+639171234567" class="text-blue-600 hover:text-blue-700">0917 123 4567</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:captain@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">captain@barangay.gov.ph</a>
-                                            </p>
+                            <% 
+                                const barangayContacts = categories.find(c => c.category_id === 1)?.contacts || [];
+                                barangayContacts.forEach(contact => { 
+                            %>
+                                <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+                                    <button class="favorite-btn absolute top-2 right-2 text-gray-400 hover:text-amber-500 <%= contact.is_favorited ? 'favorite-active' : '' %>" 
+                                            data-contact-id="<%= contact.contact_id %>">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl">
+                                            <i class="fas fa-user-tie"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-gray-800"><%= contact.name %></h3>
+                                            <p class="text-sm text-gray-600"><%= contact.title %></p>
+                                            <div class="mt-2 space-y-1">
+                                                <% if (contact.phone_landline) { %>
+                                                    <p class="text-sm flex items-center gap-2">
+                                                        <i class="fas fa-phone text-amber-600 w-4"></i>
+                                                        <a href="tel:<%= contact.phone_landline.replace(/[^0-9]/g, '') %>" 
+                                                           class="text-blue-600 hover:text-blue-700"><%= contact.phone_landline %></a>
+                                                    </p>
+                                                <% } %>
+                                                <% if (contact.phone_mobile) { %>
+                                                    <p class="text-sm flex items-center gap-2">
+                                                        <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
+                                                        <a href="tel:<%= contact.phone_mobile %>" 
+                                                           class="text-blue-600 hover:text-blue-700"><%= contact.phone_mobile %></a>
+                                                    </p>
+                                                <% } %>
+                                                <% if (contact.email) { %>
+                                                    <p class="text-sm flex items-center gap-2">
+                                                        <i class="fas fa-envelope text-amber-600 w-4"></i>
+                                                        <a href="mailto:<%= contact.email %>" 
+                                                           class="text-blue-600 hover:text-blue-700"><%= contact.email %></a>
+                                                    </p>
+                                                <% } %>
+                                                <p class="text-xs text-gray-500 mt-1">
+                                                    <%= language === 'tl' ? (contact.office_hours_tagalog || contact.office_hours) : contact.office_hours %>
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Contact 2 - Barangay Secretary -->
-                            <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl">
-                                        <i class="fas fa-file-signature"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">Barangay Secretary</h3>
-                                        <p class="text-sm text-gray-600">Maria Santos</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234568" class="text-blue-600 hover:text-blue-700">(02) 8123-4568</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:secretary@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">secretary@barangay.gov.ph</a>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Contact 3 - Barangay Treasurer -->
-                            <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-xl">
-                                        <i class="fas fa-coins"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">Barangay Treasurer</h3>
-                                        <p class="text-sm text-gray-600">Jose Torres</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234569" class="text-blue-600 hover:text-blue-700">(02) 8123-4569</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:treasurer@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">treasurer@barangay.gov.ph</a>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Contact 4 - Barangay Hall General -->
-                            <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xl">
-                                        <i class="fas fa-building"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">Barangay Hall</h3>
-                                        <p class="text-sm text-gray-600">Main Office</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234560" class="text-blue-600 hover:text-blue-700">(02) 8123-4560</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:barangay@example.gov.ph" class="text-blue-600 hover:text-blue-700">barangay@example.gov.ph</a>
-                                            </p>
-                                            <p class="text-xs text-gray-500 mt-1">8:00 AM - 5:00 PM (Mon-Fri)</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <% }) %>
                         </div>
                     </div>
                 </div>
@@ -280,129 +260,57 @@
                     <div class="bg-red-600 px-6 py-4">
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
                             <i class="fas fa-exclamation-circle"></i>
-                            Emergency Services
+                            <%= language === 'tl' ? 'Pang-emergency na Serbisyo' : 'Emergency Services' %>
                         </h2>
                     </div>
                     
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- PNP/Police -->
-                            <div class="contact-card bg-red-50 rounded-xl p-4 border border-red-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-xl">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">PNP / Police</h3>
-                                        <p class="text-sm text-gray-600">Barangay Police Station</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-lg font-bold text-red-600">911</p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234570" class="text-blue-600 hover:text-blue-700">(02) 8123-4570</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
-                                                <a href="tel:+639171234570" class="text-blue-600 hover:text-blue-700">0917 123 4570</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:police@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">police@barangay.gov.ph</a>
-                                            </p>
+                            <% 
+                                const emergencyContacts = categories.find(c => c.category_id === 2)?.contacts || [];
+                                emergencyContacts.forEach(contact => { 
+                            %>
+                                <div class="contact-card bg-red-50 rounded-xl p-4 border border-red-200 relative">
+                                    <button class="favorite-btn absolute top-2 right-2 text-gray-400 hover:text-amber-500 <%= contact.is_favorited ? 'favorite-active' : '' %>" 
+                                            data-contact-id="<%= contact.contact_id %>">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-xl">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-gray-800"><%= contact.name %></h3>
+                                            <p class="text-sm text-gray-600"><%= contact.title %></p>
+                                            <div class="mt-2 space-y-1">
+                                                <% if (contact.phone_landline) { %>
+                                                    <p class="text-sm flex items-center gap-2">
+                                                        <i class="fas fa-phone text-amber-600 w-4"></i>
+                                                        <a href="tel:<%= contact.phone_landline.replace(/[^0-9]/g, '') %>" 
+                                                           class="text-blue-600 hover:text-blue-700"><%= contact.phone_landline %></a>
+                                                    </p>
+                                                <% } %>
+                                                <% if (contact.phone_mobile) { %>
+                                                    <p class="text-lg font-bold text-red-600"><%= contact.phone_mobile %></p>
+                                                <% } %>
+                                                <% if (contact.email) { %>
+                                                    <p class="text-sm flex items-center gap-2">
+                                                        <i class="fas fa-envelope text-amber-600 w-4"></i>
+                                                        <a href="mailto:<%= contact.email %>" 
+                                                           class="text-blue-600 hover:text-blue-700"><%= contact.email %></a>
+                                                    </p>
+                                                <% } %>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- BFP / Fire -->
-                            <div class="contact-card bg-orange-50 rounded-xl p-4 border border-orange-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 text-xl">
-                                        <i class="fas fa-fire-extinguisher"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">BFP / Fire Dept</h3>
-                                        <p class="text-sm text-gray-600">Bureau of Fire Protection</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-lg font-bold text-orange-600">160</p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234571" class="text-blue-600 hover:text-blue-700">(02) 8123-4571</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
-                                                <a href="tel:+639171234571" class="text-blue-600 hover:text-blue-700">0917 123 4571</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:fire@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">fire@barangay.gov.ph</a>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Red Cross / Ambulance -->
-                            <div class="contact-card bg-green-50 rounded-xl p-4 border border-green-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl">
-                                        <i class="fas fa-ambulance"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">Red Cross / Ambulance</h3>
-                                        <p class="text-sm text-gray-600">Emergency Medical Services</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-lg font-bold text-green-600">143</p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234572" class="text-blue-600 hover:text-blue-700">(02) 8123-4572</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
-                                                <a href="tel:+639171234572" class="text-blue-600 hover:text-blue-700">0917 123 4572</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:ems@redcross.org.ph" class="text-blue-600 hover:text-blue-700">ems@redcross.org.ph</a>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- CDRRMO / Disaster -->
-                            <div class="contact-card bg-blue-50 rounded-xl p-4 border border-blue-200">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl">
-                                        <i class="fas fa-cloud-rain"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-gray-800">CDRRMO</h3>
-                                        <p class="text-sm text-gray-600">Disaster Risk Reduction</p>
-                                        <div class="mt-2 space-y-1">
-                                            <p class="text-lg font-bold text-blue-600">161</p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-phone text-amber-600 w-4"></i>
-                                                <a href="tel:+63281234573" class="text-blue-600 hover:text-blue-700">(02) 8123-4573</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
-                                                <a href="tel:+639171234573" class="text-blue-600 hover:text-blue-700">0917 123 4573</a>
-                                            </p>
-                                            <p class="text-sm flex items-center gap-2">
-                                                <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                                <a href="mailto:drrmo@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">drrmo@barangay.gov.ph</a>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <% }) %>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN - Community Services -->
+            <!-- RIGHT COLUMN - Health, Utilities, Municipal Services -->
             <div class="lg:col-span-5 space-y-6">
                 
                 <!-- Health Services -->
@@ -410,61 +318,50 @@
                     <div class="bg-green-600 px-6 py-4">
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
                             <i class="fas fa-hospital"></i>
-                            Health Services
+                            <%= language === 'tl' ? 'Serbisyong Pangkalusugan' : 'Health Services' %>
                         </h2>
                     </div>
                     
                     <div class="p-6 space-y-4">
-                        <!-- Barangay Health Center -->
-                        <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <div class="flex items-start gap-3">
-                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl">
-                                    <i class="fas fa-clinic-medical"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="font-bold text-gray-800">Barangay Health Center</h3>
-                                    <p class="text-sm text-gray-600">Dr. Maria Santos - Municipal Health Officer</p>
-                                    <div class="mt-2 space-y-1">
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-phone text-amber-600 w-4"></i>
-                                            <a href="tel:+63281234574" class="text-blue-600 hover:text-blue-700">(02) 8123-4574</a>
-                                        </p>
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
-                                            <a href="tel:+639171234574" class="text-blue-600 hover:text-blue-700">0917 123 4574</a>
-                                        </p>
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                            <a href="mailto:health@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">health@barangay.gov.ph</a>
-                                        </p>
-                                        <p class="text-xs text-gray-500 mt-1">8:00 AM - 5:00 PM (Mon-Fri) • 8:00 AM - 12:00 PM (Sat)</p>
+                        <% 
+                            const healthContacts = categories.find(c => c.category_id === 3)?.contacts || [];
+                            healthContacts.forEach(contact => { 
+                        %>
+                            <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+                                <button class="favorite-btn absolute top-2 right-2 text-gray-400 hover:text-amber-500 <%= contact.is_favorited ? 'favorite-active' : '' %>" 
+                                        data-contact-id="<%= contact.contact_id %>">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <div class="flex items-start gap-3">
+                                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl">
+                                        <i class="fas fa-clinic-medical"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="font-bold text-gray-800"><%= contact.name %></h3>
+                                        <p class="text-sm text-gray-600"><%= contact.title %></p>
+                                        <div class="mt-2 space-y-1">
+                                            <% if (contact.phone_landline) { %>
+                                                <p class="text-sm flex items-center gap-2">
+                                                    <i class="fas fa-phone text-amber-600 w-4"></i>
+                                                    <a href="tel:<%= contact.phone_landline.replace(/[^0-9]/g, '') %>" 
+                                                       class="text-blue-600 hover:text-blue-700"><%= contact.phone_landline %></a>
+                                                </p>
+                                            <% } %>
+                                            <% if (contact.phone_mobile) { %>
+                                                <p class="text-sm flex items-center gap-2">
+                                                    <i class="fas fa-mobile-alt text-amber-600 w-4"></i>
+                                                    <a href="tel:<%= contact.phone_mobile %>" 
+                                                       class="text-blue-600 hover:text-blue-700"><%= contact.phone_mobile %></a>
+                                                </p>
+                                            <% } %>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                <%= language === 'tl' ? (contact.office_hours_tagalog || contact.office_hours) : contact.office_hours %>
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Rural Health Unit -->
-                        <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <div class="flex items-start gap-3">
-                                <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 text-xl">
-                                    <i class="fas fa-syringe"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-800">Rural Health Unit (RHU)</h3>
-                                    <p class="text-sm text-gray-600">Vaccination & Maternal Care</p>
-                                    <div class="mt-2 space-y-1">
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-phone text-amber-600 w-4"></i>
-                                            <a href="tel:+63281234575" class="text-blue-600 hover:text-blue-700">(02) 8123-4575</a>
-                                        </p>
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                            <a href="mailto:rhu@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">rhu@barangay.gov.ph</a>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <% }) %>
                     </div>
                 </div>
 
@@ -473,66 +370,31 @@
                     <div class="bg-blue-600 px-6 py-4">
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
                             <i class="fas fa-tools"></i>
-                            Utilities & Public Services
+                            <%= language === 'tl' ? 'Mga Utility at Pampublikong Serbisyo' : 'Utilities & Public Services' %>
                         </h2>
                     </div>
                     
                     <div class="p-6 space-y-3">
-                        <!-- MERALCO -->
-                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
-                                    <i class="fas fa-bolt"></i>
+                        <% 
+                            const utilityContacts = categories.find(c => c.category_id === 4)?.contacts || [];
+                            utilityContacts.forEach(contact => { 
+                        %>
+                            <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
+                                        <i class="fas fa-bolt"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium"><%= contact.name %></p>
+                                        <p class="text-xs text-gray-500"><%= contact.title %></p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="font-medium">MERALCO</p>
-                                    <p class="text-xs text-gray-500">Power Outages / Billing</p>
-                                </div>
+                                <a href="tel:<%= contact.phone_landline || contact.phone_mobile %>" 
+                                   class="text-blue-600 font-bold">
+                                    <%= contact.phone_landline || contact.phone_mobile %>
+                                </a>
                             </div>
-                            <a href="tel:16211" class="text-blue-600 font-bold">16211</a>
-                        </div>
-
-                        <!-- Manila Water -->
-                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                    <i class="fas fa-water"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium">Manila Water</p>
-                                    <p class="text-xs text-gray-500">Water Supply / Leaks</p>
-                                </div>
-                            </div>
-                            <a href="tel:1627" class="text-blue-600 font-bold">1627</a>
-                        </div>
-
-                        <!-- Maynilad -->
-                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                    <i class="fas fa-tint"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium">Maynilad</p>
-                                    <p class="text-xs text-gray-500">Water Services</p>
-                                </div>
-                            </div>
-                            <a href="tel:1626" class="text-blue-600 font-bold">1626</a>
-                        </div>
-
-                        <!-- PLDT / Telco -->
-                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
-                                    <i class="fas fa-wifi"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium">PLDT / Internet</p>
-                                    <p class="text-xs text-gray-500">Service Issues</p>
-                                </div>
-                            </div>
-                            <a href="tel:171" class="text-blue-600 font-bold">171</a>
-                        </div>
+                        <% }) %>
                     </div>
                 </div>
 
@@ -541,64 +403,100 @@
                     <div class="bg-amber-600 px-6 py-4">
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
                             <i class="fas fa-hand-holding-heart"></i>
-                            Social Welfare
+                            <%= language === 'tl' ? 'Pangkapakanang Panlipunan' : 'Social Welfare' %>
                         </h2>
                     </div>
                     
                     <div class="p-6 space-y-4">
-                        <!-- DSWD -->
-                        <div class="contact-card bg-amber-50 rounded-xl p-4 border border-amber-200">
-                            <div class="flex items-start gap-3">
-                                <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-xl">
-                                    <i class="fas fa-hands-helping"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-800">DSWD - Social Welfare</h3>
-                                    <p class="text-sm text-gray-600">4Ps, Senior Citizen, PWD</p>
-                                    <div class="mt-2 space-y-1">
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-phone text-amber-600 w-4"></i>
-                                            <a href="tel:+63281234576" class="text-blue-600 hover:text-blue-700">(02) 8123-4576</a>
-                                        </p>
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-envelope text-amber-600 w-4"></i>
-                                            <a href="mailto:dswd@barangay.gov.ph" class="text-blue-600 hover:text-blue-700">dswd@barangay.gov.ph</a>
-                                        </p>
+                        <% 
+                            const welfareContacts = categories.find(c => c.category_id === 5)?.contacts || [];
+                            welfareContacts.forEach(contact => { 
+                        %>
+                            <div class="contact-card bg-amber-50 rounded-xl p-4 border border-amber-200 relative">
+                                <button class="favorite-btn absolute top-2 right-2 text-gray-400 hover:text-amber-500 <%= contact.is_favorited ? 'favorite-active' : '' %>" 
+                                        data-contact-id="<%= contact.contact_id %>">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <div class="flex items-start gap-3">
+                                    <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-xl">
+                                        <i class="fas fa-hands-helping"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-800"><%= contact.name %></h3>
+                                        <p class="text-sm text-gray-600"><%= contact.title %></p>
+                                        <div class="mt-2">
+                                            <% if (contact.phone_landline) { %>
+                                                <p class="text-sm flex items-center gap-2">
+                                                    <i class="fas fa-phone text-amber-600 w-4"></i>
+                                                    <a href="tel:<%= contact.phone_landline.replace(/[^0-9]/g, '') %>" 
+                                                       class="text-blue-600 hover:text-blue-700"><%= contact.phone_landline %></a>
+                                                </p>
+                                            <% } %>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        <% }) %>
+                    </div>
+                </div>
 
-                        <!-- VAWC / Women's Desk -->
-                        <div class="contact-card bg-pink-50 rounded-xl p-4 border border-pink-200">
-                            <div class="flex items-start gap-3">
-                                <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 text-xl">
-                                    <i class="fas fa-female"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-800">VAWC / Women's Desk</h3>
-                                    <p class="text-sm text-gray-600">Violence Against Women & Children</p>
-                                    <div class="mt-2">
-                                        <p class="text-lg font-bold text-pink-600">1343</p>
-                                        <p class="text-sm flex items-center gap-2">
-                                            <i class="fas fa-phone text-amber-600 w-4"></i>
-                                            <a href="tel:+63281234577" class="text-blue-600 hover:text-blue-700">(02) 8123-4577</a>
-                                        </p>
+                <!-- Municipal Office -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-purple-600 px-6 py-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-city"></i>
+                            <%= language === 'tl' ? 'Opisina ng Munisipyo ng Baliuag' : 'Baliuag Municipal Office' %>
+                        </h2>
+                    </div>
+                    
+                    <div class="p-6 space-y-4">
+                        <% 
+                            const municipalContacts = categories.find(c => c.category_id === 6)?.contacts || [];
+                            municipalContacts.forEach(contact => { 
+                        %>
+                            <div class="contact-card bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+                                <button class="favorite-btn absolute top-2 right-2 text-gray-400 hover:text-amber-500 <%= contact.is_favorited ? 'favorite-active' : '' %>" 
+                                        data-contact-id="<%= contact.contact_id %>">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <div class="flex items-start gap-3">
+                                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xl">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-800"><%= contact.name %></h3>
+                                        <p class="text-sm text-gray-600"><%= contact.title %></p>
+                                        <div class="mt-2 space-y-1">
+                                            <% if (contact.phone_landline) { %>
+                                                <p class="text-sm flex items-center gap-2">
+                                                    <i class="fas fa-phone text-amber-600 w-4"></i>
+                                                    <a href="tel:<%= contact.phone_landline.replace(/[^0-9]/g, '') %>" 
+                                                       class="text-blue-600 hover:text-blue-700"><%= contact.phone_landline %></a>
+                                                </p>
+                                            <% } %>
+                                            <% if (contact.email) { %>
+                                                <p class="text-sm flex items-center gap-2">
+                                                    <i class="fas fa-envelope text-amber-600 w-4"></i>
+                                                    <a href="mailto:<%= contact.email %>" 
+                                                       class="text-blue-600 hover:text-blue-700"><%= contact.email %></a>
+                                                </p>
+                                            <% } %>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        <% }) %>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Important Addresses Section -->
+        <!-- Important Addresses Section (Baliuag) -->
         <div class="mt-8 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
             <div class="bg-gradient-to-r from-blue-800 to-amber-700 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
                     <i class="fas fa-map-marked-alt"></i>
-                    Important Addresses
+                    <%= language === 'tl' ? 'Mahahalagang Lokasyon sa Baliuag' : 'Important Locations in Baliuag' %>
                 </h2>
             </div>
             
@@ -610,9 +508,9 @@
                             <i class="fas fa-landmark"></i>
                         </div>
                         <div>
-                            <p class="font-semibold">Barangay Hall</p>
-                            <p class="text-sm text-gray-600">123 Barangay Hall St., Phase 2</p>
-                            <p class="text-xs text-gray-500">Barangay <%= user.barangay || 'San Antonio' %>, <%= user.city || 'Quezon City' %></p>
+                            <p class="font-semibold"><%= language === 'tl' ? 'Bulwagang Barangay' : 'Barangay Hall' %></p>
+                            <p class="text-sm text-gray-600"><%= barangayInfo?.hall_address || 'Purok 3, Barangay San Antonio, Baliuag, Bulacan' %></p>
+                            <p class="text-xs text-gray-500"><%= language === 'tl' ? 'Oras: ' : 'Hours: ' %><%= language === 'tl' ? (barangayInfo?.office_hours_tagalog || barangayInfo?.office_hours) : barangayInfo?.office_hours %></p>
                         </div>
                     </div>
 
@@ -622,51 +520,53 @@
                             <i class="fas fa-clinic-medical"></i>
                         </div>
                         <div>
-                            <p class="font-semibold">Barangay Health Center</p>
-                            <p class="text-sm text-gray-600">45 Health Complex, Phase 3</p>
-                            <p class="text-xs text-gray-500">Near Barangay Covered Court</p>
+                            <p class="font-semibold"><%= language === 'tl' ? 'Barangay Health Center' : 'Barangay Health Center' %></p>
+                            <p class="text-sm text-gray-600"><%= language === 'tl' ? 'Purok 2, Barangay San Antonio' : 'Purok 2, Barangay San Antonio' %></p>
+                            <p class="text-xs text-gray-500"><%= language === 'tl' ? 'Kalapit ng Barangay Covered Court' : 'Near Barangay Covered Court' %></p>
                         </div>
                     </div>
 
-                    <!-- Police Station -->
+                    <!-- Evacuation Center -->
                     <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
                         <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
-                            <i class="fas fa-shield-alt"></i>
+                            <i class="fas fa-school"></i>
                         </div>
                         <div>
-                            <p class="font-semibold">Police Station</p>
-                            <p class="text-sm text-gray-600">78 Peace St., Phase 1</p>
-                            <p class="text-xs text-gray-500">Across from Barangay Plaza</p>
+                            <p class="font-semibold"><%= language === 'tl' ? 'Evacuation Center' : 'Evacuation Center' %></p>
+                            <p class="text-sm text-gray-600"><%= barangayInfo?.evacuation_center || 'San Antonio Elementary School' %></p>
+                            <p class="text-xs text-gray-500"><%= barangayInfo?.evacuation_center_address || 'Purok 4, Barangay San Antonio, Baliuag, Bulacan' %></p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Emergency Preparedness Tips -->
+        <!-- Emergency Preparedness Tips (Baliuag specific) -->
         <div class="mt-6 bg-blue-50 rounded-xl p-5 border border-blue-200">
             <div class="flex items-start gap-4">
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xl flex-shrink-0">
                     <i class="fas fa-lightbulb"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold text-blue-800 mb-2">Emergency Preparedness Tips</h3>
+                    <h3 class="font-semibold text-blue-800 mb-2">
+                        <%= language === 'tl' ? 'Mga Tip sa Paghahanda sa Emergency' : 'Emergency Preparedness Tips' %>
+                    </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-blue-700">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-check-circle text-blue-600"></i>
-                            <span>Save emergency numbers on your phone</span>
+                            <span><%= language === 'tl' ? 'I-save ang mga emergency numbers sa iyong telepono' : 'Save emergency numbers on your phone' %></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-check-circle text-blue-600"></i>
-                            <span>Prepare an emergency go-bag</span>
+                            <span><%= language === 'tl' ? 'Maghanda ng emergency go-bag' : 'Prepare an emergency go-bag' %></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-check-circle text-blue-600"></i>
-                            <span>Know your barangay evacuation center</span>
+                            <span><%= language === 'tl' ? 'Alamin ang evacuation center sa inyong barangay' : 'Know your barangay evacuation center' %></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-check-circle text-blue-600"></i>
-                            <span>Share your location with family</span>
+                            <span><%= language === 'tl' ? 'I-share ang iyong lokasyon sa pamilya' : 'Share your location with family' %></span>
                         </div>
                     </div>
                 </div>
@@ -682,32 +582,175 @@
 
     <!-- JavaScript for Contacts Page -->
     <script>
-        // Add click-to-call tracking (optional)
-        document.querySelectorAll('a[href^="tel:"]').forEach(link => {
-            link.addEventListener('click', function(e) {
-                console.log('Calling:', this.getAttribute('href'));
-                // You could add analytics tracking here
+        // Language switching functionality
+        document.querySelectorAll('.lang-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const lang = this.dataset.lang;
+                const url = new URL(window.location.href);
+                url.searchParams.set('lang', lang);
+                window.location.href = url.toString();
             });
         });
-
-        // Add quick actions for chatbot
+        
+        // Favorite button functionality
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const contactId = this.dataset.contactId;
+                const isFavorited = this.classList.contains('favorite-active');
+                
+                try {
+                    const response = await fetch(`/api/contacts/${contactId}/favorite`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        if (data.action === 'added') {
+                            this.classList.add('favorite-active');
+                            // Show success message
+                            showToast('<%= language === "tl" ? "Idinagdag sa mga paborito" : "Added to favorites" %>', 'success');
+                        } else {
+                            this.classList.remove('favorite-active');
+                            showToast('<%= language === "tl" ? "Tinanggal sa mga paborito" : "Removed from favorites" %>', 'info');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error toggling favorite:', error);
+                    showToast('<%= language === "tl" ? "May error. Pakisubukang muli." : "An error occurred. Please try again." %>', 'error');
+                }
+            });
+        });
+        
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // Track contact clicks for analytics
+        document.querySelectorAll('a[href^="tel:"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const phoneNumber = this.getAttribute('href').replace('tel:', '');
+                console.log('Calling:', phoneNumber);
+                
+                // Send tracking to server
+                fetch('/api/contacts/track-click', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone_number: phoneNumber,
+                        contact_name: this.closest('.contact-card')?.querySelector('h3')?.textContent || 'Unknown'
+                    })
+                }).catch(err => console.error('Tracking error:', err));
+            });
+        });
+        
+        // Search functionality
+        const searchInput = document.querySelector('#searchContacts');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length >= 2) {
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(`/api/contacts/search?q=${encodeURIComponent(query)}&lang=<%= language %>`);
+                            const data = await response.json();
+                            
+                            if (data.success && data.contacts.length > 0) {
+                                displaySearchResults(data.contacts);
+                            }
+                        } catch (error) {
+                            console.error('Search error:', error);
+                        }
+                    }, 500);
+                }
+            });
+        }
+        
+        // Display search results
+        function displaySearchResults(contacts) {
+            const resultsContainer = document.getElementById('searchResults');
+            if (!resultsContainer) return;
+            
+            resultsContainer.innerHTML = contacts.map(contact => `
+                <div class="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer" onclick="window.location.href='/contacts/${contact.contact_id}'">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-phone text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold">${contact.name}</p>
+                            <p class="text-sm text-gray-600">${contact.title || ''}</p>
+                            <p class="text-xs text-blue-600 mt-1">${contact.phone_landline || contact.phone_mobile || ''}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            resultsContainer.classList.remove('hidden');
+        }
+        
+        // Quick actions for chatbot (Baliuag specific)
         document.addEventListener('DOMContentLoaded', function() {
             const quickActionsContainer = document.getElementById('quickActionsContainer');
             if (quickActionsContainer) {
-                quickActionsContainer.innerHTML = `
-                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What are the emergency numbers?">
-                        🚨 Emergency numbers
-                    </button>
-                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I contact the Barangay Captain?">
-                        📞 Barangay Captain
-                    </button>
-                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Where is the Barangay Health Center?">
-                        🏥 Health Center
-                    </button>
-                    <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What should I do in case of fire?">
-                        🔥 Fire emergency
-                    </button>
-                `;
+                const lang = '<%= language %>';
+                if (lang === 'tl') {
+                    quickActionsContainer.innerHTML = `
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Ano ang mga emergency numbers sa Baliuag?">
+                            🚨 Emergency numbers
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Paano ko makontak ang Kapitan ng Barangay San Antonio?">
+                            📞 Barangay Captain
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Saan matatagpuan ang Barangay Health Center sa San Antonio?">
+                            🏥 Health Center
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Ano ang dapat kong gawin kapag may sunog sa Baliuag?">
+                            🔥 Fire emergency
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Saan ang evacuation center sa Barangay San Antonio?">
+                            🏫 Evacuation center
+                        </button>
+                    `;
+                } else {
+                    quickActionsContainer.innerHTML = `
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What are the emergency numbers in Baliuag?">
+                            🚨 Emergency numbers
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="How do I contact the Barangay Captain of San Antonio?">
+                            📞 Barangay Captain
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Where is the Barangay Health Center in San Antonio?">
+                            🏥 Health Center
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="What should I do in case of fire in Baliuag?">
+                            🔥 Fire emergency
+                        </button>
+                        <button class="quick-action text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-full border border-amber-200 transition" data-message="Where is the evacuation center in Barangay San Antonio?">
+                            🏫 Evacuation center
+                        </button>
+                    `;
+                }
             }
         });
     </script>

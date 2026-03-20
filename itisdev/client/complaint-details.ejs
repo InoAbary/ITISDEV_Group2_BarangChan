@@ -28,7 +28,7 @@
                         <p class="text-amber-100">Reference: CMP-<%= complaint.complaint_id %>-2026</p>
                     </div>
                     <span class="px-3 py-1 rounded-full text-sm font-semibold
-                        <%= complaint.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : 
+                        <%= complaint.status === 'Under Review' ? 'bg-yellow-200 text-yellow-800' : 
                            complaint.status === 'Resolved' ? 'bg-green-200 text-green-800' : 
                            'bg-gray-200 text-gray-800' %>">
                         <%= complaint.status %>
@@ -95,24 +95,59 @@
                     </div>
 
                     <!-- Sidebar -->
-                   
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h4 class="font-semibold text-gray-700 mb-3">Complaint Info</h4>
-                        <div class="space-y-2 text-sm">
-                            <p><span class="text-gray-500">Filed:</span> <%= new Date(complaint.complaint_date).toLocaleDateString() %></p>
-                            <p><span class="text-gray-500">Last Updated:</span> <%= new Date().toLocaleDateString() %></p>
-                            <p><span class="text-gray-500">Complainant:</span> 
-                                <% if (complaint.name === 'ANONYMOUS') { %>
-                                    <span class="text-gray-400 italic">Anonymous</span>
-                                <% } else { %>
-                                    <%= complaint.name %>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-700 mb-3">Complaint Info</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><span class="text-gray-500">Filed:</span> <%= new Date(complaint.complaint_date).toLocaleDateString() %></p>
+                                <p><span class="text-gray-500">Last Updated:</span> <%= new Date().toLocaleDateString() %></p>
+                                <p><span class="text-gray-500">Complainant:</span> 
+                                    <% if (complaint.name === 'ANONYMOUS') { %>
+                                        <span class="text-gray-400 italic">Anonymous</span>
+                                    <% } else { %>
+                                        <%= complaint.name %>
+                                    <% } %>
+                                </p>
+                                <% if (complaint.name !== 'ANONYMOUS') { %>
+                                    <p><span class="text-gray-500">Contact:</span> <%= complaint.email || 'Not provided' %></p>
+                                    <p><span class="text-gray-500">Phone:</span> <%= complaint.phone || 'Not provided' %></p>
                                 <% } %>
-                            </p>
-                            <% if (complaint.name !== 'ANONYMOUS') { %>
-                                <p><span class="text-gray-500">Contact:</span> <%= complaint.email || 'Not provided' %></p>
-                                <p><span class="text-gray-500">Phone:</span> <%= complaint.phone || 'Not provided' %></p>
-                            <% } %>
+                            </div>
                         </div>
+
+                        <!-- Cancel Button - Only show if complaint is Under Review -->
+                        <% if (complaint.status === 'Under Review') { %>
+                        <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                            <button onclick="cancelComplaint(<%= complaint.complaint_id %>)" 
+                                    class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2">
+                                <i class="fas fa-times-circle"></i>
+                                Cancel Complaint
+                            </button>
+                            <p class="text-xs text-red-600 mt-2 text-center">
+                                <i class="fas fa-info-circle"></i>
+                                You can only cancel complaints under review.
+                            </p>
+                        </div>
+                        <% } %>
+
+                        <!-- Show message if complaint is already cancelled or resolved -->
+                        <% if (complaint.status === 'Cancelled') { %>
+                        <div class="bg-gray-100 p-4 rounded-lg border border-gray-300">
+                            <div class="text-center text-gray-600">
+                                <i class="fas fa-ban text-2xl mb-2"></i>
+                                <p class="font-medium">This complaint has been cancelled</p>
+                            </div>
+                        </div>
+                        <% } %>
+
+                        <% if (complaint.status === 'Resolved') { %>
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <div class="text-center text-green-700">
+                                <i class="fas fa-check-circle text-2xl mb-2"></i>
+                                <p class="font-medium">This complaint has been resolved</p>
+                            </div>
+                        </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
@@ -122,6 +157,8 @@
     <%- include('../partials/footer') %>
 
     <script>
+
+        
         document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const comment = document.getElementById('commentText').value;
@@ -139,6 +176,52 @@
                 document.getElementById('commentText').value = '';
             } else {
                 alert('Failed to add comment');
+            }
+        });
+
+        async function cancelComplaint(complaintId) {
+        if (!confirm('Are you sure you want to cancel this complaint? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/client/complaints/${complaintId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert('Complaint cancelled successfully');
+                // Reload the page to show updated status
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to cancel complaint');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while cancelling the complaint');
+        }
+    }
+
+        
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('button') && e.target.closest('button').innerHTML.includes('Cancel Complaint')) {
+                const btn = e.target.closest('button');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Cancelling...';
+                
+                // Re-enable if there's an error (handled in the function)
+                setTimeout(() => {
+                    if (btn.disabled) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }
+                }, 5000);
             }
         });
     </script>

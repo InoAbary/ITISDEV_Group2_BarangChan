@@ -14,7 +14,6 @@
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
             background-repeat: repeat;
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -30,32 +29,45 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a0aec0;
         }
-        /* Document card hover */
         .doc-card {
             transition: all 0.2s ease;
         }
         .doc-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-        /* Status badges */
         .status-pending { background-color: #fff3e0; color: #ef6c00; }
         .status-processing { background-color: #e3f2fd; color: #0d47a1; }
         .status-ready { background-color: #e8f5e8; color: #2e7d32; }
         .status-released { background-color: #e8eaf6; color: #283593; }
         .status-rejected { background-color: #ffebee; color: #c62828; }
-        /* Requirement check */
         .requirement-check {
             transition: all 0.2s ease;
         }
         .requirement-check:hover {
             background-color: #f9fafb;
         }
-        /* Filipino ornament */
-        .filipino-border {
-            border-image: repeating-linear-gradient(45deg, #fbbf24, #2563eb, #fbbf24) 30;
-            border-width: 2px;
-            border-style: solid;
+        /* File upload styling */
+        .file-upload-area {
+            border: 2px dashed #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .file-upload-area:hover {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+        }
+        .file-preview {
+            transition: all 0.2s ease;
+        }
+        .file-preview:hover {
+            background-color: #fef3c7;
+        }
+        .remove-file {
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+        .remove-file:hover {
+            opacity: 1;
         }
     </style>
 </head>
@@ -139,9 +151,9 @@
                                     <i class="fas fa-check-circle text-green-500"></i> Requirements:
                                 </p>
                                 <ul class="text-xs text-gray-600 space-y-1">
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid Government ID</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Residency</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Community Tax Certificate (Cedula)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid Government ID (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Residency (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Community Tax Certificate (upload)</li>
                                 </ul>
                             </div>
                             
@@ -175,9 +187,8 @@
                                     <i class="fas fa-check-circle text-green-500"></i> Requirements:
                                 </p>
                                 <ul class="text-xs text-gray-600 space-y-1">
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid ID</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Barangay Certification</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Assessment Interview</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid ID (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Barangay Certification (upload)</li>
                                 </ul>
                             </div>
                             
@@ -211,9 +222,9 @@
                                     <i class="fas fa-check-circle text-green-500"></i> Requirements:
                                 </p>
                                 <ul class="text-xs text-gray-600 space-y-1">
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> DTI Registration (if applicable)</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Barangay Clearance</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Community Tax Certificate</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> DTI/SEC Registration (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Barangay Clearance (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Business Address (upload)</li>
                                 </ul>
                             </div>
                             
@@ -247,8 +258,8 @@
                                     <i class="fas fa-check-circle text-green-500"></i> Requirements:
                                 </p>
                                 <ul class="text-xs text-gray-600 space-y-1">
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Any Valid ID</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Utility Bill (proof of address)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Any Valid ID (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Utility Bill (upload)</li>
                                 </ul>
                             </div>
                             
@@ -282,8 +293,7 @@
                                     <i class="fas fa-check-circle text-green-500"></i> Requirements:
                                 </p>
                                 <ul class="text-xs text-gray-600 space-y-1">
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Name and Address</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Annual Income Declaration</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Valid ID (upload optional)</li>
                                 </ul>
                             </div>
                             
@@ -317,9 +327,9 @@
                                     <i class="fas fa-check-circle text-green-500"></i> Requirements:
                                 </p>
                                 <ul class="text-xs text-gray-600 space-y-1">
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Birth Certificate</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> 1x1 ID Picture</li>
-                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Residency</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Birth Certificate (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> 1x1 ID Picture (upload)</li>
+                                    <li class="flex items-center gap-1"><i class="fas fa-circle text-amber-500 text-[6px]"></i> Proof of Residency (upload)</li>
                                 </ul>
                             </div>
                             
@@ -353,7 +363,6 @@
                                 <i class="fas fa-file-signature text-2xl"></i>
                             </div>
                         </div>
-                        
                     </div>
                 </div>
 
@@ -379,6 +388,11 @@
                                                 </span>
                                                 <span class="text-xs text-gray-400">Ref: <%= request.referenceNumber %></span>
                                             </div>
+                                            <% if (request.fileCount > 0) { %>
+                                                <p class="text-xs text-green-600 mt-1">
+                                                    <i class="fas fa-paperclip"></i> <%= request.fileCount %> file(s) attached
+                                                </p>
+                                            <% } %>
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xs text-gray-500">Estimated release</p>
@@ -412,30 +426,26 @@
                 <!-- Requirements Checklist Info -->
                 <div class="bg-blue-50 rounded-xl p-5 border border-blue-200">
                     <h3 class="font-semibold text-blue-800 flex items-center gap-2 mb-3">
-                        <i class="fas fa-clipboard-list"></i> Common Requirements
+                        <i class="fas fa-clipboard-list"></i> File Upload Guidelines
                     </h3>
                     <div class="space-y-2 text-sm">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-id-card text-blue-600 w-5"></i>
-                            <span>Government-issued ID (Passport, Driver's License, UMID)</span>
+                            <i class="fas fa-file-image text-blue-600 w-5"></i>
+                            <span>Accepted formats: JPG, PNG, PDF (Max 10MB per file)</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-file-invoice text-blue-600 w-5"></i>
-                            <span>Proof of Residency (Utility Bill, Barangay Certification)</span>
+                            <i class="fas fa-camera text-blue-600 w-5"></i>
+                            <span>Take clear photos of your documents</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-image text-blue-600 w-5"></i>
-                            <span>1x1 or 2x2 ID Pictures (for ID applications)</span>
+                            <i class="fas fa-file-pdf text-blue-600 w-5"></i>
+                            <span>PDF files are preferred for scanned documents</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-stamp text-blue-600 w-5"></i>
-                            <span>Community Tax Certificate (Cedula) - PHP 5.00 - 50.00</span>
+                            <i class="fas fa-upload text-blue-600 w-5"></i>
+                            <span>You can upload multiple files for each request</span>
                         </div>
                     </div>
-                    <p class="text-xs text-blue-600 mt-3">
-                        <i class="fas fa-info-circle"></i> 
-                        Bring original copies of requirements when picking up documents.
-                    </p>
                 </div>
 
                 <!-- Barangay Hall Info -->
@@ -455,11 +465,11 @@
         </div>
     </main>
 
-    <!-- REQUEST MODAL -->
+    <!-- REQUEST MODAL with File Upload -->
     <div id="requestModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-6 text-white">
+            <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-6 text-white sticky top-0 z-10">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-xl font-bold flex items-center gap-2" id="modalTitle">
@@ -559,7 +569,7 @@
                         </div>
                     </div>
 
-                    <!-- Document-Specific Fields -->
+                    <!-- Document-Specific Fields and File Uploads -->
                     <div id="documentSpecificFields" class="mb-6">
                         <!-- These will be populated dynamically via JavaScript -->
                     </div>
@@ -570,17 +580,6 @@
                         <textarea name="purpose" rows="3" required
                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="e.g., Employment requirement, School enrollment, Business permit application, etc."></textarea>
-                    </div>
-
-                    <!-- Requirements Checklist -->
-                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <h4 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <i class="fas fa-check-circle text-green-600"></i> Requirements Checklist
-                        </h4>
-                        <p class="text-xs text-gray-500 mb-3">Check all that you have prepared:</p>
-                        <div class="space-y-2" id="requirementsChecklist">
-                            <!-- Dynamically populated -->
-                        </div>
                     </div>
 
                     <!-- Terms and Conditions -->
@@ -613,28 +612,21 @@
     <!-- Include footer -->
     <%- include('../partials/footer') %>
 
-    <!-- JavaScript for Requests Page -->
+    <!-- JavaScript for Requests Page with File Upload -->
     <script>
+        // Store selected files
+        let selectedFiles = [];
 
-        function formatDate(dateString) {
-            if (!dateString) return 'TBD';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-        }
-        // Document type configurations
+        // Document type configurations with file upload requirements
         const documentConfigs = {
             'barangay-clearance': {
                 title: 'Request Barangay Clearance',
                 subtitle: 'Government-issued clearance certificate',
                 fields: [],
-                requirements: [
-                    'Valid Government ID',
-                    'Proof of Residency (Utility Bill)',
-                    'Community Tax Certificate (Cedula)'
+                fileRequirements: [
+                    { name: 'validId', label: 'Valid Government ID', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'proofResidency', label: 'Proof of Residency (Utility Bill)', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'cedula', label: 'Community Tax Certificate (Cedula)', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 }
                 ]
             },
             'certificate-indigency': {
@@ -648,41 +640,31 @@
                         options: ['Medical', 'Financial', 'Educational', 'Other']
                     }
                 ],
-                requirements: [
-                    'Valid ID',
-                    'Barangay Certification',
-                    'Medical Certificate (if medical assistance)'
+                fileRequirements: [
+                    { name: 'validId', label: 'Valid ID', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'barangayCert', label: 'Barangay Certification', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 }
                 ]
             },
             'business-permit': {
                 title: 'Request Business Permit',
                 subtitle: 'For small businesses and home-based enterprises',
                 fields: [
-                    {
-                        type: 'text',
-                        name: 'businessName',
-                        label: 'Business Name'
-                    },
-                    {
-                        type: 'text',
-                        name: 'businessType',
-                        label: 'Type of Business'
-                    }
+                    { type: 'text', name: 'businessName', label: 'Business Name', required: true },
+                    { type: 'text', name: 'businessType', label: 'Type of Business', required: true }
                 ],
-                requirements: [
-                    'DTI Registration (if applicable)',
-                    'Barangay Clearance',
-                    'Community Tax Certificate',
-                    'Proof of Business Address'
+                fileRequirements: [
+                    { name: 'dtiRegistration', label: 'DTI/SEC Registration', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'barangayClearance', label: 'Barangay Clearance', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'businessAddress', label: 'Proof of Business Address', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 }
                 ]
             },
             'certificate-residency': {
                 title: 'Request Certificate of Residency',
                 subtitle: 'Proof of residence in the barangay',
                 fields: [],
-                requirements: [
-                    'Any Valid ID',
-                    'Utility Bill (last 3 months)'
+                fileRequirements: [
+                    { name: 'validId', label: 'Valid ID', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'utilityBill', label: 'Utility Bill (last 3 months)', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 }
                 ]
             },
             'cedula': {
@@ -693,34 +675,24 @@
                         type: 'number',
                         name: 'annualIncome',
                         label: 'Annual Income (PHP)',
-                        placeholder: 'e.g., 150000'
+                        placeholder: 'e.g., 150000',
+                        required: true
                     }
                 ],
-                requirements: [
-                    'Name and Address',
-                    'Income Declaration'
+                fileRequirements: [
+                    { name: 'validId', label: 'Valid ID (Optional)', required: false, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 }
                 ]
             },
             'barangay-id': {
                 title: 'Request Barangay ID',
                 subtitle: 'Official barangay identification card',
                 fields: [
-                    {
-                        type: 'file',
-                        name: 'idPicture',
-                        label: '1x1 ID Picture (Upload)'
-                    },
-                    {
-                        type: 'text',
-                        name: 'bloodType',
-                        label: 'Blood Type (Optional)'
-                    }
+                    { type: 'text', name: 'bloodType', label: 'Blood Type (Optional)', required: false }
                 ],
-                requirements: [
-                    'Birth Certificate (PSA or Local)',
-                    '1x1 ID Picture (2 copies)',
-                    'Proof of Residency',
-                    'Valid Government ID (for verification)'
+                fileRequirements: [
+                    { name: 'birthCertificate', label: 'Birth Certificate', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 },
+                    { name: 'idPicture', label: '1x1 ID Picture', required: true, accept: '.jpg,.jpeg,.png', maxSize: 5 },
+                    { name: 'proofResidency', label: 'Proof of Residency', required: true, accept: '.jpg,.jpeg,.png,.pdf', maxSize: 10 }
                 ]
             }
         };
@@ -730,6 +702,9 @@
             const config = documentConfigs[docType];
             
             if (!config) return;
+
+            // Reset selected files
+            selectedFiles = [];
 
             // Set document type
             document.getElementById('documentType').value = docType;
@@ -742,34 +717,27 @@
             const fieldsContainer = document.getElementById('documentSpecificFields');
             fieldsContainer.innerHTML = '';
             
+            // Add additional text fields
             if (config.fields && config.fields.length > 0) {
                 let fieldsHtml = '<h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2"><i class="fas fa-pen text-amber-600"></i> Additional Information</h4>';
                 fieldsHtml += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
                 
                 config.fields.forEach(field => {
+                    const requiredAttr = field.required ? 'required' : '';
                     if (field.type === 'select') {
                         fieldsHtml += `
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
-                                <select name="${field.name}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label} ${field.required ? '<span class="text-red-500">*</span>' : ''}</label>
+                                <select name="${field.name}" ${requiredAttr} class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400">
                                     ${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
                                 </select>
-                            </div>
-                        `;
-                    } else if (field.type === 'file') {
-                        fieldsHtml += `
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
-                                <input type="file" name="${field.name}" accept="image/*" 
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
-                                <p class="text-xs text-gray-400 mt-1">Accepted formats: JPG, PNG (Max 2MB)</p>
                             </div>
                         `;
                     } else {
                         fieldsHtml += `
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
-                                <input type="${field.type}" name="${field.name}" placeholder="${field.placeholder || ''}"
+                                <label class="block text-sm font-medium text-gray-700 mb-1">${field.label} ${field.required ? '<span class="text-red-500">*</span>' : ''}</label>
+                                <input type="${field.type}" name="${field.name}" placeholder="${field.placeholder || ''}" ${requiredAttr}
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
                             </div>
                         `;
@@ -780,29 +748,112 @@
                 fieldsContainer.innerHTML = fieldsHtml;
             }
 
-            // Populate requirements checklist
-            const checklistContainer = document.getElementById('requirementsChecklist');
-            checklistContainer.innerHTML = '';
-            
-            if (config.requirements) {
-                config.requirements.forEach((req, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'requirement-check flex items-center gap-2 p-2 rounded';
-                    div.innerHTML = `
-                        <input type="checkbox" name="requirement_${index}" id="req_${index}" class="rounded text-amber-600 focus:ring-amber-500">
-                        <label for="req_${index}" class="text-sm text-gray-700">${req}</label>
+            // Add file upload sections
+            if (config.fileRequirements && config.fileRequirements.length > 0) {
+                let fileHtml = '<h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2 mt-4"><i class="fas fa-paperclip text-amber-600"></i> Required Documents (Upload)</h4>';
+                fileHtml += '<div class="space-y-4" id="fileUploadsContainer">';
+                
+                config.fileRequirements.forEach((req, index) => {
+                    const requiredMark = req.required ? '<span class="text-red-500">*</span>' : '<span class="text-gray-400">(Optional)</span>';
+                    const acceptAttr = req.accept ? `accept="${req.accept}"` : '';
+                    
+                    fileHtml += `
+                        <div class="border border-gray-200 rounded-lg p-4" id="fileGroup_${req.name}">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                ${req.label} ${requiredMark}
+                            </label>
+                            <div class="file-upload-area border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-amber-400 transition"
+                                 onclick="document.getElementById('fileInput_${req.name}').click()">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-sm text-gray-500">Click to upload or drag and drop</p>
+                                <p class="text-xs text-gray-400 mt-1">${req.accept.toUpperCase().replace(/\./g, '').replace(/,/g, ', ')} up to ${req.maxSize}MB</p>
+                            </div>
+                            <input type="file" name="${req.name}" id="fileInput_${req.name}" ${acceptAttr} class="hidden" 
+                                   data-max-size="${req.maxSize}" data-required="${req.required}" data-label="${req.label}"
+                                   onchange="handleFileSelect(this, '${req.name}')">
+                            <div id="filePreview_${req.name}" class="mt-2 space-y-2"></div>
+                        </div>
                     `;
-                    checklistContainer.appendChild(div);
                 });
+                
+                fileHtml += '</div>';
+                fieldsContainer.innerHTML += fileHtml;
             }
 
             // Show modal
             modal.classList.remove('hidden');
         }
 
+        // Handle file selection
+        function handleFileSelect(input, fieldName) {
+            const previewContainer = document.getElementById(`filePreview_${fieldName}`);
+            const maxSize = parseInt(input.dataset.maxSize);
+            const file = input.files[0];
+            
+            if (!file) return;
+            
+            // Check file size
+            if (file.size > maxSize * 1024 * 1024) {
+                alert(`File is too large! Maximum size is ${maxSize}MB.`);
+                input.value = '';
+                return;
+            }
+            
+            // Create file preview
+            const filePreview = document.createElement('div');
+            filePreview.className = 'file-preview bg-gray-50 rounded-lg p-2 flex items-center justify-between';
+            
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'flex items-center gap-2';
+            
+            // File icon based on type
+            const fileIcon = document.createElement('i');
+            if (file.type.startsWith('image/')) {
+                fileIcon.className = 'fas fa-file-image text-blue-500';
+            } else if (file.type === 'application/pdf') {
+                fileIcon.className = 'fas fa-file-pdf text-red-500';
+            } else {
+                fileIcon.className = 'fas fa-file text-gray-500';
+            }
+            fileInfo.appendChild(fileIcon);
+            
+            const fileName = document.createElement('span');
+            fileName.className = 'text-sm text-gray-600';
+            fileName.textContent = file.name;
+            fileInfo.appendChild(fileName);
+            
+            const fileSize = document.createElement('span');
+            fileSize.className = 'text-xs text-gray-400 ml-2';
+            fileSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            fileInfo.appendChild(fileSize);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-file text-red-500 hover:text-red-700 ml-2';
+            removeBtn.innerHTML = '<i class="fas fa-times-circle"></i>';
+            removeBtn.onclick = function() {
+                filePreview.remove();
+                input.value = '';
+            };
+            
+            filePreview.appendChild(fileInfo);
+            filePreview.appendChild(removeBtn);
+            
+            // Clear previous preview and add new one
+            previewContainer.innerHTML = '';
+            previewContainer.appendChild(filePreview);
+            
+            // Store file reference
+            if (!selectedFiles[fieldName]) {
+                selectedFiles[fieldName] = [];
+            }
+            selectedFiles[fieldName] = [file];
+        }
+
         function closeRequestModal() {
             document.getElementById('requestModal').classList.add('hidden');
             document.getElementById('requestForm').reset();
+            selectedFiles = [];
         }
 
         // Close modal when clicking outside
@@ -833,10 +884,6 @@
                 `;
             }
         });
-
-        
-
-    
     </script>
 </body>
 </html>

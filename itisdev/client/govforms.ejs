@@ -65,9 +65,53 @@
         .badge-doc { background-color: #e0f2fe; color: #0369a1; }
         .badge-xls { background-color: #dcfce7; color: #166534; }
         .badge-other { background-color: #f3e8ff; color: #6b21a8; }
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #fbbf24;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-pattern font-sans antialiased min-h-screen flex flex-col" data-page-context="govforms">
+
+    <%
+        // Helper function for form icons
+        function getFormIcon(category) {
+            const icons = {
+                'barangay': 'home',
+                'national': 'landmark',
+                'psa': 'id-card',
+                'bpls': 'store',
+                'social': 'hand-holding-heart',
+                'education': 'graduation-cap',
+                'health': 'hospital',
+                'others': 'file-alt'
+            };
+            return icons[category] || 'file-alt';
+        }
+
+        // Helper function for badge colors
+        function getBadgeClass(fileType) {
+            const type = fileType ? fileType.toLowerCase() : 'other';
+            const badges = {
+                'pdf': 'badge-pdf',
+                'doc': 'badge-doc',
+                'docx': 'badge-doc',
+                'xls': 'badge-xls',
+                'xlsx': 'badge-xls',
+                'other': 'badge-other'
+            };
+            return badges[type] || badges['other'];
+        }
+    %>
 
     <!-- Include navigation -->
     <%- include('../partials/topnavigation', { currentPath: '/client/govforms', currentUser: user }) %>
@@ -91,12 +135,27 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-file-pdf mr-2"></i>24 forms available
+                            <i class="fas fa-file-pdf mr-2"></i><%= categoryCounts.total || 24 %> forms available
                         </span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Success/Error Messages -->
+        <% if (locals.success) { %>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-check-circle mt-0.5 text-green-600"></i>
+                <p class="text-sm font-medium"><%= success %></p>
+            </div>
+        <% } %>
+
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
 
         <!-- Search and Filter Bar -->
         <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6">
@@ -109,11 +168,14 @@
                 <div class="flex gap-2">
                     <select id="categoryFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
                         <option value="all">All Categories</option>
-                        <option value="barangay">Barangay Forms</option>
-                        <option value="national">National Government</option>
-                        <option value="psa">PSA/Statistics</option>
-                        <option value="bpls">Business Permits</option>
-                        <option value="social">Social Services</option>
+                        <option value="barangay">Barangay Forms (<%= categoryCounts.barangay || 0 %>)</option>
+                        <option value="national">National Government (<%= categoryCounts.national || 0 %>)</option>
+                        <option value="psa">PSA/Statistics (<%= categoryCounts.psa || 0 %>)</option>
+                        <option value="bpls">Business Permits (<%= categoryCounts.bpls || 0 %>)</option>
+                        <option value="social">Social Services (<%= categoryCounts.social || 0 %>)</option>
+                        <option value="education">Education (<%= categoryCounts.education || 0 %>)</option>
+                        <option value="health">Health (<%= categoryCounts.health || 0 %>)</option>
+                        <option value="others">Others (<%= categoryCounts.others || 0 %>)</option>
                     </select>
                     <select id="formatFilter" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-amber-400">
                         <option value="all">All Formats</option>
@@ -130,35 +192,49 @@
             <button onclick="filterCategory('barangay')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-home text-amber-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">Barangay</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.barangay || 0 %></span>
             </button>
             <button onclick="filterCategory('national')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-landmark text-blue-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">National</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.national || 0 %></span>
             </button>
             <button onclick="filterCategory('psa')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-id-card text-green-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">PSA</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.psa || 0 %></span>
             </button>
             <button onclick="filterCategory('bpls')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-store text-purple-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">Business</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.bpls || 0 %></span>
             </button>
             <button onclick="filterCategory('social')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-hand-holding-heart text-red-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">Social</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.social || 0 %></span>
             </button>
             <button onclick="filterCategory('education')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-graduation-cap text-indigo-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">Education</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.education || 0 %></span>
             </button>
             <button onclick="filterCategory('health')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-hospital text-pink-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">Health</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.health || 0 %></span>
             </button>
             <button onclick="filterCategory('others')" class="category-tab bg-white hover:bg-amber-50 p-3 rounded-xl shadow-sm border border-gray-200 text-center">
                 <i class="fas fa-ellipsis-h text-gray-600 text-xl mb-1"></i>
                 <span class="text-xs font-medium block">Others</span>
+                <span class="text-xs text-gray-500"><%= categoryCounts.others || 0 %></span>
             </button>
+        </div>
+
+        <!-- Loading Indicator for AJAX searches -->
+        <div id="searchLoading" class="hidden text-center py-4">
+            <div class="spinner mx-auto"></div>
+            <p class="text-sm text-gray-500 mt-2">Searching forms...</p>
         </div>
 
         <!-- Featured/Recent Forms -->
@@ -171,466 +247,505 @@
                 <a href="#" class="text-sm text-amber-600 hover:text-amber-700">View All <i class="fas fa-arrow-right ml-1"></i></a>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Featured Form 1 - Barangay Clearance -->
-                <div class="form-card bg-white rounded-xl shadow-md border-2 border-amber-200 overflow-hidden">
-                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-white flex items-center justify-between">
-                        <span class="font-semibold text-sm">⭐ MOST POPULAR</span>
-                        <i class="fas fa-crown"></i>
-                    </div>
-                    <div class="p-5">
-                        <div class="flex items-start gap-3 mb-3">
-                            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-id-card text-amber-600 text-2xl"></i>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="featuredFormsContainer">
+                <% if (featuredForms && featuredForms.length > 0) { %>
+                    <% featuredForms.slice(0, 3).forEach(form => { %>
+                        <div class="form-card bg-white rounded-xl shadow-md border-2 <%= form.is_featured ? 'border-amber-200' : 'border-gray-200' %> overflow-hidden" data-form-id="<%= form.form_id %>">
+                            <% if (form.is_featured) { %>
+                            <div class="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-white flex items-center justify-between">
+                                <span class="font-semibold text-sm">⭐ MOST POPULAR</span>
+                                <i class="fas fa-crown"></i>
                             </div>
-                            <div>
-                                <h3 class="font-bold text-gray-800">Barangay Clearance Form</h3>
-                                <p class="text-xs text-gray-500">Form ID: BC-FRM-001</p>
+                            <% } %>
+                            <div class="p-5">
+                                <div class="flex items-start gap-3 mb-3">
+                                    <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-<%= getFormIcon(form.category) %> text-amber-600 text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-800"><%= form.title %></h3>
+                                        <p class="text-xs text-gray-500">Form ID: <%= form.form_code || 'FRM-'+form.form_id %></p>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3"><%= form.description %></p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full">
+                                            <%= form.file_type %>
+                                        </span>
+                                        <span class="text-xs text-gray-500"><%= form.file_size %>KB</span>
+                                    </div>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" 
+                                       class="download-btn bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2"
+                                       onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <p class="text-sm text-gray-600 mb-3">Standard application form for Barangay Clearance certificate.</p>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                                <span class="text-xs text-gray-500">250KB</span>
+                    <% }); %>
+                <% } else { %>
+                    <!-- Fallback to hardcoded featured forms if no data -->
+                    <div class="form-card bg-white rounded-xl shadow-md border-2 border-amber-200 overflow-hidden">
+                        <div class="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-white flex items-center justify-between">
+                            <span class="font-semibold text-sm">⭐ MOST POPULAR</span>
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-id-card text-amber-600 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">Barangay Clearance Form</h3>
+                                    <p class="text-xs text-gray-500">Form ID: BC-FRM-001</p>
+                                </div>
                             </div>
-                            <a href="/downloads/barangay-clearance-form.pdf" class="download-btn bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
-                                <i class="fas fa-download"></i> Download
-                            </a>
+                            <p class="text-sm text-gray-600 mb-3">Standard application form for Barangay Clearance certificate.</p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
+                                    <span class="text-xs text-gray-500">250KB</span>
+                                </div>
+                                <a href="/client/govforms/download/1" class="download-btn bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Featured Form 2 - PSA Birth Certificate -->
-                <div class="form-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                    <div class="p-5">
-                        <div class="flex items-start gap-3 mb-3">
-                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-baby text-blue-600 text-2xl"></i>
+                    <div class="form-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                        <div class="p-5">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-baby text-blue-600 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">PSA Birth Certificate Application</h3>
+                                    <p class="text-xs text-gray-500">Form ID: PSA-BC-001</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="font-bold text-gray-800">PSA Birth Certificate Application</h3>
-                                <p class="text-xs text-gray-500">Form ID: PSA-BC-001</p>
+                            <p class="text-sm text-gray-600 mb-3">Application form for PSA Birth Certificate request.</p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
+                                    <span class="text-xs text-gray-500">180KB</span>
+                                </div>
+                                <a href="/client/govforms/download/2" class="download-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
                             </div>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">Application form for PSA Birth Certificate request.</p>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                                <span class="text-xs text-gray-500">180KB</span>
-                            </div>
-                            <a href="/downloads/psa-birth-certificate.pdf" class="download-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
-                                <i class="fas fa-download"></i> Download
-                            </a>
                         </div>
                     </div>
-                </div>
 
-                <!-- Featured Form 3 - Business Permit -->
-                <div class="form-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                    <div class="p-5">
-                        <div class="flex items-start gap-3 mb-3">
-                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-store text-green-600 text-2xl"></i>
+                    <div class="form-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                        <div class="p-5">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-store text-green-600 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">Business Permit Application</h3>
+                                    <p class="text-xs text-gray-500">Form ID: BP-FRM-002</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="font-bold text-gray-800">Business Permit Application</h3>
-                                <p class="text-xs text-gray-500">Form ID: BP-FRM-002</p>
+                            <p class="text-sm text-gray-600 mb-3">Complete application form for Business Permit / Mayor's Permit.</p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="badge-doc text-xs px-2 py-1 rounded-full">DOC</span>
+                                    <span class="text-xs text-gray-500">350KB</span>
+                                </div>
+                                <a href="/client/govforms/download/3" class="download-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
                             </div>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">Complete application form for Business Permit / Mayor's Permit.</p>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="badge-doc text-xs px-2 py-1 rounded-full">DOC</span>
-                                <span class="text-xs text-gray-500">350KB</span>
-                            </div>
-                            <a href="/downloads/business-permit-form.doc" class="download-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
-                                <i class="fas fa-download"></i> Download
-                            </a>
                         </div>
                     </div>
-                </div>
+                <% } %>
             </div>
         </div>
 
         <!-- Filipino Pattern Divider -->
         <div class="filipino-divider my-8"></div>
 
+        <!-- Search Results Message (for AJAX search) -->
+        <div id="searchResultsMessage" class="hidden mb-4 p-4 bg-blue-50 rounded-lg text-blue-700"></div>
+
         <!-- All Forms Grid by Category -->
-        <div class="space-y-8">
-            <!-- Barangay Forms Section -->
-            <div id="section-barangay">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-home text-amber-600"></i>
-                    Barangay Forms
-                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">8 forms</span>
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Barangay Clearance -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-id-card text-amber-600"></i>
+        <div id="allFormsContainer">
+            <% if (formsByCategory && Object.keys(formsByCategory).length > 0) { %>
+                <!-- Barangay Forms Section -->
+                <% if (formsByCategory.barangay && formsByCategory.barangay.length > 0) { %>
+                <div id="section-barangay" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-home text-amber-600"></i>
+                        Barangay Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.barangay.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.barangay.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-amber-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Barangay Clearance</h3>
-                                    <p class="text-xs text-gray-500">BC-FRM-001 • Updated Mar 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-amber-600 mr-1"></i>250KB</span>
-                            <a href="#" class="text-amber-600 hover:text-amber-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Certificate of Indigency -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-file-contract text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Certificate of Indigency</h3>
-                                    <p class="text-xs text-gray-500">CI-FRM-002 • Updated Mar 2026</p>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-amber-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-amber-600 hover:text-amber-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
                                 </div>
                             </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-blue-600 mr-1"></i>180KB</span>
-                            <a href="#" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Barangay ID Application -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-id-badge text-purple-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Barangay ID Application</h3>
-                                    <p class="text-xs text-gray-500">BID-FRM-003 • Updated Feb 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-purple-600 mr-1"></i>220KB</span>
-                            <a href="#" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Barangay Clearance (Tagalog Version) -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-language text-amber-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Barangay Clearance (Tagalog)</h3>
-                                    <p class="text-xs text-gray-500">BC-FRM-001-TG • Updated Mar 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-doc text-xs px-2 py-1 rounded-full">DOC</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-amber-600 mr-1"></i>195KB</span>
-                            <a href="#" class="text-amber-600 hover:text-amber-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Cedula Application -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-receipt text-yellow-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Community Tax Certificate (Cedula)</h3>
-                                    <p class="text-xs text-gray-500">CTC-FRM-004 • Updated Jan 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-yellow-600 mr-1"></i>150KB</span>
-                            <a href="#" class="text-yellow-600 hover:text-yellow-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Residency Certificate -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-map-pin text-green-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Certificate of Residency</h3>
-                                    <p class="text-xs text-gray-500">CR-FRM-005 • Updated Mar 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-green-600 mr-1"></i>165KB</span>
-                            <a href="#" class="text-green-600 hover:text-green-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
+                        <% }); %>
                     </div>
                 </div>
-            </div>
+                <% } %>
 
-            <!-- National Government Forms -->
-            <div id="section-national">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-landmark text-blue-600"></i>
-                    National Government Forms
-                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">6 forms</span>
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- PSA Birth Certificate -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-baby text-blue-600"></i>
+                <!-- National Government Forms Section -->
+                <% if (formsByCategory.national && formsByCategory.national.length > 0) { %>
+                <div id="section-national" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-landmark text-blue-600"></i>
+                        National Government Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.national.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.national.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">PSA Birth Certificate Form</h3>
-                                    <p class="text-xs text-gray-500">PSA-BC-001 • Updated Dec 2025</p>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-blue-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-blue-600 hover:text-blue-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
                                 </div>
                             </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-blue-600 mr-1"></i>180KB</span>
-                            <a href="#" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- PSA Marriage Certificate -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-heart text-pink-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">PSA Marriage Certificate Form</h3>
-                                    <p class="text-xs text-gray-500">PSA-MC-001 • Updated Dec 2025</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-pink-600 mr-1"></i>190KB</span>
-                            <a href="#" class="text-pink-600 hover:text-pink-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- PSA Death Certificate -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-cross text-gray-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">PSA Death Certificate Form</h3>
-                                    <p class="text-xs text-gray-500">PSA-DC-001 • Updated Dec 2025</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-gray-600 mr-1"></i>175KB</span>
-                            <a href="#" class="text-gray-600 hover:text-gray-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
+                        <% }); %>
                     </div>
                 </div>
-            </div>
+                <% } %>
 
-            <!-- Business Permit Forms -->
-            <div id="section-business">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-store text-green-600"></i>
-                    Business Permit Forms
-                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">5 forms</span>
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Business Permit Application -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-store text-green-600"></i>
+                <!-- PSA Forms Section -->
+                <% if (formsByCategory.psa && formsByCategory.psa.length > 0) { %>
+                <div id="section-psa" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-id-card text-green-600"></i>
+                        PSA/Statistics Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.psa.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.psa.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Business Permit Application</h3>
-                                    <p class="text-xs text-gray-500">BP-FRM-001 • Updated Feb 2026</p>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-green-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-green-600 hover:text-green-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
                                 </div>
                             </div>
-                            <span class="badge-doc text-xs px-2 py-1 rounded-full">DOC</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-green-600 mr-1"></i>350KB</span>
-                            <a href="#" class="text-green-600 hover:text-green-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Business Permit Renewal -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-sync-alt text-teal-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Business Permit Renewal</h3>
-                                    <p class="text-xs text-gray-500">BP-FRM-002 • Updated Feb 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-doc text-xs px-2 py-1 rounded-full">DOC</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-teal-600 mr-1"></i>320KB</span>
-                            <a href="#" class="text-teal-600 hover:text-teal-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- BIR Form 1901 -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-file-invoice text-red-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">BIR Form 1901 (Registration)</h3>
-                                    <p class="text-xs text-gray-500">BIR-1901 • Updated Jan 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-red-600 mr-1"></i>420KB</span>
-                            <a href="#" class="text-red-600 hover:text-red-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
+                        <% }); %>
                     </div>
                 </div>
-            </div>
+                <% } %>
 
-            <!-- Social Services Forms -->
-            <div id="section-social">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-hand-holding-heart text-red-600"></i>
-                    Social Services Forms
-                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">5 forms</span>
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- 4Ps Application -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-hand-holding-heart text-red-600"></i>
+                <!-- Business Permit Forms Section -->
+                <% if (formsByCategory.bpls && formsByCategory.bpls.length > 0) { %>
+                <div id="section-business" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-store text-purple-600"></i>
+                        Business Permit Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.bpls.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.bpls.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-purple-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">4Ps Application Form</h3>
-                                    <p class="text-xs text-gray-500">DSWD-4PS-001 • Updated Mar 2026</p>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-purple-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-purple-600 hover:text-purple-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
                                 </div>
                             </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-red-600 mr-1"></i>280KB</span>
-                            <a href="#" class="text-red-600 hover:text-red-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Senior Citizen ID Application -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-user-plus text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">Senior Citizen ID Application</h3>
-                                    <p class="text-xs text-gray-500">OSCA-001 • Updated Feb 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-blue-600 mr-1"></i>210KB</span>
-                            <a href="#" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- PWD ID Application -->
-                    <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-wheelchair text-purple-600"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-800">PWD ID Application Form</h3>
-                                    <p class="text-xs text-gray-500">PWD-001 • Updated Jan 2026</p>
-                                </div>
-                            </div>
-                            <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between">
-                            <span class="text-xs text-gray-500"><i class="fas fa-file text-purple-600 mr-1"></i>195KB</span>
-                            <a href="#" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
-                                <i class="fas fa-download mr-1"></i> Download
-                            </a>
-                        </div>
+                        <% }); %>
                     </div>
                 </div>
-            </div>
+                <% } %>
+
+                <!-- Social Services Forms Section -->
+                <% if (formsByCategory.social && formsByCategory.social.length > 0) { %>
+                <div id="section-social" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-hand-holding-heart text-red-600"></i>
+                        Social Services Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.social.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.social.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-red-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-red-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-red-600 hover:text-red-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Education Forms Section -->
+                <% if (formsByCategory.education && formsByCategory.education.length > 0) { %>
+                <div id="section-education" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-graduation-cap text-indigo-600"></i>
+                        Education Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.education.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.education.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-indigo-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-indigo-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Health Forms Section -->
+                <% if (formsByCategory.health && formsByCategory.health.length > 0) { %>
+                <div id="section-health" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-hospital text-pink-600"></i>
+                        Health Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.health.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.health.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-pink-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-pink-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-pink-600 hover:text-pink-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Other Forms Section -->
+                <% if (formsByCategory.others && formsByCategory.others.length > 0) { %>
+                <div id="section-others" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-ellipsis-h text-gray-600"></i>
+                        Other Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full"><%= formsByCategory.others.length %> forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <% formsByCategory.others.forEach(form => { %>
+                            <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4" data-form-id="<%= form.form_id %>">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-<%= getFormIcon(form.category) %> text-gray-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-800"><%= form.title %></h3>
+                                            <p class="text-xs text-gray-500"><%= form.form_code || 'FRM-'+form.form_id %> • Updated <%= new Date(form.last_updated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) %></p>
+                                        </div>
+                                    </div>
+                                    <span class="<%= getBadgeClass(form.file_type) %> text-xs px-2 py-1 rounded-full"><%= form.file_type %></span>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-file text-gray-600 mr-1"></i><%= form.file_size %>KB</span>
+                                    <a href="/client/govforms/download/<%= form.form_id %>" class="text-gray-600 hover:text-gray-700 text-sm font-medium" onclick="trackDownload('<%= form.title %>')">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+            <% } else { %>
+                <!-- Fallback to hardcoded forms if no data from database -->
+                <!-- Keep your existing hardcoded forms here -->
+                <!-- Barangay Forms Section (hardcoded) -->
+                <div id="section-barangay" class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-home text-amber-600"></i>
+                        Barangay Forms
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">8 forms</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Barangay Clearance -->
+                        <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-id-card text-amber-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-800">Barangay Clearance</h3>
+                                        <p class="text-xs text-gray-500">BC-FRM-001 • Updated Mar 2026</p>
+                                    </div>
+                                </div>
+                                <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between">
+                                <span class="text-xs text-gray-500"><i class="fas fa-file text-amber-600 mr-1"></i>250KB</span>
+                                <a href="/client/govforms/download/1" class="text-amber-600 hover:text-amber-700 text-sm font-medium">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Certificate of Indigency -->
+                        <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-file-contract text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-800">Certificate of Indigency</h3>
+                                        <p class="text-xs text-gray-500">CI-FRM-002 • Updated Mar 2026</p>
+                                    </div>
+                                </div>
+                                <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between">
+                                <span class="text-xs text-gray-500"><i class="fas fa-file text-blue-600 mr-1"></i>180KB</span>
+                                <a href="/client/govforms/download/2" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Barangay ID Application -->
+                        <div class="form-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-id-badge text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-800">Barangay ID Application</h3>
+                                        <p class="text-xs text-gray-500">BID-FRM-003 • Updated Feb 2026</p>
+                                    </div>
+                                </div>
+                                <span class="badge-pdf text-xs px-2 py-1 rounded-full">PDF</span>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between">
+                                <span class="text-xs text-gray-500"><i class="fas fa-file text-purple-600 mr-1"></i>220KB</span>
+                                <a href="/client/govforms/download/3" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Add more hardcoded forms as needed -->
+                    </div>
+                </div>
+
+                <!-- Add other hardcoded sections similarly -->
+            <% } %>
         </div>
 
         <!-- Information Card -->
@@ -675,10 +790,61 @@
 
     <!-- JavaScript for Forms Page -->
     <script>
-        // Search functionality
+        // Track downloads
+        function trackDownload(formName) {
+            console.log(`Download started: ${formName}`);
+            // You can add Google Analytics or other tracking here
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'download', {
+                    'event_category': 'forms',
+                    'event_label': formName
+                });
+            }
+        }
+
+        // Search functionality with AJAX
+        let searchTimeout;
         document.getElementById('searchForms')?.addEventListener('keyup', function(e) {
+            clearTimeout(searchTimeout);
             const searchTerm = e.target.value.toLowerCase();
+            
+            // Show loading indicator
+            document.getElementById('searchLoading').classList.remove('hidden');
+            
+            searchTimeout = setTimeout(() => {
+                if (searchTerm.length > 2) {
+                    // Use AJAX search
+                    fetch(`/client/govforms/api/search?q=${encodeURIComponent(searchTerm)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('searchLoading').classList.add('hidden');
+                            if (data.success) {
+                                updateSearchResults(data.forms, searchTerm);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Search error:', error);
+                            document.getElementById('searchLoading').classList.add('hidden');
+                            // Fallback to client-side search
+                            performClientSideSearch(searchTerm);
+                        });
+                } else if (searchTerm.length === 0) {
+                    // Reset all forms
+                    document.querySelectorAll('.form-card').forEach(card => {
+                        card.style.display = 'block';
+                    });
+                    document.getElementById('searchLoading').classList.add('hidden');
+                    document.getElementById('searchResultsMessage').classList.add('hidden');
+                } else {
+                    performClientSideSearch(searchTerm);
+                }
+            }, 500);
+        });
+
+        // Client-side search fallback
+        function performClientSideSearch(searchTerm) {
             const formCards = document.querySelectorAll('.form-card');
+            let visibleCount = 0;
             
             formCards.forEach(card => {
                 const title = card.querySelector('h3')?.textContent.toLowerCase() || '';
@@ -687,11 +853,66 @@
                 
                 if (title.includes(searchTerm) || description.includes(searchTerm) || formId.includes(searchTerm)) {
                     card.style.display = 'block';
+                    visibleCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
-        });
+            
+            document.getElementById('searchLoading').classList.add('hidden');
+            
+            // Show results message
+            const messageDiv = document.getElementById('searchResultsMessage');
+            if (visibleCount === 0) {
+                messageDiv.innerHTML = `<i class="fas fa-info-circle mr-2"></i>No forms found matching "${searchTerm}"`;
+                messageDiv.classList.remove('hidden');
+            } else {
+                messageDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Found ${visibleCount} form(s) matching "${searchTerm}"`;
+                messageDiv.classList.remove('hidden');
+                
+                // Hide message after 3 seconds
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Update search results from AJAX
+        function updateSearchResults(forms, searchTerm) {
+            // Hide all sections first
+            document.querySelectorAll('[id^="section-"]').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            if (forms.length === 0) {
+                document.getElementById('searchResultsMessage').innerHTML = 
+                    `<i class="fas fa-info-circle mr-2"></i>No forms found matching "${searchTerm}"`;
+                document.getElementById('searchResultsMessage').classList.remove('hidden');
+                return;
+            }
+            
+            // Show only sections that have matching forms
+            const formIds = forms.map(f => f.form_id);
+            document.querySelectorAll('.form-card').forEach(card => {
+                const formId = card.dataset.formId;
+                if (formIds.includes(parseInt(formId))) {
+                    card.style.display = 'block';
+                    // Show the parent section
+                    const section = card.closest('[id^="section-"]');
+                    if (section) section.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('searchResultsMessage').innerHTML = 
+                `<i class="fas fa-check-circle mr-2"></i>Found ${forms.length} form(s) matching "${searchTerm}"`;
+            document.getElementById('searchResultsMessage').classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('searchResultsMessage').classList.add('hidden');
+            }, 3000);
+        }
 
         // Filter by category
         function filterCategory(category) {
@@ -711,6 +932,9 @@
                 setTimeout(() => {
                     section.style.backgroundColor = 'transparent';
                 }, 1000);
+            } else {
+                // If section doesn't exist, show message
+                alert(`No forms available in the ${category} category`);
             }
         }
 
@@ -719,6 +943,14 @@
             const category = e.target.value;
             if (category !== 'all') {
                 filterCategory(category);
+            } else {
+                // Show all sections
+                document.querySelectorAll('[id^="section-"]').forEach(section => {
+                    section.style.display = 'block';
+                });
+                document.querySelectorAll('.form-card').forEach(card => {
+                    card.style.display = 'block';
+                });
             }
         });
 
@@ -726,25 +958,38 @@
         document.getElementById('formatFilter')?.addEventListener('change', function(e) {
             const format = e.target.value;
             const formCards = document.querySelectorAll('.form-card');
+            let visibleCount = 0;
             
             formCards.forEach(card => {
                 const formatBadge = card.querySelector('[class*="badge-"]');
                 if (format === 'all') {
                     card.style.display = 'block';
+                    visibleCount++;
                 } else if (formatBadge && formatBadge.textContent.toLowerCase().includes(format)) {
                     card.style.display = 'block';
+                    visibleCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
+            
+            // Show message if no results
+            const messageDiv = document.getElementById('searchResultsMessage');
+            if (format !== 'all' && visibleCount === 0) {
+                messageDiv.innerHTML = `<i class="fas fa-info-circle mr-2"></i>No forms found in ${format.toUpperCase()} format`;
+                messageDiv.classList.remove('hidden');
+            } else {
+                messageDiv.classList.add('hidden');
+            }
         });
 
-        // Download tracking (optional)
+        // Download tracking for all download links
         document.querySelectorAll('.download-btn, a[href*="download"]').forEach(btn => {
             btn.addEventListener('click', function(e) {
-                const formName = this.closest('.form-card')?.querySelector('h3')?.textContent || 'Unknown form';
-                console.log(`Download started: ${formName}`);
-                // You can add analytics tracking here
+                const formName = this.closest('.form-card')?.querySelector('h3')?.textContent || 
+                                this.closest('[class*="form-card"]')?.querySelector('h3')?.textContent || 
+                                'Unknown form';
+                trackDownload(formName);
             });
         });
 
@@ -767,7 +1012,25 @@
                     </button>
                 `;
             }
+
+            // Initialize category counts in the header
+            updateCategoryCounts();
         });
+
+        // Update category counts in the UI
+        function updateCategoryCounts() {
+            const categories = ['barangay', 'national', 'psa', 'bpls', 'social', 'education', 'health', 'others'];
+            categories.forEach(category => {
+                const section = document.getElementById(`section-${category}`);
+                if (section) {
+                    const formCount = section.querySelectorAll('.form-card').length;
+                    const countBadge = section.querySelector('.bg-gray-200');
+                    if (countBadge) {
+                        countBadge.textContent = `${formCount} forms`;
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>

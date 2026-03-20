@@ -9,12 +9,12 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Previous styles remain the same */
         .bg-pattern {
             background-color: #f8fafc;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
             background-repeat: repeat;
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -30,15 +30,13 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a0aec0;
         }
-        /* Forum card hover effects */
         .forum-card {
             transition: all 0.2s ease;
         }
         .forum-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-        /* Category badges */
         .category-general { background-color: #e6f7e6; color: #2e7d32; }
         .category-announcement { background-color: #e3f2fd; color: #0d47a1; }
         .category-concern { background-color: #fff3e0; color: #ef6c00; }
@@ -50,67 +48,19 @@
             50% { opacity: 0.8; }
             100% { opacity: 1; }
         }
-        /* Topic row hover */
-        .topic-row {
-            transition: background-color 0.2s ease;
-        }
         .topic-row:hover {
             background-color: #f9fafb;
         }
-        /* Chatbot Styles */
-        .chatbot-container {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .barangay-badge {
+            background-color: #fef3c7;
+            color: #92400e;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
         }
-        .message-bubble {
-            animation: fadeInUp 0.3s ease-out;
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .typing-indicator span {
-            animation: blink 1.4s infinite;
-            animation-fill-mode: both;
-        }
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        @keyframes blink {
-            0% { opacity: 0.1; }
-            20% { opacity: 1; }
-            100% { opacity: 0.1; }
-        }
-        /* Filipino ornament divider */
-        .filipino-divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: #9ca3af;
-        }
-        .filipino-divider::before,
-        .filipino-divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .filipino-divider::before {
-            margin-right: 0.75rem;
-        }
-        .filipino-divider::after {
-            margin-left: 0.75rem;
-        }
-        .filipino-divider span {
-            font-size: 0.75rem;
-            color: #d97706;
+        .active-filter {
+            background-color: #f59e0b;
+            color: white;
         }
     </style>
 </head>
@@ -138,10 +88,10 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-users mr-2"></i>1,234 members
+                            <i class="fas fa-users mr-2"></i><%= totalMembers || 0 %> members
                         </span>
                         <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-message mr-2"></i>456 topics
+                            <i class="fas fa-message mr-2"></i><%= totalTopics || 0 %> topics
                         </span>
                     </div>
                 </div>
@@ -180,6 +130,55 @@
             
             <!-- LEFT SIDEBAR - Forum Categories & Info -->
             <div class="lg:col-span-3 space-y-5">
+                
+                <!-- Barangay Filter Section -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-600 to-green-700 px-4 py-3">
+                        <h3 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt"></i> Filter by Barangay
+                        </h3>
+                    </div>
+                    <div class="p-3">
+                        <div class="mb-3">
+                            <a href="/client/forum?<%= new URLSearchParams({...query, barangay: '', page: 1}).toString() %>" 
+                               class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition <%= !query.barangay ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700' %>">
+                                <div class="flex items-center justify-between">
+                                    <span>📌 All Barangays</span>
+                                    <span class="text-xs text-gray-500"><%= totalTopics || 0 %></span>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <% if (barangays && barangays.length > 0) { %>
+                            <div class="space-y-1 max-h-64 overflow-y-auto">
+                                <% barangays.forEach(function(barangay) { 
+                                    const barangayName = barangay.barangay;
+                                    const isActive = query.barangay === barangayName;
+                                %>
+                                    <a href="/client/forum?<%= new URLSearchParams({...query, barangay: barangayName, page: 1}).toString() %>" 
+                                       class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition <%= isActive ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700' %>">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fas fa-map-pin text-xs <%= isActive ? 'text-amber-600' : 'text-gray-400' %>"></i>
+                                                <span class="text-sm"><%= barangayName %></span>
+                                            </div>
+                                            <span class="text-xs text-gray-500">
+                                                <% 
+                                                    const barangayStat = barangayStats?.find(bs => bs.barangay === barangayName);
+                                                    const topicCount = barangayStat?.topics || 0;
+                                                %>
+                                                <%= topicCount %>
+                                            </span>
+                                        </div>
+                                    </a>
+                                <% }); %>
+                            </div>
+                        <% } else { %>
+                            <p class="text-sm text-gray-500 text-center py-4">No barangays available</p>
+                        <% } %>
+                    </div>
+                </div>
+
                 <!-- Categories Card -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                     <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3">
@@ -188,42 +187,50 @@
                         </h3>
                     </div>
                     <div class="p-3 space-y-1">
-                        <a href="/client/forum?category=general" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: '', page: 1}).toString() %>" 
+                           class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition <%= !query.category ? 'bg-amber-50' : '' %>">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                <span class="text-sm font-medium">All Categories</span>
+                            </div>
+                            <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= totalTopics || 0 %></span>
+                        </a>
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: 'general', page: 1}).toString() %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                                 <span class="text-sm font-medium">General Discussion</span>
                             </div>
                             <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= categoryCounts?.general || 0 %></span>
                         </a>
-                        <a href="/client/forum?category=announcement" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: 'announcement', page: 1}).toString() %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
                                 <span class="text-sm font-medium">Announcements</span>
                             </div>
                             <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= categoryCounts?.announcement || 0 %></span>
                         </a>
-                        <a href="/client/forum?category=concern" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: 'concern', page: 1}).toString() %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
                                 <span class="text-sm font-medium">Community Concerns</span>
                             </div>
                             <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= categoryCounts?.concern || 0 %></span>
                         </a>
-                        <a href="/client/forum?category=suggestion" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: 'suggestion', page: 1}).toString() %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
                                 <span class="text-sm font-medium">Suggestions</span>
                             </div>
                             <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= categoryCounts?.suggestion || 0 %></span>
                         </a>
-                        <a href="/client/forum?category=emergency" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: 'emergency', page: 1}).toString() %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-red-500 rounded-full"></span>
                                 <span class="text-sm font-medium">Emergency Alerts</span>
                             </div>
                             <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= categoryCounts?.emergency || 0 %></span>
                         </a>
-                        <a href="/client/forum?category=event" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+                        <a href="/client/forum?<%= new URLSearchParams({...query, category: 'event', page: 1}).toString() %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
                                 <span class="text-sm font-medium">Events & Activities</span>
@@ -232,6 +239,22 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Active Barangay Filter Badge -->
+                <% if (query.barangay) { %>
+                    <div class="bg-amber-50 rounded-xl shadow-md border border-amber-200 p-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-amber-700">Active Barangay Filter:</p>
+                                <p class="font-semibold text-amber-800"><%= query.barangay %></p>
+                            </div>
+                            <a href="/client/forum?<%= new URLSearchParams({...query, barangay: '', page: 1}).toString() %>" 
+                               class="text-amber-600 hover:text-amber-700 text-sm">
+                                <i class="fas fa-times-circle"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                <% } %>
 
                 <!-- Forum Stats Card -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
@@ -243,7 +266,7 @@
                     <div class="p-4 space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-gray-600">Total Topics</span>
-                            <span class="font-bold text-gray-800"><%= totalTopics || 0 %></span>
+                            <span class="font-bold text-gray-800"><%= filteredTotal || 0 %></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-gray-600">Total Replies</span>
@@ -257,15 +280,19 @@
                             <span class="text-sm text-gray-600">Newest Member</span>
                             <span class="text-sm font-medium text-amber-600"><%= newestMember || 'N/A' %></span>
                         </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">From Barangay</span>
+                            <span class="text-xs bg-gray-100 px-2 py-1 rounded-full"><%= newestMemberBarangay || 'N/A' %></span>
+                        </div>
                         <div class="filipino-divider mt-2">
                             <span>⚙️ ACTIVE NOW</span>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600">
                             <div class="flex -space-x-2">
                                 <% if (activeUsers && activeUsers.length > 0) { %>
-                                    <% activeUsers.slice(0, 4).forEach(function(user) { %>
-                                        <div class="w-6 h-6 bg-amber-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs">
-                                            <%= user.first_name ? user.first_name.charAt(0) : 'U' %>
+                                    <% activeUsers.slice(0, 4).forEach(function(activeUser) { %>
+                                        <div class="w-6 h-6 bg-amber-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs" title="<%= activeUser.barangay || 'Unknown' %>">
+                                            <%= activeUser.first_name ? activeUser.first_name.charAt(0) : 'U' %>
                                         </div>
                                     <% }); %>
                                     <% if (activeUsers.length > 4) { %>
@@ -314,7 +341,7 @@
                                 value="<%= query?.search || '' %>"
                                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent">
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-wrap">
                             <select name="category" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-amber-400">
                                 <option value="">All Categories</option>
                                 <option value="general" <%= query?.category === 'general' ? 'selected' : '' %>>General Discussion</option>
@@ -333,20 +360,46 @@
                             <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm transition">
                                 <i class="fas fa-filter mr-1"></i> Filter
                             </button>
-                            <% if (query?.search || query?.category || query?.sort) { %>
+                            <% if (query?.search || query?.category || query?.sort || query?.barangay) { %>
                                 <a href="/client/forum" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                                    <i class="fas fa-times"></i> Clear
+                                    <i class="fas fa-times"></i> Clear All
                                 </a>
                             <% } %>
                         </div>
                     </form>
                 </div>
 
+                <!-- Active Filters Display -->
+                <% if (query?.barangay || query?.category || query?.search) { %>
+                    <div class="flex flex-wrap gap-2 items-center text-sm">
+                        <span class="text-gray-500">Active filters:</span>
+                        <% if (query.barangay) { %>
+                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                                <i class="fas fa-map-pin mr-1"></i> Barangay: <%= query.barangay %>
+                                <a href="/client/forum?<%= new URLSearchParams({...query, barangay: '', page: 1}).toString() %>" class="ml-2 hover:text-red-600">×</a>
+                            </span>
+                        <% } %>
+                        <% if (query.category) { %>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                                <i class="fas fa-tag mr-1"></i> Category: <%= query.category %>
+                                <a href="/client/forum?<%= new URLSearchParams({...query, category: '', page: 1}).toString() %>" class="ml-2 hover:text-red-600">×</a>
+                            </span>
+                        <% } %>
+                        <% if (query.search) { %>
+                            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+                                <i class="fas fa-search mr-1"></i> Search: <%= query.search %>
+                                <a href="/client/forum?<%= new URLSearchParams({...query, search: '', page: 1}).toString() %>" class="ml-2 hover:text-red-600">×</a>
+                            </span>
+                        <% } %>
+                    </div>
+                <% } %>
+
                 <!-- Topics List Header -->
                 <div class="bg-gray-50 rounded-t-xl border border-gray-200 p-3 hidden md:block">
                     <div class="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <div class="col-span-6">Topic</div>
-                        <div class="col-span-2 text-center">Replies</div>
+                        <div class="col-span-5">Topic</div>
+                        <div class="col-span-2 text-center">Barangay</div>
+                        <div class="col-span-1 text-center">Replies</div>
                         <div class="col-span-2 text-center">Views</div>
                         <div class="col-span-2 text-center">Last Activity</div>
                     </div>
@@ -355,13 +408,12 @@
                 <!-- Topics List -->
                 <div class="space-y-3">
                     <% if (forumTopics && forumTopics.length > 0) { %>
-                        <!-- Pinned Topics First (if any) -->
+                        <!-- Pinned Topics First -->
                         <% forumTopics.filter(t => t.is_pinned).forEach(function(topic) { %>
-                            <!-- Pinned Topic -->
                             <div class="forum-card bg-white rounded-xl shadow-md border-l-4 border-amber-500 border border-gray-200 overflow-hidden">
                                 <div class="p-4">
                                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                        <div class="md:col-span-6">
+                                        <div class="md:col-span-5">
                                             <div class="flex items-start gap-3">
                                                 <div class="bg-amber-100 p-2 rounded-lg flex-shrink-0">
                                                     <i class="fas fa-thumbtack text-amber-600"></i>
@@ -380,7 +432,7 @@
                                                             <span class="category-emergency text-xs px-2 py-0.5 rounded-full animate-pulse">EMERGENCY</span>
                                                         <% } %>
                                                     </div>
-                                                    <<a href="/client/forum/topic/<%= topic.id %>" class="font-semibold text-gray-800 hover:text-amber-600 transition mt-1 block">
+                                                    <a href="/client/forum/topic/<%= topic.id %>" class="font-semibold text-gray-800 hover:text-amber-600 transition mt-1 block">
                                                         <%= topic.title %>
                                                     </a>
                                                     <p class="text-xs text-gray-500 mt-1">
@@ -389,7 +441,12 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="md:col-span-2 text-center text-sm text-gray-600"><%= topic.reply_count || 0 %></div>
+                                        <div class="md:col-span-2">
+                                            <span class="barangay-badge">
+                                                <i class="fas fa-map-pin mr-1"></i> <%= topic.barangay || 'N/A' %>
+                                            </span>
+                                        </div>
+                                        <div class="md:col-span-1 text-center text-sm text-gray-600"><%= topic.reply_count || 0 %></div>
                                         <div class="md:col-span-2 text-center text-sm text-gray-600"><%= topic.views || 0 %></div>
                                         <div class="md:col-span-2 text-center">
                                             <p class="text-xs text-gray-500"><%= topic.last_activity || topic.time_ago %></p>
@@ -399,13 +456,12 @@
                             </div>
                         <% }); %>
 
-                        <!-- Regular Topics (non-pinned) -->
+                        <!-- Regular Topics -->
                         <% forumTopics.filter(t => !t.is_pinned).forEach(function(topic) { %>
-                            <!-- Topic Row -->
                             <div class="forum-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                                 <div class="p-4">
                                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                        <div class="md:col-span-6">
+                                        <div class="md:col-span-5">
                                             <div class="flex items-start gap-3">
                                                 <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
                                                     <%= topic.author_avatar || (topic.author_name ? topic.author_name.charAt(0) : 'U') %>
@@ -419,23 +475,15 @@
                                                                 topic.category === 'suggestion' ? 'Suggestion' :
                                                                 topic.category === 'event' ? 'Event' : 'Emergency' %>
                                                         </span>
-                                                        
                                                         <% if (topic.is_official) { %>
                                                             <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
                                                                 <i class="fas fa-check-circle text-xs"></i> Official
                                                             </span>
                                                         <% } %>
-                                                        
                                                         <% if (topic.reply_count > 10) { %>
                                                             <span class="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full">
                                                                 <i class="fas fa-fire"></i> Hot
                                                             </span>
-                                                        <% } %>
-
-                                                        <% if (topic.urgency === 'high') { %>
-                                                            <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">High Priority</span>
-                                                        <% } else if (topic.urgency === 'emergency') { %>
-                                                            <span class="category-emergency text-xs px-2 py-0.5 rounded-full animate-pulse">EMERGENCY</span>
                                                         <% } %>
                                                     </div>
                                                     <a href="/client/forum/topic/<%= topic.topic_id || topic.id %>" class="font-semibold text-gray-800 hover:text-amber-600 transition mt-1 block">
@@ -447,7 +495,12 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="md:col-span-2 text-center">
+                                        <div class="md:col-span-2">
+                                            <span class="barangay-badge">
+                                                <i class="fas fa-map-pin mr-1"></i> <%= topic.barangay || 'N/A' %>
+                                            </span>
+                                        </div>
+                                        <div class="md:col-span-1 text-center">
                                             <span class="font-bold text-gray-800"><%= topic.reply_count || 0 %></span>
                                             <span class="text-xs text-gray-500 block md:hidden">replies</span>
                                         </div>
@@ -463,68 +516,56 @@
                             </div>
                         <% }); %>
                     <% } else { %>
-                        <!-- No topics yet -->
                         <div class="bg-white rounded-xl shadow-md p-8 text-center">
                             <i class="fas fa-comments text-4xl text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">No topics yet. Be the first to create one!</p>
-                            <button onclick="document.getElementById('createTopicModal').classList.remove('hidden')" 
-                                    class="mt-4 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
-                                <i class="fas fa-plus-circle mr-2"></i> Create First Topic
-                            </button>
+                            <p class="text-gray-500">No topics found matching your filters.</p>
+                            <a href="/client/forum" class="mt-4 inline-block bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-undo mr-2"></i> Clear Filters
+                            </a>
                         </div>
                     <% } %>
 
-                    <!-- Load More Button (only if there are more topics) -->
-                    <% if (forumTopics && forumTopics.length >= 10) { %>
-                    <div class="text-center py-4">
-                        <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg text-sm font-medium transition">
-                            <i class="fas fa-spinner mr-2"></i> Load More Topics
-                        </button>
-                    </div>
+                    <!-- Pagination -->
+                    <% if (totalPages > 1) { %>
+                        <div class="flex justify-center items-center gap-2 mt-6">
+                            <% if (currentPage > 1) { %>
+                                <a href="/client/forum?<%= new URLSearchParams({...query, page: currentPage - 1}).toString() %>" 
+                                class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            <% } %>
+                            
+                            <% for(let i = 1; i <= totalPages; i++) { %>
+                                <% if (i === currentPage) { %>
+                                    <span class="px-3 py-2 bg-amber-600 text-white border border-amber-600 rounded-lg text-sm">
+                                        <%= i %>
+                                    </span>
+                                <% } else if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) { %>
+                                    <a href="/client/forum?<%= new URLSearchParams({...query, page: i}).toString() %>" 
+                                    class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                                        <%= i %>
+                                    </a>
+                                <% } else if (i === currentPage - 3 || i === currentPage + 3) { %>
+                                    <span class="px-3 py-2 text-gray-500">...</span>
+                                <% } %>
+                            <% } %>
+                            
+                            <% if (currentPage < totalPages) { %>
+                                <a href="/client/forum?<%= new URLSearchParams({...query, page: currentPage + 1}).toString() %>" 
+                                class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            <% } %>
+                        </div>
                     <% } %>
                 </div>
-
-                <!-- Pagination -->
-                <% if (totalPages > 1) { %>
-                <div class="flex justify-center items-center gap-2 mt-6">
-                    <% if (currentPage > 1) { %>
-                        <a href="/client/forum?<%= new URLSearchParams({...query, page: currentPage - 1}).toString() %>" 
-                        class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    <% } %>
-                    
-                    <% for(let i = 1; i <= totalPages; i++) { %>
-                        <% if (i === currentPage) { %>
-                            <span class="px-3 py-2 bg-amber-600 text-white border border-amber-600 rounded-lg text-sm">
-                                <%= i %>
-                            </span>
-                        <% } else if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) { %>
-                            <a href="/client/forum?<%= new URLSearchParams({...query, page: i}).toString() %>" 
-                            class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                                <%= i %>
-                            </a>
-                        <% } else if (i === currentPage - 3 || i === currentPage + 3) { %>
-                            <span class="px-3 py-2 text-gray-500">...</span>
-                        <% } %>
-                    <% } %>
-                    
-                    <% if (currentPage < totalPages) { %>
-                        <a href="/client/forum?<%= new URLSearchParams({...query, page: currentPage + 1}).toString() %>" 
-                        class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    <% } %>
-                </div>
-                <% } %>
             </div>
         </div>
     </main>
 
-    <!-- CREATE TOPIC MODAL -->
+    <!-- CREATE TOPIC MODAL (same as before) -->
     <div id="createTopicModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <!-- Modal Header -->
             <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-6 text-white">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xl font-bold flex items-center gap-2">
@@ -538,10 +579,8 @@
                 <p class="text-blue-100 text-sm mt-1">Makisali at makibahagi sa iyong barangay community</p>
             </div>
 
-            <!-- Modal Body -->
             <div class="p-6">
                 <form action="/client/forum/create" method="POST">
-                    <!-- Title -->
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-heading text-amber-600 mr-1"></i> Topic Title
@@ -551,7 +590,6 @@
                                placeholder="e.g., Looking for recommendations, Community concern, etc.">
                     </div>
 
-                    <!-- Category and Tags -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -578,7 +616,6 @@
                         </div>
                     </div>
 
-                    <!-- Content -->
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-pen text-amber-600 mr-1"></i> Content
@@ -588,7 +625,6 @@
                                   placeholder="Share your thoughts, concerns, or suggestions..."></textarea>
                     </div>
 
-                    <!-- Tags -->
                     <div class="mb-6">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-hashtag text-amber-600 mr-1"></i> Tags (comma separated)
@@ -598,7 +634,6 @@
                                placeholder="e.g., barangay, safety, event">
                     </div>
 
-                    <!-- Form Actions -->
                     <div class="flex items-center justify-end gap-3 border-t pt-4">
                         <button type="button" onclick="document.getElementById('createTopicModal').classList.add('hidden')"
                                 class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
@@ -614,13 +649,7 @@
         </div>
     </div>
 
-   
     <%- include('../partials/chatbot') %>
-
-    <!-- Include footer -->
     <%- include('../partials/footer') %>
-
-    <!-- JavaScript for Chatbot Functionality -->
-    
 </body>
 </html>
