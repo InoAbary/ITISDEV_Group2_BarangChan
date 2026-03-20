@@ -592,7 +592,7 @@ WHERE email = 'moderator@barangchan.ph';
 
 -- Update Administrator password
 UPDATE User 
-SET password = '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+SET password = '$2b$10$S4LKu6/XbF2R7zXy6mDRZ.ZvPk.1z3HU7ENLgASHinFEfOVh4/pAi'
 WHERE email = 'admin@barangchan.ph';
 
 SELECT '=== Addresses ===' as '';
@@ -608,3 +608,65 @@ SELECT category_id, name, name_tagalog FROM ContactCategory;
 
 SELECT '=== Emergency Hotlines ===' as '';
 SELECT name, number, is_national FROM EmergencyHotline;
+
+
+
+-- Moderator Actions Log Table
+CREATE TABLE IF NOT EXISTS ModeratorAction (
+    action_id INT AUTO_INCREMENT PRIMARY KEY,
+    moderator_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (moderator_id) REFERENCES User(user_id) ON DELETE CASCADE
+);
+
+-- Post Reports Table (for flagged posts)
+CREATE TABLE IF NOT EXISTS PostReport (
+    report_id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    reason VARCHAR(255),
+    reported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (post_id) REFERENCES StatusPost(post_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_report (post_id, user_id)
+);
+
+-- Chatbot Logs Table (for tracking chatbot usage)
+CREATE TABLE IF NOT EXISTS ChatbotLog (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    query TEXT,
+    response TEXT,
+    response_time INT, -- in milliseconds
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE SET NULL
+);
+
+-- Admin Actions Log Table
+CREATE TABLE IF NOT EXISTS AdminAction (
+    action_id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (admin_id) REFERENCES User(user_id) ON DELETE CASCADE
+);
+
+-- Error Log Table (for tracking system errors)
+CREATE TABLE IF NOT EXISTS ErrorLog (
+    error_id INT AUTO_INCREMENT PRIMARY KEY,
+    error_type VARCHAR(100),
+    error_message TEXT,
+    stack_trace TEXT,
+    url VARCHAR(500),
+    user_id INT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE SET NULL
+);

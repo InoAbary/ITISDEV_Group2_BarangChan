@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- ApexCharts for advanced analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         .bg-pattern {
             background-color: #f8fafc;
@@ -19,7 +17,6 @@
             background-repeat: repeat;
         }
         
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -36,7 +33,6 @@
             background: #a0aec0;
         }
 
-        /* Analytics card hover effects */
         .analytics-card {
             transition: all 0.2s ease;
         }
@@ -45,7 +41,6 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* Metric animations */
         .metric-value {
             animation: countUp 1s ease-out;
         }
@@ -54,34 +49,21 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Filipino pattern */
         .filipino-divider {
             background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
             height: 2px;
             width: 100%;
         }
 
-        /* Status badges */
         .status-online { background-color: #dcfce7; color: #166534; }
         .status-offline { background-color: #fee2e2; color: #991b1b; }
         .status-away { background-color: #fff3e0; color: #9a3412; }
-
-        /* Progress bars */
-        .progress-bar {
-            transition: width 1s ease-in-out;
-        }
-
-        /* Filipino ornament */
-        .filipino-sun {
-            background: radial-gradient(circle at 30% 50%, #fbbf24 2px, transparent 3px);
-            background-size: 20px 20px;
-        }
     </style>
 </head>
 <body class="bg-pattern font-sans antialiased min-h-screen flex flex-col" data-page-context="admin">
 
     <!-- Include navigation -->
-    <%- include('../partials/topnavigation', { currentPath: '/admin/dashboard', currentUser: user }) %>
+    <%- include('../partials/topnavigation', { currentPath: '/administrator/dashboard', currentUser: user }) %>
 
     <!-- Main Content -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -119,6 +101,12 @@
                 <p class="text-sm font-medium"><%= success %></p>
             </div>
         <% } %>
+        <% if (locals.error) { %>
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3 shadow-md">
+                <i class="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
+                <p class="text-sm font-medium"><%= error %></p>
+            </div>
+        <% } %>
 
         <!-- KEY METRICS SECTION (Descriptive Analytics) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -129,15 +117,15 @@
                         <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
                             <i class="fas fa-users text-blue-500"></i> Total Registered Users
                         </p>
-                        <p class="text-3xl font-bold text-gray-800 metric-value" id="totalUsers">2,547</p>
-                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-arrow-up"></i> +12.5% from last month</p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value"><%= totalUsers || 0 %></p>
+                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-arrow-up"></i> +<%= growthPercent || 0 %>% from last month</p>
                     </div>
                     <div class="bg-blue-100 p-3 rounded-lg">
                         <i class="fas fa-user-plus text-blue-600 text-xl"></i>
                     </div>
                 </div>
                 <div class="mt-3 text-xs text-gray-500">
-                    <span class="font-medium">Active:</span> 1,892 • <span class="font-medium">Inactive:</span> 655
+                    <span class="font-medium">Active:</span> <%= activeUsers || 0 %> • <span class="font-medium">Inactive:</span> <%= inactiveUsers || 0 %>
                 </div>
             </div>
 
@@ -148,15 +136,11 @@
                         <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
                             <i class="fas fa-sign-in-alt text-green-500"></i> Users Logged In Today
                         </p>
-                        <p class="text-3xl font-bold text-gray-800 metric-value" id="usersLoggedIn">847</p>
-                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-arrow-up"></i> +5.2% from yesterday</p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value" id="usersLoggedIn"><%= usersLoggedInToday || 0 %></p>
                     </div>
                     <div class="bg-green-100 p-3 rounded-lg">
                         <i class="fas fa-user-check text-green-600 text-xl"></i>
                     </div>
-                </div>
-                <div class="mt-3 text-xs text-gray-500">
-                    <span class="font-medium">Peak hour:</span> 9:00 AM - 11:00 AM
                 </div>
             </div>
 
@@ -167,16 +151,12 @@
                         <p class="text-sm text-gray-500 mb-1 flex items-center gap-1">
                             <i class="fas fa-user-shield text-amber-500"></i> Moderators Online
                         </p>
-                        <p class="text-3xl font-bold text-gray-800 metric-value" id="moderatorsOnline">18</p>
-                        <p class="text-xs text-amber-600 mt-2">of 24 total moderators</p>
+                        <p class="text-3xl font-bold text-gray-800 metric-value" id="moderatorsOnline"><%= moderatorsOnline || 0 %></p>
+                        <p class="text-xs text-amber-600 mt-2">of <%= totalModerators || 0 %> total moderators</p>
                     </div>
                     <div class="bg-amber-100 p-3 rounded-lg">
                         <i class="fas fa-shield-alt text-amber-600 text-xl"></i>
                     </div>
-                </div>
-                <div class="mt-3 flex items-center gap-1">
-                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span class="text-xs text-gray-500">18 online • 4 away • 2 offline</span>
                 </div>
             </div>
 
@@ -195,7 +175,7 @@
                     </div>
                 </div>
                 <div class="mt-3 text-xs text-gray-500">
-                    Response time: 124ms • Load: 42%
+                    Response time: <%= systemHealth?.avgResponseTime || 124 %>ms • Load: <%= systemHealth?.load || 42 %>%
                 </div>
             </div>
         </div>
@@ -216,11 +196,6 @@
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-semibold text-gray-700">User Growth (Last 6 Months)</h3>
-                        <select class="text-sm border border-gray-300 rounded-lg px-3 py-1 bg-white">
-                            <option>Daily</option>
-                            <option selected>Weekly</option>
-                            <option>Monthly</option>
-                        </select>
                     </div>
                     <div class="h-64">
                         <canvas id="userGrowthChart"></canvas>
@@ -256,32 +231,32 @@
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
                                 <span>Registration Funnel</span>
-                                <span class="font-medium">78% completion rate</span>
+                                <span class="font-medium"><%= dropOff?.registrationFunnel || 78 %>% completion rate</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: 78%"></div>
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: <%= dropOff?.registrationFunnel || 78 %>%"></div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Drop-off at email verification: 22%</p>
+                            <p class="text-xs text-gray-500 mt-1">Drop-off at email verification: <%= 100 - (dropOff?.registrationFunnel || 78) %>%</p>
                         </div>
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
                                 <span>Document Request Completion</span>
-                                <span class="font-medium">64% completion rate</span>
+                                <span class="font-medium"><%= dropOff?.documentCompletion || 64 %>% completion rate</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-amber-600 h-2.5 rounded-full" style="width: 64%"></div>
+                                <div class="bg-amber-600 h-2.5 rounded-full" style="width: <%= dropOff?.documentCompletion || 64 %>%"></div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Drop-off at requirements submission: 36%</p>
+                            <p class="text-xs text-gray-500 mt-1">Drop-off at requirements submission: <%= 100 - (dropOff?.documentCompletion || 64) %>%</p>
                         </div>
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
                                 <span>Complaint Resolution Rate</span>
-                                <span class="font-medium">92% resolution rate</span>
+                                <span class="font-medium"><%= dropOff?.complaintResolution || 92 %>% resolution rate</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-green-600 h-2.5 rounded-full" style="width: 92%"></div>
+                                <div class="bg-green-600 h-2.5 rounded-full" style="width: <%= dropOff?.complaintResolution || 92 %>%"></div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Average resolution time: 3.2 days</p>
+                            <p class="text-xs text-gray-500 mt-1">Average resolution time: <%= resolutionTime || 3.2 %> days</p>
                         </div>
                     </div>
 
@@ -353,13 +328,13 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <p class="text-xs text-gray-500">API Error Rate</p>
-                            <p class="text-xl font-bold text-red-600">2.4%</p>
-                            <p class="text-xs text-gray-400">↑ 0.5% from last week</p>
+                            <p class="text-xl font-bold text-red-600"><%= errorRate || 2.4 %>%</p>
+                            <p class="text-xs text-gray-400">↑ <%= errorRateChange || 0.5 %>% from last week</p>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <p class="text-xs text-gray-500">Database Queries</p>
-                            <p class="text-xl font-bold text-amber-600">1.8k/s</p>
-                            <p class="text-xs text-gray-400">Peak: 2.4k/s</p>
+                            <p class="text-xl font-bold text-amber-600"><%= databaseQueries || 1.8 %>k/s</p>
+                            <p class="text-xs text-gray-400">Peak: <%= databasePeak || 2.4 %>k/s</p>
                         </div>
                     </div>
                 </div>
@@ -379,17 +354,17 @@
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
                     <h3 class="font-semibold text-gray-700 mb-3">User Growth Forecast</h3>
                     <div class="flex items-end gap-2 mb-4">
-                        <p class="text-3xl font-bold text-blue-600">3,842</p>
+                        <p class="text-3xl font-bold text-blue-600"><%= predictedUsers || 3842 %></p>
                         <p class="text-sm text-gray-500 mb-1">by end of Q2</p>
                     </div>
                     <div class="space-y-2">
                         <div class="flex items-center justify-between text-sm">
                             <span>Current:</span>
-                            <span class="font-medium">2,547 users</span>
+                            <span class="font-medium"><%= totalUsers || 2547 %> users</span>
                         </div>
                         <div class="flex items-center justify-between text-sm">
                             <span>Projected growth:</span>
-                            <span class="font-medium text-green-600">+51%</span>
+                            <span class="font-medium text-green-600">+<%= growthPercent || 51 %>%</span>
                         </div>
                         <div class="flex items-center justify-between text-sm">
                             <span>Confidence interval:</span>
@@ -397,7 +372,6 @@
                         </div>
                     </div>
                     <div class="mt-4 h-20">
-                        <!-- Mini sparkline would go here -->
                         <div class="flex items-end h-16 gap-1">
                             <div class="w-1/6 bg-blue-200 h-8 rounded-t"></div>
                             <div class="w-1/6 bg-blue-300 h-10 rounded-t"></div>
@@ -414,13 +388,13 @@
                     <h3 class="font-semibold text-gray-700 mb-3">Peak Usage Prediction</h3>
                     <div class="mb-4">
                         <p class="text-sm text-gray-500">Next peak expected:</p>
-                        <p class="text-xl font-bold text-amber-600">Monday, 9:00 AM</p>
+                        <p class="text-xl font-bold text-amber-600"><%= predictedPeakDay || 'Monday' %>, <%= predictedPeakHour || '9:00 AM' %></p>
                         <p class="text-xs text-gray-400">March 23, 2026</p>
                     </div>
                     <div class="space-y-2">
                         <div class="flex items-center justify-between text-sm">
                             <span>Predicted concurrent users:</span>
-                            <span class="font-medium">1,247</span>
+                            <span class="font-medium"><%= predictedConcurrent || 1247 %></span>
                         </div>
                         <div class="flex items-center justify-between text-sm">
                             <span>Server load estimate:</span>
@@ -439,22 +413,31 @@
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
                     <h3 class="font-semibold text-gray-700 mb-3">Document Request Forecast</h3>
                     <div class="flex items-end gap-2 mb-4">
-                        <p class="text-3xl font-bold text-green-600">1,245</p>
+                        <p class="text-3xl font-bold text-green-600"><%= predictedRequests || 1245 %></p>
                         <p class="text-sm text-gray-500 mb-1">requests next week</p>
                     </div>
                     <div class="space-y-2">
-                        <div class="flex items-center justify-between text-sm">
-                            <span>Barangay Clearance:</span>
-                            <span class="font-medium">+23%</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span>Business Permit:</span>
-                            <span class="font-medium">+12%</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span>Certificate of Indigency:</span>
-                            <span class="font-medium">+8%</span>
-                        </div>
+                        <% if (documentBreakdown && documentBreakdown.length > 0) { %>
+                            <% documentBreakdown.slice(0, 3).forEach(function(doc) { %>
+                            <div class="flex items-center justify-between text-sm">
+                                <span><%= doc.doc_type %>:</span>
+                                <span class="font-medium text-green-600">+<%= doc.percentage?.toFixed(0) || 0 %>%</span>
+                            </div>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="flex items-center justify-between text-sm">
+                                <span>Barangay Clearance:</span>
+                                <span class="font-medium text-green-600">+23%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span>Business Permit:</span>
+                                <span class="font-medium text-green-600">+12%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span>Certificate of Indigency:</span>
+                                <span class="font-medium text-green-600">+8%</span>
+                            </div>
+                        <% } %>
                     </div>
                     <div class="mt-4 flex items-center gap-2">
                         <div class="flex-1 bg-gray-200 rounded-full h-2">
@@ -480,44 +463,35 @@
                     <h3 class="font-semibold text-gray-700 mb-4">AI-Generated Recommendations</h3>
                     
                     <div class="space-y-4">
-                        <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-database text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium text-sm text-blue-800">Scale database resources</p>
-                                    <p class="text-xs text-blue-600 mt-1">Predicted 51% user growth requires additional capacity. Recommended: Upgrade to premium tier by April 15.</p>
-                                    <p class="text-xs text-blue-500 mt-2">Priority: High • ROI: +32% performance</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-500">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-robot text-amber-600"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium text-sm text-amber-800">Optimize chatbot responses</p>
-                                    <p class="text-xs text-amber-600 mt-1">Chatbot escalation rate increased 15%. Retrain model on recent FAQs to reduce human intervention.</p>
-                                    <p class="text-xs text-amber-500 mt-2">Priority: Medium • ROI: -25% moderator load</p>
+                        <% if (recommendations && recommendations.length > 0) { %>
+                            <% recommendations.forEach(function(rec) { %>
+                            <div class="p-3 bg-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-50 rounded-lg border-l-4 border-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-500">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-8 h-8 bg-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-<%= rec.category === 'database' ? 'database' : (rec.category === 'chatbot' ? 'robot' : 'file-alt') %> text-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-sm text-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-800"><%= rec.action %></p>
+                                        <p class="text-xs text-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-600 mt-1"><%= rec.recommendation %></p>
+                                        <p class="text-xs text-<%= rec.category === 'database' ? 'blue' : (rec.category === 'chatbot' ? 'amber' : 'green') %>-500 mt-2">Priority: <%= rec.priority %> • ROI: +<%= rec.roi %>% performance</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-file-alt text-green-600"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium text-sm text-green-800">Simplify document requirements</p>
-                                    <p class="text-xs text-green-600 mt-1">36% drop-off at requirements stage. Consider accepting digital copies and reducing requirements.</p>
-                                    <p class="text-xs text-green-500 mt-2">Priority: High • ROI: +28% completion rate</p>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-database text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-sm text-blue-800">Scale database resources</p>
+                                        <p class="text-xs text-blue-600 mt-1">Predicted 51% user growth requires additional capacity.</p>
+                                        <p class="text-xs text-blue-500 mt-2">Priority: High • ROI: +32% performance</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        <% } %>
                     </div>
                 </div>
 
@@ -605,106 +579,48 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white font-bold text-sm">MS</div>
-                                        <div class="ml-3">
-                                            <p class="text-sm font-medium text-gray-900">Maria Santos</p>
-                                            <p class="text-xs text-gray-500">Senior Moderator</p>
+                            <% if (moderatorStatus && moderatorStatus.length > 0) { %>
+                                <% moderatorStatus.forEach(function(mod) { %>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="w-8 h-8 bg-<%= mod.role === 'administrator' ? 'amber' : (mod.online_status === 'Online' ? 'green' : 'blue') %>-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                                <%= mod.name ? mod.name.charAt(0).toUpperCase() : 'M' %>
+                                            </div>
+                                            <div class="ml-3">
+                                                <p class="text-sm font-medium text-gray-900"><%= mod.name %></p>
+                                                <p class="text-xs text-gray-500"><%= mod.role === 'administrator' ? 'Administrator' : 'Moderator' %></p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="status-online px-3 py-1 rounded-full text-xs font-medium">Online</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Now</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-medium">98%</span>
-                                        <div class="w-16 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-500 h-2 rounded-full" style="width: 98%"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="status-<%= mod.online_status === 'Online' ? 'online' : (mod.online_status === 'Away' ? 'away' : 'offline') %> px-3 py-1 rounded-full text-xs font-medium">
+                                            <%= mod.online_status %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <%= mod.online_status === 'Online' ? 'Now' : (mod.last_login ? moment(mod.last_login).fromNow() : 'Never') %>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= mod.tickets_assigned || 0 %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-medium"><%= mod.resolution_rate || 0 %>%</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-green-500 h-2 rounded-full" style="width: <%= mod.resolution_rate || 0 %>%"></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.3 min</td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">JR</div>
-                                        <div class="ml-3">
-                                            <p class="text-sm font-medium text-gray-900">Juan Reyes</p>
-                                            <p class="text-xs text-gray-500">Moderator</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="status-online px-3 py-1 rounded-full text-xs font-medium">Online</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Now</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">8</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-medium">92%</span>
-                                        <div class="w-16 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.1 min</td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">AL</div>
-                                        <div class="ml-3">
-                                            <p class="text-sm font-medium text-gray-900">Anna Lopez</p>
-                                            <p class="text-xs text-gray-500">Moderator</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="status-away px-3 py-1 rounded-full text-xs font-medium">Away</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15 mins ago</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-medium">88%</span>
-                                        <div class="w-16 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-amber-500 h-2 rounded-full" style="width: 88%"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4.2 min</td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-sm">PD</div>
-                                        <div class="ml-3">
-                                            <p class="text-sm font-medium text-gray-900">Pedro Diaz</p>
-                                            <p class="text-xs text-gray-500">Moderator</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="status-offline px-3 py-1 rounded-full text-xs font-medium">Offline</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-medium">-</span>
-                                        <div class="w-16 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-gray-300 h-2 rounded-full" style="width: 0%"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td>
-                            </tr>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= mod.avg_response_time || '-' %></td>
+                                </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                        <i class="fas fa-users text-3xl mb-2"></i>
+                                        <p>No moderator data available</p>
+                                    </td>
+                                </tr>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>
@@ -713,7 +629,7 @@
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-1">
                             <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span class="text-xs text-gray-600">18 Online</span>
+                            <span class="text-xs text-gray-600"><%= moderatorsOnline || 0 %> Online</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -724,7 +640,7 @@
                             <span class="text-xs text-gray-600">2 Offline</span>
                         </div>
                     </div>
-                    <a href="/admin/moderators" class="text-sm text-amber-600 hover:text-amber-700">Manage Moderators <i class="fas fa-arrow-right ml-1"></i></a>
+                    <a href="/administrator/moderators" class="text-sm text-amber-600 hover:text-amber-700">Manage Moderators <i class="fas fa-arrow-right ml-1"></i></a>
                 </div>
             </div>
         </div>
@@ -737,19 +653,19 @@
                     <p class="text-xs text-gray-500">Download comprehensive analytics for your records</p>
                 </div>
                 <div class="flex gap-2">
-                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
+                    <button onclick="generateReport('pdf')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
                         <i class="fas fa-file-pdf text-red-500"></i>
                         PDF
                     </button>
-                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
+                    <button onclick="generateReport('excel')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
                         <i class="fas fa-file-excel text-green-600"></i>
                         Excel
                     </button>
-                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
+                    <button onclick="generateReport('csv')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition flex items-center gap-2">
                         <i class="fas fa-file-csv text-blue-600"></i>
                         CSV
                     </button>
-                    <button class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg text-sm hover:from-amber-700 hover:to-amber-800 transition flex items-center gap-2">
+                    <button onclick="emailReport()" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg text-sm hover:from-amber-700 hover:to-amber-800 transition flex items-center gap-2">
                         <i class="fas fa-envelope"></i>
                         Email Report
                     </button>
@@ -765,6 +681,7 @@
     <%- include('../partials/footer') %>
 
     <!-- JavaScript for Charts and Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script>
         // Update date and time
         function updateDateTime() {
@@ -778,28 +695,40 @@
         setInterval(updateDateTime, 1000);
         updateDateTime();
 
-        // User Growth Chart (Descriptive)
+        // User Growth Chart - Using Backend Data
+        const userGrowthMonths = <%- JSON.stringify(userGrowthMonths || ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']) %>;
+        const userGrowthNew = <%- JSON.stringify(userGrowthNew || [245, 320, 412, 389, 456, 512]) %>;
+        const userGrowthActive = <%- JSON.stringify(userGrowthActive || [189, 245, 312, 356, 412, 478]) %>;
+        
         const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
         new Chart(userGrowthCtx, {
             type: 'line',
             data: {
-                labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+                labels: userGrowthMonths,
                 datasets: [
                     {
                         label: 'New Users',
-                        data: [245, 320, 412, 389, 456, 512],
+                        data: userGrowthNew,
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
                     },
                     {
                         label: 'Active Users',
-                        data: [189, 245, 312, 356, 412, 478],
+                        data: userGrowthActive,
                         borderColor: '#f59e0b',
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
                     }
                 ]
             },
@@ -808,18 +737,24 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
                 }
             }
         });
 
-        // Activity Distribution Chart (Descriptive)
+        // Activity Distribution Chart - Using Backend Data
+        const activityTypes = <%- JSON.stringify(activityTypes || ['Posts', 'Document Requests', 'Complaints', 'Chatbot Inquiries', 'Profile Updates']) %>;
+        const activityCounts = <%- JSON.stringify(activityCounts || [35, 28, 15, 12, 10]) %>;
+        
         const activityCtx = document.getElementById('activityDistributionChart').getContext('2d');
         new Chart(activityCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Posts', 'Document Requests', 'Complaints', 'Chatbot Inquiries', 'Profile Updates'],
+                labels: activityTypes,
                 datasets: [{
-                    data: [35, 28, 15, 12, 10],
+                    data: activityCounts,
                     backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6'],
                     borderWidth: 0
                 }]
@@ -833,24 +768,49 @@
             }
         });
 
-        // Simulate real-time updates
+        // Report Generation Functions
+        function generateReport(format) {
+            window.location.href = `/administrator/reports/generate?format=${format}&type=full`;
+        }
+        
+        function emailReport() {
+            const email = prompt('Enter email address to send report:', '<%= user?.email %>');
+            if (email) {
+                fetch('/administrator/reports/email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, format: 'pdf' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Report sent successfully to ' + email);
+                    } else {
+                        alert('Error sending report');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error sending report');
+                });
+            }
+        }
+
+        // Real-time updates
         setInterval(() => {
-            // Randomize some values to simulate live data
-            const usersLoggedIn = document.getElementById('usersLoggedIn');
-            const moderatorsOnline = document.getElementById('moderatorsOnline');
-            
-            if (usersLoggedIn) {
-                const current = parseInt(usersLoggedIn.textContent);
-                const change = Math.floor(Math.random() * 10) - 3;
-                usersLoggedIn.textContent = Math.max(800, current + change);
-            }
-            
-            if (moderatorsOnline) {
-                const current = parseInt(moderatorsOnline.textContent);
-                const change = Math.floor(Math.random() * 3) - 1;
-                moderatorsOnline.textContent = Math.max(15, Math.min(22, current + change));
-            }
-        }, 30000); // Update every 30 seconds
+            fetch('/administrator/analytics/realtime')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const usersLoggedIn = document.getElementById('usersLoggedIn');
+                        const moderatorsOnline = document.getElementById('moderatorsOnline');
+                        
+                        if (usersLoggedIn) usersLoggedIn.textContent = data.usersLoggedIn;
+                        if (moderatorsOnline) moderatorsOnline.textContent = data.moderatorsOnline;
+                    }
+                })
+                .catch(err => console.error('Error fetching real-time data:', err));
+        }, 30000);
     </script>
 </body>
 </html>

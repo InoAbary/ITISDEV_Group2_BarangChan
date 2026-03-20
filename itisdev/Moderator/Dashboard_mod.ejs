@@ -1,4 +1,4 @@
-<!-- moderator/dashboard.ejs -->
+<!-- Moderator/Dashboard_mod.ejs - Fixed EJS Tags -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +18,6 @@
             background-repeat: repeat;
         }
         
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -35,13 +34,11 @@
             background: #a0aec0;
         }
 
-        /* Status badges */
         .status-pending { background-color: #fff3e0; color: #ef6c00; }
-        .status-in-progress { background-color: #e3f2fd; color: #1565c0; }
+        .status-accepted { background-color: #e3f2fd; color: #1565c0; }
         .status-completed { background-color: #e8f5e8; color: #2e7d32; }
-        .status-rejected { background-color: #ffebee; color: #c62828; }
+        .status-cancelled { background-color: #ffebee; color: #c62828; }
 
-        /* Urgency badges */
         .urgency-low { background-color: #e6f7e6; color: #2e7d32; }
         .urgency-medium { background-color: #fff3e0; color: #ef6c00; }
         .urgency-high { background-color: #ffebee; color: #c62828; }
@@ -53,7 +50,6 @@
             100% { opacity: 1; }
         }
 
-        /* Card hover effects */
         .stat-card {
             transition: all 0.2s ease;
         }
@@ -62,16 +58,39 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* Table row hover */
         .table-row-hover:hover {
             background-color: #f9fafb;
         }
         
-        /* Chart container to prevent overflow */
         .chart-container {
             position: relative;
             height: 200px;
             width: 100%;
+        }
+        
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal.hidden {
+            display: none;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -83,7 +102,7 @@
     <!-- Main Content -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        <!-- Welcome Banner (Moderator Version) -->
+        <!-- Welcome Banner -->
         <div class="bg-gradient-to-r from-amber-800 to-amber-700 rounded-2xl shadow-lg mb-6 overflow-hidden">
             <div class="px-6 py-5 text-white flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
@@ -93,15 +112,12 @@
                     </h1>
                     <p class="text-amber-100 mt-1 text-sm md:text-base">
                         <i class="fas fa-map-marker-alt mr-1"></i> 
-                        <%= user.barangay || 'Barangay San Antonio' %>, <%= user.city || 'Quezon City' %>
+                        <%- user.barangay || 'Barangay San Antonio' %>, <%- user.city || 'Baliuag' %>
                     </p>
                 </div>
                 <div class="mt-3 md:mt-0 flex items-center gap-3">
                     <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                        <i class="fas fa-clock mr-2"></i>Last login: Today, 8:30 AM
-                    </span>
-                    <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                        <i class="fas fa-user-check mr-2"></i>Moderator Level 2
+                        <i class="fas fa-clock mr-2"></i>Moderator
                     </span>
                 </div>
             </div>
@@ -127,8 +143,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Pending Posts</p>
-                        <p class="text-3xl font-bold text-gray-800">24</p>
-                        <p class="text-xs text-amber-600 mt-2"><i class="fas fa-clock"></i> 8 awaiting review</p>
+                        <p class="text-3xl font-bold text-gray-800"><%= stats.pendingPosts %></p>
+                        <p class="text-xs text-amber-600 mt-2"><i class="fas fa-clock"></i> <%= stats.awaitingReview %> awaiting review</p>
                     </div>
                     <div class="bg-amber-100 p-3 rounded-lg">
                         <i class="fas fa-comments text-amber-600 text-xl"></i>
@@ -139,8 +155,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Document Requests</p>
-                        <p class="text-3xl font-bold text-gray-800">17</p>
-                        <p class="text-xs text-blue-600 mt-2"><i class="fas fa-hourglass-half"></i> 12 in progress</p>
+                        <p class="text-3xl font-bold text-gray-800"><%= stats.totalRequests %></p>
+                        <p class="text-xs text-blue-600 mt-2"><i class="fas fa-hourglass-half"></i> <%= stats.inProgressRequests %> in progress</p>
                     </div>
                     <div class="bg-blue-100 p-3 rounded-lg">
                         <i class="fas fa-file-alt text-blue-600 text-xl"></i>
@@ -151,8 +167,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Urgent Issues</p>
-                        <p class="text-3xl font-bold text-gray-800">6</p>
-                        <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-triangle"></i> 2 emergencies</p>
+                        <p class="text-3xl font-bold text-gray-800"><%= stats.urgentIssues %></p>
+                        <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-triangle"></i> <%= stats.emergencies %> emergencies</p>
                     </div>
                     <div class="bg-red-100 p-3 rounded-lg">
                         <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
@@ -163,8 +179,10 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Resolved This Week</p>
-                        <p class="text-3xl font-bold text-gray-800">43</p>
-                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> +12 from last week</p>
+                        <p class="text-3xl font-bold text-gray-800"><%= stats.resolvedThisWeek %></p>
+                        <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> 
+                            <%= stats.resolvedIncrease > 0 ? '+' + stats.resolvedIncrease : stats.resolvedIncrease %> from last week
+                        </p>
                     </div>
                     <div class="bg-green-100 p-3 rounded-lg">
                         <i class="fas fa-check-double text-green-600 text-xl"></i>
@@ -173,12 +191,12 @@
             </div>
         </div>
 
-        <!-- Main Grid: Left Analytics + Right Quick Actions -->
+        <!-- Main Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- LEFT COLUMN - Analytics and Charts -->
+            <!-- LEFT COLUMN -->
             <div class="lg:col-span-8 space-y-6">
-                <!-- Activity Chart - FIXED VERSION -->
+                <!-- Activity Chart -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-semibold text-gray-700 flex items-center gap-2">
@@ -188,16 +206,14 @@
                         <select id="chartTimeRange" class="text-sm border border-gray-300 rounded-lg px-3 py-1 bg-white">
                             <option value="7">Last 7 days</option>
                             <option value="30">Last 30 days</option>
-                            <option value="this">This month</option>
                         </select>
                     </div>
-                    <!-- Chart container with fixed ID and proper sizing -->
                     <div class="chart-container">
                         <canvas id="activityChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Recent Document Requests (Table) -->
+                <!-- Recent Document Requests -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
                         <h3 class="font-semibold text-gray-700 flex items-center gap-2">
@@ -221,42 +237,38 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <% 
-                                const sampleRequests = [
-                                    { id: 'DOC-2026-001', resident: 'Maria Santos', type: 'Barangay Clearance', date: '2026-03-16', status: 'pending' },
-                                    { id: 'DOC-2026-002', resident: 'Juan Dela Cruz', type: 'Certificate of Indigency', date: '2026-03-16', status: 'in-progress' },
-                                    { id: 'DOC-2026-003', resident: 'Elena Rodriguez', type: 'Business Permit', date: '2026-03-15', status: 'completed' },
-                                    { id: 'DOC-2026-004', resident: 'Pedro Santos', type: 'Barangay Clearance', date: '2026-03-15', status: 'pending' },
-                                    { id: 'DOC-2026-005', resident: 'Ana Lopez', type: 'Residency Certificate', date: '2026-03-14', status: 'rejected' }
-                                ];
-                                %>
-                                <% sampleRequests.forEach(function(req) { %>
-                                <tr class="table-row-hover">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= req.id %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.resident %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.type %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.date %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <% if (req.status === 'pending') { %>
-                                            <span class="status-pending px-3 py-1 rounded-full text-xs font-medium">Pending</span>
-                                        <% } else if (req.status === 'in-progress') { %>
-                                            <span class="status-in-progress px-3 py-1 rounded-full text-xs font-medium">In Progress</span>
-                                        <% } else if (req.status === 'completed') { %>
-                                            <span class="status-completed px-3 py-1 rounded-full text-xs font-medium">Completed</span>
-                                        <% } else if (req.status === 'rejected') { %>
-                                            <span class="status-rejected px-3 py-1 rounded-full text-xs font-medium">Rejected</span>
-                                        <% } %>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <button class="text-amber-600 hover:text-amber-700 mr-2" title="Update Status">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="text-blue-600 hover:text-blue-700" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <% }) %>
+                                <% if (recentRequests && recentRequests.length > 0) { %>
+                                    <% recentRequests.forEach(function(req) { %>
+                                    <tr class="table-row-hover">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= req.id %></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.resident %></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.type %></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><%= req.date %></td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="status-<%= req.status %> px-3 py-1 rounded-full text-xs font-medium">
+                                                <%= req.statusDisplay %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="updateRequestStatus(<%= req.original_id %>)" 
+                                                    class="text-amber-600 hover:text-amber-700 mr-2" title="Update Status">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button onclick="viewRequestDetails(<%= req.original_id %>)" 
+                                                    class="text-blue-600 hover:text-blue-700" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                            <i class="fas fa-inbox text-3xl mb-2"></i>
+                                            <p>No document requests found</p>
+                                        </td>
+                                    </tr>
+                                <% } %>
                             </tbody>
                         </table>
                     </div>
@@ -274,61 +286,63 @@
                         </a>
                     </div>
                     <div class="divide-y divide-gray-200">
-                        <% 
-                        const pendingPosts = [
-                            { id: 101, author: 'John Smith', content: 'Complaint about noise in Phase 3...', time: '10 mins ago', urgency: 'medium', reports: 2 },
-                            { id: 102, author: 'Lisa Marie', content: 'Suspicious activity near the covered court...', time: '25 mins ago', urgency: 'high', reports: 5 },
-                            { id: 103, author: 'Ramon Bautista', content: 'Request for additional street lights...', time: '1 hour ago', urgency: 'low', reports: 0 },
-                            { id: 104, author: 'Cynthia Villar', content: 'EMERGENCY: Fallen tree blocking road...', time: '2 hours ago', urgency: 'emergency', reports: 8 }
-                        ];
-                        %>
-                        <% pendingPosts.forEach(function(post) { %>
-                        <div class="p-4 hover:bg-gray-50 transition">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-medium text-gray-800"><%= post.author %></span>
-                                        <% if (post.urgency === 'low') { %>
-                                            <span class="urgency-low px-2 py-0.5 rounded-full text-xs">Low</span>
-                                        <% } else if (post.urgency === 'medium') { %>
-                                            <span class="urgency-medium px-2 py-0.5 rounded-full text-xs">Medium</span>
-                                        <% } else if (post.urgency === 'high') { %>
-                                            <span class="urgency-high px-2 py-0.5 rounded-full text-xs">High</span>
-                                        <% } else if (post.urgency === 'emergency') { %>
-                                            <span class="urgency-emergency px-2 py-0.5 rounded-full text-xs">🚨 EMERGENCY</span>
-                                        <% } %>
-                                        <% if (post.reports > 0) { %>
-                                            <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">
-                                                <i class="fas fa-flag mr-1"></i><%= post.reports %> reports
-                                            </span>
-                                        <% } %>
+                        <% if (pendingPosts && pendingPosts.length > 0) { %>
+                            <% pendingPosts.forEach(function(post) { %>
+                            <div class="p-4 hover:bg-gray-50 transition">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="font-medium text-gray-800"><%= post.author %></span>
+                                            <% if (post.urgency === 'low') { %>
+                                                <span class="urgency-low px-2 py-0.5 rounded-full text-xs">Low</span>
+                                            <% } else if (post.urgency === 'medium') { %>
+                                                <span class="urgency-medium px-2 py-0.5 rounded-full text-xs">Medium</span>
+                                            <% } else if (post.urgency === 'high') { %>
+                                                <span class="urgency-high px-2 py-0.5 rounded-full text-xs">High</span>
+                                            <% } else if (post.urgency === 'emergency') { %>
+                                                <span class="urgency-emergency px-2 py-0.5 rounded-full text-xs">🚨 EMERGENCY</span>
+                                            <% } %>
+                                            <% if (post.reports > 0) { %>
+                                                <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">
+                                                    <i class="fas fa-flag mr-1"></i><%= post.reports %> reports
+                                                </span>
+                                            <% } %>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-2"><%= post.content %></p>
+                                        <div class="flex items-center gap-3 text-xs text-gray-500">
+                                            <span><i class="far fa-clock"></i> <%= post.time_ago %></span>
+                                        </div>
                                     </div>
-                                    <p class="text-sm text-gray-700 mb-2"><%= post.content %></p>
-                                    <div class="flex items-center gap-3 text-xs text-gray-500">
-                                        <span><i class="far fa-clock"></i> <%= post.time %></span>
+                                    <div class="flex items-center gap-2 ml-4">
+                                        <button onclick="approvePost(<%= post.id %>)" 
+                                                class="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Approve">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button onclick="rejectPost(<%= post.id %>)" 
+                                                class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Reject">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button onclick="viewPostDetails(<%= post.id %>)" 
+                                                class="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Review">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="flex items-center gap-2 ml-4">
-                                    <button class="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Approve">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Reject">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                    <button class="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Review">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        <% }) %>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="p-8 text-center text-gray-500">
+                                <i class="fas fa-check-circle text-3xl mb-2 text-green-500"></i>
+                                <p>No pending posts! All caught up.</p>
+                            </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN - Quick Actions and Status Overview -->
+            <!-- RIGHT COLUMN -->
             <div class="lg:col-span-4 space-y-6">
-                <!-- Moderator Quick Actions -->
+                <!-- Quick Actions -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                     <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-4 py-3">
                         <h3 class="font-semibold text-white flex items-center gap-2">
@@ -336,87 +350,69 @@
                         </h3>
                     </div>
                     <div class="p-4 space-y-3">
-                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-amber-50 rounded-lg text-gray-700 transition group">
+                        <a href="/moderator/posts?status=pending" class="flex items-center gap-3 p-3 hover:bg-amber-50 rounded-lg text-gray-700 transition group">
                             <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-200">
                                 <i class="fas fa-check-double text-amber-600"></i>
                             </div>
                             <div>
-                                <p class="font-medium text-sm">Bulk Approve Posts</p>
-                                <p class="text-xs text-gray-500">Approve multiple pending posts</p>
+                                <p class="font-medium text-sm">Review Pending Posts</p>
+                                <p class="text-xs text-gray-500"><%= stats.awaitingReview %> posts need review</p>
                             </div>
                         </a>
-                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg text-gray-700 transition group">
+                        <a href="/moderator/requests?status=pending" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg text-gray-700 transition group">
                             <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200">
-                                <i class="fas fa-file-pdf text-blue-600"></i>
+                                <i class="fas fa-file-alt text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm">Process Requests</p>
+                                <p class="text-xs text-gray-500"><%= stats.inProgressRequests %> pending requests</p>
+                            </div>
+                        </a>
+                        <a href="/moderator/reports/generate?type=weekly" class="flex items-center gap-3 p-3 hover:bg-green-50 rounded-lg text-gray-700 transition group">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200">
+                                <i class="fas fa-file-pdf text-green-600"></i>
                             </div>
                             <div>
                                 <p class="font-medium text-sm">Generate Reports</p>
-                                <p class="text-xs text-gray-500">Weekly/Monthly activity report</p>
-                            </div>
-                        </a>
-                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-green-50 rounded-lg text-gray-700 transition group">
-                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200">
-                                <i class="fas fa-user-shield text-green-600"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-sm">Assign Tasks</p>
-                                <p class="text-xs text-gray-500">Delegate to other moderators</p>
-                            </div>
-                        </a>
-                        <a href="#" class="flex items-center gap-3 p-3 hover:bg-purple-50 rounded-lg text-gray-700 transition group">
-                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200">
-                                <i class="fas fa-bell text-purple-600"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-sm">Send Announcement</p>
-                                <p class="text-xs text-gray-500">Broadcast to all residents</p>
+                                <p class="text-xs text-gray-500">Weekly activity report</p>
                             </div>
                         </a>
                     </div>
                 </div>
 
-                <!-- Urgent Issues Summary -->
+                <!-- Urgent Issues -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                     <div class="px-4 py-3 border-b border-gray-200 bg-red-50">
                         <h3 class="font-semibold text-red-700 flex items-center gap-2">
                             <i class="fas fa-exclamation-triangle"></i>
-                            Urgent Issues (6)
+                            Urgent Issues (<%= stats.urgentIssues %>)
                         </h3>
                     </div>
-                    <div class="divide-y divide-gray-200">
-                        <div class="p-3 flex items-start gap-2">
-                            <div class="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium">Broken street light - Phase 2</p>
-                                <p class="text-xs text-gray-500">Reported 2 hours ago • 12 residents affected</p>
+                    <div class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+                        <% if (urgentIssues && urgentIssues.length > 0) { %>
+                            <% urgentIssues.forEach(function(issue) { %>
+                            <div class="p-3 flex items-start gap-2">
+                                <div class="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium"><%= issue.title %></p>
+                                    <p class="text-xs text-gray-500"><%= issue.time_ago %> • <%= issue.comments %> comments</p>
+                                    <p class="text-xs text-amber-600 mt-1"><i class="fas fa-map-marker-alt"></i> <%= issue.location %></p>
+                                </div>
+                                <span class="text-xs <%= issue.urgency === 'emergency' ? 'bg-purple-100 text-purple-600' : 'bg-red-100 text-red-600' %> px-2 py-1 rounded-full">
+                                    <%= issue.urgency === 'emergency' ? 'Emergency' : 'High' %>
+                                </span>
                             </div>
-                            <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">High</span>
-                        </div>
-                        <div class="p-3 flex items-start gap-2">
-                            <div class="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium">Flooding in Phase 4</p>
-                                <p class="text-xs text-gray-500">Reported 5 hours ago • 25 residents affected</p>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="p-6 text-center text-gray-500">
+                                <i class="fas fa-check-circle text-3xl mb-2 text-green-500"></i>
+                                <p>No urgent issues</p>
                             </div>
-                            <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">High</span>
-                        </div>
-                        <div class="p-3 flex items-start gap-2">
-                            <div class="w-2 h-2 bg-purple-600 rounded-full mt-2"></div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium">Suspicious person near school</p>
-                                <p class="text-xs text-gray-500">Reported 30 mins ago • Immediate attention needed</p>
-                            </div>
-                            <span class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">Emergency</span>
-                        </div>
-                    </div>
-                    <div class="p-3 bg-gray-50">
-                        <a href="#" class="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center justify-center gap-1">
-                            View All Urgent Issues <i class="fas fa-arrow-right"></i>
-                        </a>
+                        <% } %>
                     </div>
                 </div>
 
-                <!-- System Status / Performance -->
+                <!-- System Status -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
                     <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
                         <i class="fas fa-server text-amber-600"></i>
@@ -425,207 +421,182 @@
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-600">Response Time</span>
-                            <span class="text-sm font-medium text-green-600">98 ms</span>
+                            <span class="text-sm font-medium text-green-600"><%= systemStats.responseTime %> ms</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-600">Active Users</span>
-                            <span class="text-sm font-medium">245 online</span>
+                            <span class="text-sm font-medium"><%= systemStats.activeUsers %> online</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-600">AI Chatbot Load</span>
-                            <span class="text-sm font-medium text-green-600">Normal</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">Server Uptime</span>
-                            <span class="text-sm font-medium">99.9%</span>
+                            <span class="text-sm font-medium text-green-600"><%= systemStats.chatbotLoad %></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Recent Moderator Activity -->
+                <!-- Recent Activity -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
                     <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
                         <i class="fas fa-history text-amber-600"></i>
                         Recent Activity
                     </h3>
-                    <div class="space-y-3">
-                        <div class="flex items-start gap-2 text-sm">
-                            <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
-                            <div>
-                                <p class="text-gray-700"><span class="font-medium">You</span> approved 5 posts</p>
-                                <p class="text-xs text-gray-500">10 minutes ago</p>
+                    <div class="space-y-3 max-h-64 overflow-y-auto">
+                        <% if (recentActivity && recentActivity.length > 0) { %>
+                            <% recentActivity.forEach(function(activity) { %>
+                            <div class="flex items-start gap-2 text-sm">
+                                <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+                                <div>
+                                    <p class="text-gray-700"><span class="font-medium"><%= activity.moderator %></span> <%= activity.details %></p>
+                                    <p class="text-xs text-gray-500"><%= activity.time_ago %></p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="flex items-start gap-2 text-sm">
-                            <i class="fas fa-flag text-amber-500 mt-0.5"></i>
-                            <div>
-                                <p class="text-gray-700"><span class="font-medium">Maria</span> flagged a post</p>
-                                <p class="text-xs text-gray-500">25 minutes ago</p>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="text-center text-gray-500 py-4">
+                                <i class="fas fa-clock text-2xl mb-2"></i>
+                                <p>No recent activity</p>
                             </div>
-                        </div>
-                        <div class="flex items-start gap-2 text-sm">
-                            <i class="fas fa-file-signature text-blue-500 mt-0.5"></i>
-                            <div>
-                                <p class="text-gray-700"><span class="font-medium">John</span> processed a clearance</p>
-                                <p class="text-xs text-gray-500">1 hour ago</p>
-                            </div>
-                        </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Include chatbot -->
-    <%- include('../partials/chatbot') %>
+    <!-- Update Status Modal -->
+    <div id="updateStatusModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white rounded-t-2xl">
+                <h3 class="text-lg font-bold">Update Request Status</h3>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="currentRequestId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="requestStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+                        <option value="Pending">Pending</option>
+                        <option value="Accepted">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                    <textarea id="statusNotes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Add notes about this update..."></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-3">
+                    <button onclick="closeStatusModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="submitStatusUpdate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Update Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Include footer -->
+    <!-- Reject Post Modal -->
+    <div id="rejectPostModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="bg-gradient-to-r from-red-600 to-red-700 p-4 text-white rounded-t-2xl">
+                <h3 class="text-lg font-bold">Reject Post</h3>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="rejectPostId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Rejection</label>
+                    <textarea id="rejectReason" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400" placeholder="Please provide a reason for rejection..."></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-3">
+                    <button onclick="closeRejectModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="submitRejectPost()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Reject Post
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/chatbot') %>
     <%- include('../partials/footer') %>
 
-    <!-- Chart.js Script - FIXED VERSION -->
     <script>
+        let activityChart = null;
+        
+        const chartData = {
+            days: <%- JSON.stringify(chartData?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) %>,
+            posts: <%- JSON.stringify(chartData?.posts || [0, 0, 0, 0, 0, 0, 0]) %>,
+            requests: <%- JSON.stringify(chartData?.requests || [0, 0, 0, 0, 0, 0, 0]) %>,
+            resolved: <%- JSON.stringify(chartData?.resolved || [0, 0, 0, 0, 0, 0, 0]) %>
+        };
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // Store chart instance globally to destroy it later if needed
-            let activityChart = null;
-            
-            // Function to initialize or update chart
             function initChart() {
                 const ctx = document.getElementById('activityChart').getContext('2d');
+                if (activityChart) activityChart.destroy();
                 
-                // Destroy existing chart if it exists (prevents duplication)
-                if (activityChart) {
-                    activityChart.destroy();
-                }
-                
-                // Create new chart
                 activityChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        labels: chartData.days,
                         datasets: [
-                            {
-                                label: 'Posts',
-                                data: [65, 72, 80, 78, 85, 55, 42],
-                                borderColor: '#f59e0b',
-                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                tension: 0.4,
-                                fill: true,
-                                pointBackgroundColor: '#f59e0b',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 2,
-                                pointRadius: 4
-                            },
-                            {
-                                label: 'Document Requests',
-                                data: [45, 52, 48, 55, 60, 35, 28],
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                tension: 0.4,
-                                fill: true,
-                                pointBackgroundColor: '#3b82f6',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 2,
-                                pointRadius: 4
-                            },
-                            {
-                                label: 'Resolved',
-                                data: [40, 45, 52, 48, 58, 30, 25],
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                tension: 0.4,
-                                fill: true,
-                                pointBackgroundColor: '#10b981',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 2,
-                                pointRadius: 4
-                            }
+                            { label: 'Posts', data: chartData.posts, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.4, fill: true },
+                            { label: 'Document Requests', data: chartData.requests, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.4, fill: true },
+                            { label: 'Resolved', data: chartData.resolved, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true }
                         ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { 
-                                    usePointStyle: true,
-                                    padding: 20
-                                }
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                backgroundColor: '#1f2937',
-                                titleColor: '#f3f4f6',
-                                bodyColor: '#e5e7eb',
-                                borderColor: '#f59e0b',
-                                borderWidth: 1
-                            }
-                        },
-                        scales: {
-                            y: { 
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(156, 163, 175, 0.1)'
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        },
-                        elements: {
-                            line: {
-                                borderWidth: 2
-                            }
-                        },
-                        animation: {
-                            duration: 1000,
-                            easing: 'easeInOutQuart'
-                        }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
                 });
             }
-            
-            // Initialize chart
             initChart();
             
-            // Handle window resize to prevent chart distortion
             let resizeTimeout;
             window.addEventListener('resize', function() {
                 clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(function() {
-                    if (activityChart) {
-                        activityChart.resize();
-                    }
-                }, 250);
-            });
-            
-            // Handle time range change (example of updating chart data)
-            document.getElementById('chartTimeRange')?.addEventListener('change', function(e) {
-                // This is just an example of how you would update chart data
-                // In a real app, you would fetch new data based on the selected range
-                const range = e.target.value;
-                
-                // Simulate different data for different ranges
-                if (range === '30') {
-                    activityChart.data.datasets[0].data = [650, 720, 800, 780, 850, 550, 420];
-                    activityChart.data.datasets[1].data = [450, 520, 480, 550, 600, 350, 280];
-                    activityChart.data.datasets[2].data = [400, 450, 520, 480, 580, 300, 250];
-                } else if (range === 'this') {
-                    activityChart.data.datasets[0].data = [320, 380, 410, 390, 430, 280, 210];
-                    activityChart.data.datasets[1].data = [230, 260, 240, 280, 300, 180, 140];
-                    activityChart.data.datasets[2].data = [200, 230, 260, 240, 290, 150, 130];
-                } else {
-                    activityChart.data.datasets[0].data = [65, 72, 80, 78, 85, 55, 42];
-                    activityChart.data.datasets[1].data = [45, 52, 48, 55, 60, 35, 28];
-                    activityChart.data.datasets[2].data = [40, 45, 52, 48, 58, 30, 25];
-                }
-                
-                activityChart.update();
+                resizeTimeout = setTimeout(function() { if (activityChart) activityChart.resize(); }, 250);
             });
         });
+        
+        function approvePost(postId) {
+            if (confirm('Approve this post?')) {
+                fetch(`/moderator/posts/${postId}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                    .then(r => r.json()).then(d => { if (d.success) { showToast('Post approved!', 'success'); setTimeout(() => location.reload(), 1500); } else showToast('Error', 'error'); })
+                    .catch(() => showToast('Error', 'error'));
+            }
+        }
+        
+        function rejectPost(postId) { document.getElementById('rejectPostId').value = postId; document.getElementById('rejectPostModal').classList.remove('hidden'); }
+        function closeRejectModal() { document.getElementById('rejectPostModal').classList.add('hidden'); document.getElementById('rejectReason').value = ''; }
+        function submitRejectPost() {
+            const postId = document.getElementById('rejectPostId').value, reason = document.getElementById('rejectReason').value;
+            fetch(`/moderator/posts/${postId}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason }) })
+                .then(r => r.json()).then(d => { if (d.success) { showToast('Post rejected', 'success'); closeRejectModal(); setTimeout(() => location.reload(), 1500); } else showToast('Error', 'error'); })
+                .catch(() => showToast('Error', 'error'));
+        }
+        
+        let currentRequestId = null;
+        function updateRequestStatus(requestId) { currentRequestId = requestId; document.getElementById('currentRequestId').value = requestId; document.getElementById('updateStatusModal').classList.remove('hidden'); }
+        function closeStatusModal() { document.getElementById('updateStatusModal').classList.add('hidden'); document.getElementById('requestStatus').value = 'Pending'; document.getElementById('statusNotes').value = ''; }
+        function submitStatusUpdate() {
+            const status = document.getElementById('requestStatus').value, notes = document.getElementById('statusNotes').value;
+            fetch(`/moderator/requests/${currentRequestId}/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: status, notes: notes }) })
+                .then(r => r.json()).then(d => { if (d.success) { showToast('Status updated', 'success'); closeStatusModal(); setTimeout(() => location.reload(), 1500); } else showToast('Error', 'error'); })
+                .catch(() => showToast('Error', 'error'));
+        }
+        
+        function viewRequestDetails(id) { window.location.href = `/client/requests/${id}`; }
+        function viewPostDetails(id) { window.location.href = `/client/dashboard/${id}`; }
+        
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            toast.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span></div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
     </script>
 </body>
 </html>

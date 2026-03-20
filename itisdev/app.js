@@ -17,23 +17,27 @@ const requestController = require('./Controllers/requestController')
 const govformController = require('./Controllers/govFormController');
 const contactsController = require('./Controllers/contactsController')
 
+const moderatorController = require('./Controllers/moderatorController');
+
+const AdminController = require('./Controllers/adminController')
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==================== FILE UPLOAD CONFIGURATION ====================
 // Ensure upload directories exist
 
-async function generateHashes() {
-    const residentHash = await bcrypt.hash('resident123', 10);
-    const moderatorHash = await bcrypt.hash('moderator123', 10);
-    const adminHash = await bcrypt.hash('admin123', 10);
+// async function generateHashes() {
+//     const residentHash = await bcrypt.hash('resident123', 10);
+//     const moderatorHash = await bcrypt.hash('moderator123', 10);
+//     const adminHash = await bcrypt.hash('admin123', 10);
     
-    console.log('resident@barangchan.ph hash:', residentHash);
-    console.log('moderator@barangchan.ph hash:', moderatorHash);
-    console.log('admin@barangchan.ph hash:', adminHash);
-}
+//     console.log('resident@barangchan.ph hash:', residentHash);
+//     console.log('moderator@barangchan.ph hash:', moderatorHash);
+//     console.log('admin@barangchan.ph hash:', adminHash);
+// }
 
-generateHashes();
+// generateHashes();
 const uploadDirs = [
     './public/uploads/complaints',
     './public/uploads/requests',
@@ -526,54 +530,7 @@ app.get('/client/govforms/api/form/:id', govformController.getFormDetails);
 app.get('/client/govforms/api/search', govformController.searchForms);
 
 
-// ==================== MODERATOR ROUTES ====================
-app.get('/moderator/dashboard', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalPosts: posts.length,
-        pendingPosts: posts.filter(p => p.status === 'pending').length,
-        openPosts: posts.filter(p => p.status === 'open').length,
-        closedPosts: posts.filter(p => p.status === 'closed').length,
-        totalRequests: documentRequests.length,
-        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
-    };
-    
-    res.render('Dashboard_mod', {
-        title: 'Moderator Dashboard - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentPosts: posts.slice(0, 10),
-        recentRequests: documentRequests.slice(0, 10)
-    });
-});
 
-app.get('/moderator/posts', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalPosts: posts.length,
-        pendingPosts: posts.filter(p => p.status === 'pending').length,
-        openPosts: posts.filter(p => p.status === 'open').length,
-        closedPosts: posts.filter(p => p.status === 'closed').length,
-        totalRequests: documentRequests.length,
-        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
-    };
-    
-    res.render('posts_mod', {  // Note: special name to avoid conflict
-        title: 'Moderator Posts - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentPosts: posts.slice(0, 10),
-        recentRequests: documentRequests.slice(0, 10)
-    });
-});
 
 // Delete reply (moderator only)
 app.post('/client/forum/reply/:replyId/delete', forumController.deleteReply);
@@ -589,123 +546,57 @@ app.post('/api/contacts/:contactId/favorite', contactsController.toggleFavorite)
 app.get('/api/contacts/search', contactsController.searchContacts);
 app.get('/api/contacts/officials/:barangay', contactsController.getBarangayOfficials);
 
+
+app.get('/moderator/dashboard', moderatorController.getDashboard);
+
+// Posts Management
+app.get('/moderator/posts', moderatorController.getPosts);
+app.post('/moderator/posts/:id/approve', moderatorController.approvePost);
+app.post('/moderator/posts/:id/reject', moderatorController.rejectPost);
+
+// Document Requests Management
+//app.get('/moderator/requests', moderatorController.getRequests); // You'll need to add this method
+app.post('/moderator/requests/:id/update', moderatorController.updateRequestStatus);
+
+// Help Desk / Support
+//app.get('/moderator/help-desk', moderatorController.getHelpDesk); // You'll need to add this method
+
+// Reports & Analytics
+app.get('/moderator/reports/generate', moderatorController.generateReport);
+app.get('/moderator/urgent-issues', moderatorController.getUrgentIssues);
+
+// Keep the existing moderator routes for backward compatibility
+app.get('/moderator/posts', (req, res) => {
+    // This will be handled by ModeratorController.getPosts
+    // But if you want to keep the original, you can redirect
+    res.redirect('/moderator/posts');
+});
+
 app.get('/moderator/requests', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalPosts: posts.length,
-        pendingPosts: posts.filter(p => p.status === 'pending').length,
-        openPosts: posts.filter(p => p.status === 'open').length,
-        closedPosts: posts.filter(p => p.status === 'closed').length,
-        totalRequests: documentRequests.length,
-        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
-    };
-    
-    res.render('requests_mod', {  // Note: special name to avoid conflict
-        title: 'Moderator Requests - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentPosts: posts.slice(0, 10),
-        recentRequests: documentRequests.slice(0, 10)
-    });
+    res.redirect('/moderator/requests');
 });
 
 app.get('/moderator/help-desk', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalPosts: posts.length,
-        pendingPosts: posts.filter(p => p.status === 'pending').length,
-        openPosts: posts.filter(p => p.status === 'open').length,
-        closedPosts: posts.filter(p => p.status === 'closed').length,
-        totalRequests: documentRequests.length,
-        pendingRequests: documentRequests.filter(r => r.status === 'pending').length
-    };
-    
-    res.render('help_desk_mod', {  // Note: special name to avoid conflict
-        title: 'Moderator Help Desk - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentPosts: posts.slice(0, 10),
-        recentRequests: documentRequests.slice(0, 10)
-    });
+    res.redirect('/moderator/help-desk');
 });
+
+
 
 
 // ==================== ADMINISTRATOR ROUTES ====================
-app.get('/administrator/dashboard', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalUsers: users.length,
-        residents: users.filter(u => u.role === 'resident').length,
-        moderators: users.filter(u => u.role === 'moderator').length,
-        admins: users.filter(u => u.role === 'administrator').length,
-        totalPosts: posts.length,
-        totalRequests: documentRequests.length
-    };
-    
-    res.render('Dashboard_admin', {
-        title: 'Admin Dashboard - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentUsers: users.slice(0, 5)
-    });
-});
+app.get('/administrator/dashboard', AdminController.getDashboard);
 
+// Moderator Management
+app.get('/administrator/moderators', AdminController.getModerators);
+app.post('/administrator/moderators/:id/update', AdminController.updateModeratorRole);
+
+// Reports & Analytics
+app.get('/administrator/reports/generate', AdminController.generateReport);
+app.get('/administrator/analytics/realtime', AdminController.getRealTimeAnalytics);
+
+// Keep the existing admin routes for backward compatibility
 app.get('/administrator/users', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalUsers: users.length,
-        residents: users.filter(u => u.role === 'resident').length,
-        moderators: users.filter(u => u.role === 'moderator').length,
-        admins: users.filter(u => u.role === 'administrator').length,
-        totalPosts: posts.length,
-        totalRequests: documentRequests.length
-    };
-    
-    res.render('users_admin', {
-        title: 'Manage Users - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentUsers: users.slice(0, 5)
-    });
-});
-
-app.get('/administrator/moderators', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    if (req.session.user.role !== 'administrator') {
-        return res.status(403).send('Access denied.');
-    }
-    
-    const stats = {
-        totalUsers: users.length,
-        residents: users.filter(u => u.role === 'resident').length,
-        moderators: users.filter(u => u.role === 'moderator').length,
-        admins: users.filter(u => u.role === 'administrator').length,
-        totalPosts: posts.length,
-        totalRequests: documentRequests.length
-    };
-    
-    res.render('moderators_admin', {
-        title: 'Manage Users - BarangChan',
-        user: req.session.user,
-        stats: stats,
-        recentUsers: users.slice(0, 5)
-    });
+    res.redirect('/administrator/moderators');
 });
 // ==================== PROFILE ================
 
