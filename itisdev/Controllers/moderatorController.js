@@ -586,145 +586,510 @@ class moderatorController {
         }
     }
     
-    // Get all posts for moderation
-    static async getPosts(req, res) {
-        try {
-            if (!req.session.user || (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator')) {
-                return res.status(403).send('Access denied.');
-            }
-            
-            const { status, type, urgency, page = 1 } = req.query;
-            const limit = 20;
-            const offset = (parseInt(page) - 1) * limit;
-            
-            let whereClause = 'WHERE 1=1';
-            const params = [];
-            
-            if (status && status !== 'all') {
-                whereClause += ' AND sp.status = ?';
-                params.push(status);
-            }
-            
-            if (type && type !== 'all') {
-                whereClause += ' AND sp.type = ?';
-                params.push(type);
-            }
-            
-            if (urgency && urgency !== 'all') {
-                whereClause += ' AND sp.urgency = ?';
-                params.push(urgency);
-            }
-            
-            // Get total count
-            const [countResult] = await db.execute(`
-                SELECT COUNT(*) as total FROM StatusPost sp ${whereClause}
-            `, params);
-            
-            const totalPosts = countResult[0].total;
-            const totalPages = Math.ceil(totalPosts / limit);
-            
-            // Build the main query
-            const query = `
-                SELECT 
-                    sp.*,
-                    CONCAT(u.first_name, ' ', u.last_name) as author_name,
-                    u.email as author_email,
-                    a.barangay as author_barangay,
-                    (SELECT COUNT(*) FROM PostReport WHERE post_id = sp.post_id) as reports_count,
-                    (SELECT COUNT(*) FROM PostComment WHERE post_id = sp.post_id) as comments_count
-                FROM StatusPost sp
-                JOIN User u ON sp.user_id = u.user_id
-                LEFT JOIN Address a ON u.user_id = a.user_id
-                ${whereClause}
-                ORDER BY 
-                    CASE sp.urgency 
-                        WHEN 'emergency' THEN 1 
-                        WHEN 'high' THEN 2 
-                        ELSE 3 
-                    END,
-                    sp.date_posted DESC
-                LIMIT ? OFFSET ?
-            `;
-            
-            // Create a new params array with limit and offset as integers
-            const queryParams = [...params];
-            queryParams.push(parseInt(limit));
-            queryParams.push(parseInt(offset));
-            
-            const [posts] = await db.execute(query, queryParams);
-            
-            res.render('posts_mod', {
-                title: 'Moderate Posts - BarangChan',
-                user: req.session.user,
-                posts: posts,
-                totalPosts: totalPosts,
-                totalPages: totalPages,
-                currentPage: parseInt(page),
-                query: req.query,
-                success: req.session.success,
-                error: req.session.error
-            });
-            
-            delete req.session.success;
-            delete req.session.error;
-            
-        } catch (error) {
-            console.error('Error fetching posts:', error);
-            res.status(500).send(`
-                <h1>Error Loading Posts</h1>
-                <p>There was an error loading the posts management page.</p>
-                <p>Error: ${error.message}</p>
-                <p><a href="/moderator/dashboard">Return to Dashboard</a></p>
-            `);
+    // Get all posts for moderation with proper schema arguments
+    // Get all posts for moderation with proper schema arguments
+static async getPosts(req, res) {
+    try {
+        if (!req.session.user || (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator')) {
+            return res.status(403).send('Access denied.');
         }
+        
+        // Get filter parameters from query string - matching schema ENUM values
+        const { 
+            status,      // ENUM: 'Pending', 'Resolved', 'Closed'
+            type,        // ENUM: 'update', 'query', 'suggestion', 'complaint', 'announcement', 'emergency'
+            urgency,     // ENUM: 'low', 'medium', 'high', 'emergency'
+            page = 1,
+            search,
+            barangay,
+            sort = 'latest'
+        } = req.query;
+        
+        const limit = 20;
+        const offset = (parseInt(page) - 1) * limit;
+        
+        // Build WHERE clause
+        const whereConditions = [];
+        const params = [];
+        
+        // Filter by status
+        if (status && status !== 'all') {
+            whereConditions.push('sp.status = ?');
+            params.push(status);
+        }
+        
+        // Filter by type
+        if (type && type !== 'all') {
+            whereConditions.push('sp.type = ?');
+            params.push(type);
+        }
+        
+        // Filter by urgency
+        if (urgency && urgency !== 'all') {
+            whereConditions.push('sp.urgency = ?');
+            params.push(urgency);
+        }
+        
+        // Search by title or content
+        if (search && search.trim() !== '') {
+            whereConditions.push('(sp.title LIKE ? OR sp.body LIKE ?)');
+            const searchTerm = `%${search.trim()}%`;
+            params.push(searchTerm, searchTerm);
+        }
+        
+        // Filter by barangay
+        if (barangay && barangay !== 'all') {
+            whereConditions.push('a.barangay = ?');
+            params.push(barangay);
+        }
+        
+        const whereClause = whereConditions.length > 0 
+            ? 'WHERE ' + whereConditions.join(' AND ')
+            : '';
+        
+        // Get total count with filters
+        let countQuery = `
+            SELECT COUNT(*) as total 
+            FROM StatusPost sp
+            LEFT JOIN User u ON sp.user_id = u.user_id
+            LEFT JOIN Address a ON u.user_id = a.user_id
+            ${whereClause}
+        `;
+        
+        console.log('[getPosts] params count:', params.length, '| whereClause empty:', whereClause === '');
+        let countResult;
+        if (params.length > 0) {
+            console.log('[getPosts] count query WITH params');
+            [countResult] = await db.execute(countQuery, params);
+        } else {
+            console.log('[getPosts] count query WITHOUT params');
+            [countResult] = await db.execute(countQuery);
+        }
+        console.log('[getPosts] count OK:', countResult[0].total);
+        
+        const totalPosts = countResult[0].total;
+        const totalPages = Math.ceil(totalPosts / limit);
+        
+        // Build ORDER BY
+        let orderByClause = '';
+        switch(sort) {
+            case 'latest':
+                orderByClause = 'ORDER BY sp.date_posted DESC';
+                break;
+            case 'oldest':
+                orderByClause = 'ORDER BY sp.date_posted ASC';
+                break;
+            case 'most_urgent':
+                orderByClause = `
+                    ORDER BY 
+                        CASE sp.urgency 
+                            WHEN 'emergency' THEN 1 
+                            WHEN 'high' THEN 2 
+                            WHEN 'medium' THEN 3 
+                            WHEN 'low' THEN 4 
+                            ELSE 5 
+                        END,
+                        sp.date_posted DESC
+                `;
+                break;
+            case 'most_reported':
+                orderByClause = `
+                    ORDER BY 
+                        (SELECT COUNT(*) FROM PostReport WHERE post_id = sp.post_id) DESC,
+                        sp.date_posted DESC
+                `;
+                break;
+            case 'most_commented':
+                orderByClause = `
+                    ORDER BY 
+                        sp.comments_count DESC,
+                        sp.date_posted DESC
+                `;
+                break;
+            case 'most_liked':
+                orderByClause = `
+                    ORDER BY 
+                        sp.likes_count DESC,
+                        sp.date_posted DESC
+                `;
+                break;
+            default:
+                orderByClause = 'ORDER BY sp.date_posted DESC';
+        }
+        
+        // Main query — LIMIT/OFFSET inlined as integers to avoid mysql2 prepared-statement type error
+        const query = `
+            SELECT 
+                sp.post_id as id,
+                sp.user_id,
+                sp.title,
+                sp.body as content,
+                sp.status,
+                sp.type,
+                sp.urgency,
+                sp.likes_count as likes,
+                sp.comments_count as comments_count,
+                sp.shares_count as shares,
+                sp.is_official,
+                sp.date_posted as created_at,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.role as user_role,
+                a.barangay,
+                a.city,
+                a.street,
+                a.zip,
+                (SELECT COUNT(*) FROM PostReport WHERE post_id = sp.post_id) as reports_count,
+                (SELECT COUNT(*) FROM PostComment WHERE post_id = sp.post_id) as actual_comments_count,
+                TIMESTAMPDIFF(MINUTE, sp.date_posted, NOW()) as minutes_ago
+            FROM StatusPost sp
+            LEFT JOIN User u ON sp.user_id = u.user_id
+            LEFT JOIN Address a ON u.user_id = a.user_id
+            ${whereClause}
+            ${orderByClause}
+            LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
+        
+        console.log('[getPosts] executing main query, params.length:', params.length);
+        let posts;
+        if (params.length > 0) {
+            [posts] = await db.execute(query, params);
+        } else {
+            [posts] = await db.execute(query);
+        }
+        console.log('[getPosts] main query OK, rows:', posts.length);
+        
+        // Format posts for display
+        const formattedPosts = posts.map(post => ({
+            id: post.id,
+            user_id: post.user_id,
+            author_name: post.first_name && post.last_name ? `${post.first_name} ${post.last_name}` : 'Unknown User',
+            author_email: post.email,
+            barangay: post.barangay || 'Not specified',
+            title: post.title || '',
+            content: post.content || '',
+            status: post.status || 'Pending',
+            type: post.type || 'update',
+            urgency: post.urgency || 'low',
+            likes: post.likes || 0,
+            comments_count: post.comments_count || 0,
+            actual_comments_count: post.actual_comments_count || 0,
+            shares: post.shares || 0,
+            is_official: post.is_official === 1,
+            reports_count: post.reports_count || 0,
+            created_at: post.created_at,
+            time_ago: moderatorController.formatTimeAgo(post.minutes_ago),
+            user_avatar: post.first_name ? post.first_name.charAt(0).toUpperCase() : 'U'
+        }));
+        
+        // Get all available barangays for filter dropdown
+        let barangays = [];
+        try {
+            console.log('[getPosts] fetching barangays');
+            const [barangayList] = await db.execute(`
+                SELECT DISTINCT barangay 
+                FROM Address 
+                WHERE barangay IS NOT NULL AND barangay != ''
+                ORDER BY barangay
+            `);
+            console.log('[getPosts] barangays OK');
+            barangays = barangayList.map(b => b.barangay);
+        } catch (err) {
+            console.error('Error fetching barangays:', err.message);
+        }
+        
+        // Get filter options for counts
+        let statusCounts = [];
+        let typeCounts = [];
+        let urgencyCounts = [];
+        
+        try {
+            [statusCounts] = await db.execute(`
+                SELECT status, COUNT(*) as count 
+                FROM StatusPost 
+                GROUP BY status
+            `);
+        } catch (err) {
+            console.error('Error fetching status counts:', err.message);
+        }
+        
+        try {
+            [typeCounts] = await db.execute(`
+                SELECT type, COUNT(*) as count 
+                FROM StatusPost 
+                GROUP BY type
+            `);
+        } catch (err) {
+            console.error('Error fetching type counts:', err.message);
+        }
+        
+        try {
+            [urgencyCounts] = await db.execute(`
+                SELECT urgency, COUNT(*) as count 
+                FROM StatusPost 
+                GROUP BY urgency
+            `);
+        } catch (err) {
+            console.error('Error fetching urgency counts:', err.message);
+        }
+        
+        res.render('posts_mod', {
+            title: 'Moderate Posts - BarangChan',
+            user: req.session.user,
+            posts: formattedPosts,
+            totalPosts: totalPosts,
+            totalPages: totalPages,
+            currentPage: parseInt(page),
+            limit: limit,
+            query: req.query,
+            statusCounts: statusCounts,
+            typeCounts: typeCounts,
+            urgencyCounts: urgencyCounts,
+            barangays: barangays,
+            success: req.session.success,
+            error: req.session.error
+        });
+        
+        delete req.session.success;
+        delete req.session.error;
+        
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).send(`
+            <h1>Error Loading Posts</h1>
+            <p>There was an error loading the posts management page.</p>
+            <p>Error: ${error.message}</p>
+            <p>SQL Message: ${error.sqlMessage || 'N/A'}</p>
+            <p><a href="/moderator/dashboard">Return to Dashboard</a></p>
+        `);
     }
-    
-    // Get document requests for moderation
+}
+
+    // Get document requests for moderation with proper schema arguments
     static async getRequests(req, res) {
         try {
             if (!req.session.user || (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator')) {
                 return res.status(403).send('Access denied.');
             }
             
-            const { status, page = 1 } = req.query;
+            // Get filter parameters - matching RequestForm schema ENUM: 'Pending', 'Accepted', 'Cancelled'
+            const { 
+                status,      // ENUM: 'Pending', 'Accepted', 'Cancelled'
+                search,
+                barangay,
+                date_from,
+                date_to,
+                page = 1,
+                sort = 'latest'
+            } = req.query;
+            
             const limit = 20;
             const offset = (parseInt(page) - 1) * limit;
             
+            // Build WHERE clause
             let whereClause = 'WHERE 1=1';
             const params = [];
             
-            if (status && status !== 'all') { 
-                whereClause += ' AND r.status = ?'; 
-                params.push(status); 
+            // Filter by status (matches RequestForm.status ENUM)
+            if (status && status !== 'all') {
+                whereClause += ' AND r.status = ?';
+                params.push(status);
             }
             
-            // Get total count
-            const [countResult] = await db.execute(`
-                SELECT COUNT(*) as total FROM RequestForm r ${whereClause}
-            `, params);
+            // Search by name or document type
+            if (search && search.trim() !== '') {
+                whereClause += ' AND (r.name LIKE ? OR r.document_request LIKE ?)';
+                const searchTerm = `%${search.trim()}%`;
+                params.push(searchTerm, searchTerm);
+            }
             
+            // Filter by barangay (from Address table)
+            if (barangay && barangay !== 'all') {
+                whereClause += ' AND a.barangay = ?';
+                params.push(barangay);
+            }
+            
+            // Filter by date range
+            if (date_from) {
+                whereClause += ' AND DATE(r.request_date) >= ?';
+                params.push(date_from);
+            }
+            
+            if (date_to) {
+                whereClause += ' AND DATE(r.request_date) <= ?';
+                params.push(date_to);
+            }
+            
+            // Get total count with filters
+            let countQuery = `
+                SELECT COUNT(*) as total 
+                FROM RequestForm r
+                LEFT JOIN User u ON r.user_id = u.user_id
+                LEFT JOIN Address a ON u.user_id = a.user_id
+                ${whereClause}
+            `;
+            
+            const [countResult] = params.length > 0
+                ? await db.execute(countQuery, params)
+                : await db.execute(countQuery);
             const totalRequests = countResult[0].total;
             const totalPages = Math.ceil(totalRequests / limit);
             
-            // Get requests with user info
-            const [requests] = await db.execute(`
-                SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as requester_name,
-                       u.email as requester_email, u.phone as requester_phone
+            // Build ORDER BY
+            let orderByClause = '';
+            switch(sort) {
+                case 'latest':
+                    orderByClause = 'ORDER BY r.request_date DESC';
+                    break;
+                case 'oldest':
+                    orderByClause = 'ORDER BY r.request_date ASC';
+                    break;
+                case 'pending_first':
+                    orderByClause = `
+                        ORDER BY 
+                            CASE r.status 
+                                WHEN 'Pending' THEN 1 
+                                WHEN 'Accepted' THEN 2 
+                                WHEN 'Cancelled' THEN 3 
+                                ELSE 4 
+                            END,
+                            r.request_date DESC
+                    `;
+                    break;
+                default:
+                    orderByClause = 'ORDER BY r.request_date DESC';
+            }
+            
+            // Main query with all RequestForm fields
+            const query = `
+                SELECT 
+                    r.request_id as id,
+                    r.user_id,
+                    r.email,
+                    r.phone,
+                    r.name as requester_name,
+                    r.address as requester_address,
+                    r.document_request,
+                    r.status,
+                    r.request_date,
+                    u.first_name,
+                    u.last_name,
+                    u.username,
+                    u.email as user_email,
+                    u.phone as user_phone,
+                    a.barangay,
+                    a.city,
+                    a.street,
+                    a.zip,
+                    (SELECT COUNT(*) FROM RequestFile WHERE request_id = r.request_id) as file_count,
+                    TIMESTAMPDIFF(DAY, r.request_date, NOW()) as days_pending,
+                    CONCAT('REQ-', r.request_id, '-', YEAR(r.request_date)) as reference_number
                 FROM RequestForm r
-                JOIN User u ON r.user_id = u.user_id
+                LEFT JOIN User u ON r.user_id = u.user_id
+                LEFT JOIN Address a ON u.user_id = a.user_id
                 ${whereClause}
-                ORDER BY r.request_date DESC
-                LIMIT ? OFFSET ?
-            `, [...params, limit, offset]);
+                ${orderByClause}
+                LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+            `;
+            
+            // Execute with filter params only (LIMIT/OFFSET are inlined)
+            const [requests] = params.length > 0
+                ? await db.execute(query, params)
+                : await db.execute(query);
+            
+            // Format requests for display
+            const formattedRequests = requests.map(req => ({
+                id: req.id,
+                reference_number: req.reference_number,
+                user_id: req.user_id,
+                requester_name: req.requester_name || (req.first_name ? `${req.first_name} ${req.last_name}` : 'Unknown'),
+                email: req.email || req.user_email,
+                phone: req.phone || req.user_phone,
+                address: req.requester_address,
+                barangay: req.barangay || 'Not specified',
+                city: req.city || 'Baliuag',
+                document_request: req.document_request,
+                document_type: req.document_request ? req.document_request.split('\n')[0] : 'Document Request',
+                status: req.status || 'Pending',
+                status_display: moderatorController.getStatusDisplay(req.status),
+                status_class: moderatorController.getStatusClass(req.status),
+                request_date: req.request_date,
+                formatted_date: req.request_date ? moment(req.request_date).format('MMM DD, YYYY') : 'N/A',
+                days_pending: req.days_pending || 0,
+                file_count: req.file_count || 0,
+                created_at: req.request_date,
+                time_ago: req.request_date ? moment(req.request_date).fromNow() : 'N/A'
+            }));
+            
+            // Get all available barangays for filter dropdown
+            let barangays = [];
+            try {
+                const [barangayList] = await db.execute(`
+                    SELECT DISTINCT barangay 
+                    FROM Address 
+                    WHERE barangay IS NOT NULL AND barangay != ''
+                    ORDER BY barangay
+                `);
+                barangays = barangayList.map(b => b.barangay);
+            } catch (err) {
+                console.error('Error fetching barangays:', err.message);
+            }
+            
+            // Get status counts for filter badges
+            const [statusCounts] = await db.execute(`
+                SELECT status, COUNT(*) as count 
+                FROM RequestForm 
+                GROUP BY status
+            `);
+            
+            // Get monthly request counts for chart
+            const [monthlyCounts] = await db.execute(`
+                SELECT 
+                    DATE_FORMAT(request_date, '%b') as month,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status = 'Accepted' THEN 1 ELSE 0 END) as accepted,
+                    SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled
+                FROM RequestForm
+                WHERE request_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                GROUP BY DATE_FORMAT(request_date, '%Y-%m'), DATE_FORMAT(request_date, '%b')
+                ORDER BY DATE_FORMAT(request_date, '%Y-%m') ASC
+            `);
+            
+            // Get most requested document types
+            const [topDocuments] = await db.execute(`
+                SELECT 
+                    CASE 
+                        WHEN document_request LIKE '%Barangay Clearance%' THEN 'Barangay Clearance'
+                        WHEN document_request LIKE '%Business Permit%' THEN 'Business Permit'
+                        WHEN document_request LIKE '%Certificate of Indigency%' THEN 'Certificate of Indigency'
+                        WHEN document_request LIKE '%Certificate of Residency%' THEN 'Certificate of Residency'
+                        WHEN document_request LIKE '%Cedula%' OR document_request LIKE '%Community Tax%' THEN 'Cedula'
+                        WHEN document_request LIKE '%Barangay ID%' THEN 'Barangay ID'
+                        ELSE 'Other Documents'
+                    END as document_type,
+                    COUNT(*) as count
+                FROM RequestForm
+                WHERE request_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY document_type
+                ORDER BY count DESC
+                LIMIT 5
+            `);
             
             res.render('requests_mod', {
                 title: 'Document Requests - BarangChan',
                 user: req.session.user,
-                requests: requests,
+                requests: formattedRequests,
                 totalRequests: totalRequests,
                 totalPages: totalPages,
                 currentPage: parseInt(page),
+                limit: limit,
                 query: req.query,
+                statusCounts: statusCounts,
+                monthlyCounts: monthlyCounts,
+                topDocuments: topDocuments,
+                barangays: barangays,
                 success: req.session.success,
                 error: req.session.error
             });
@@ -736,6 +1101,7 @@ class moderatorController {
             console.error('Error fetching requests:', error);
             res.status(500).send(`
                 <h1>Error Loading Requests</h1>
+                <p>There was an error loading the document requests page.</p>
                 <p>Error: ${error.message}</p>
                 <p><a href="/moderator/dashboard">Return to Dashboard</a></p>
             `);
@@ -963,7 +1329,7 @@ class moderatorController {
                     FROM StatusPost
                     WHERE date_posted >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                     GROUP BY DATE(date_posted)
-                    ORDER BY date ASC
+                    ORDER BY DATE(date_posted) ASC
                 `);
                 
                 const [requestsData] = await db.execute(`
@@ -976,7 +1342,7 @@ class moderatorController {
                     FROM RequestForm
                     WHERE request_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                     GROUP BY DATE(request_date)
-                    ORDER BY date ASC
+                    ORDER BY DATE(request_date) ASC
                 `);
                 
                 const [complaintsData] = await db.execute(`
@@ -988,7 +1354,7 @@ class moderatorController {
                     FROM ComplaintForm
                     WHERE complaint_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                     GROUP BY DATE(complaint_date)
-                    ORDER BY date ASC
+                    ORDER BY DATE(complaint_date) ASC
                 `);
                 
                 reportData = { posts: postsData, requests: requestsData, complaints: complaintsData };
