@@ -547,41 +547,27 @@ app.get('/api/contacts/search', contactsController.searchContacts);
 app.get('/api/contacts/officials/:barangay', contactsController.getBarangayOfficials);
 
 
+// ==================== MODERATOR ROUTES ====================
+
+// Dashboard
 app.get('/moderator/dashboard', moderatorController.getDashboard);
 
 // Posts Management
 app.get('/moderator/posts', moderatorController.getPosts);
+app.post('/moderator/posts/create', moderatorController.createAnnouncement);
 app.post('/moderator/posts/:id/approve', moderatorController.approvePost);
 app.post('/moderator/posts/:id/reject', moderatorController.rejectPost);
 
 // Document Requests Management
-//app.get('/moderator/requests', moderatorController.getRequests); // You'll need to add this method
+app.get('/moderator/requests', moderatorController.getRequests);
 app.post('/moderator/requests/:id/update', moderatorController.updateRequestStatus);
 
 // Help Desk / Support
-//app.get('/moderator/help-desk', moderatorController.getHelpDesk); // You'll need to add this method
+app.get('/moderator/help-desk', moderatorController.getHelpDesk);
 
 // Reports & Analytics
 app.get('/moderator/reports/generate', moderatorController.generateReport);
 app.get('/moderator/urgent-issues', moderatorController.getUrgentIssues);
-
-// Keep the existing moderator routes for backward compatibility
-app.get('/moderator/posts', (req, res) => {
-    // This will be handled by ModeratorController.getPosts
-    // But if you want to keep the original, you can redirect
-    res.redirect('/moderator/posts');
-});
-
-app.get('/moderator/requests', (req, res) => {
-    res.redirect('/moderator/requests');
-});
-
-app.get('/moderator/help-desk', (req, res) => {
-    res.redirect('/moderator/help-desk');
-});
-
-
-
 
 // ==================== ADMINISTRATOR ROUTES ====================
 app.get('/administrator/dashboard', AdminController.getDashboard);
@@ -789,3 +775,9 @@ app.listen(PORT, () => {
     ╚══════════════════════════════════════════════════════════╝
     `);
 });
+
+
+console.log('process.env.DB_HOST:', process.env.DB_HOST);
+console.log('process.env.DB_USER:', process.env.DB_USER);
+console.log('process.env.DB_NAME:', process.env.DB_NAME);
+console.log('process.env.DB_PASSWORD:', process.env.DB_PASSWORD);
