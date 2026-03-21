@@ -34,6 +34,11 @@ DROP TABLE IF EXISTS status_audit;
 DROP TABLE IF EXISTS user_audit;
 DROP TABLE IF EXISTS request_audit;
 DROP TABLE IF EXISTS complaint_audit;
+DROP TABLE IF EXISTS ModeratorAction;
+DROP TABLE IF EXISTS PostReport;
+DROP TABLE IF EXISTS ChatbotLog;
+DROP TABLE IF EXISTS AdminAction;
+DROP TABLE IF EXISTS ErrorLog;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -371,7 +376,7 @@ CREATE TABLE IF NOT EXISTS EmergencyHotline (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Barangay information (Baliuag specific)
+-- Barangay information (3 sample barangays from Baliuag)
 CREATE TABLE IF NOT EXISTS BarangayInfo (
     info_id INT AUTO_INCREMENT PRIMARY KEY,
     barangay_name VARCHAR(100) NOT NULL,
@@ -433,183 +438,8 @@ CREATE TABLE IF NOT EXISTS PageView (
 );
 
 -- =====================================
--- Insert Default Users (Resident, Moderator, Administrator)
+-- Moderator/Action Tables
 -- =====================================
-
--- Password hashes for testing (all passwords are: resident123, moderator123, admin123)
--- Using bcrypt hash format
-
--- Resident Account
-INSERT INTO User (username, first_name, last_name, middle_name, email, phone, password, role, status, created_at) VALUES
-('juan.delacruz', 'Juan', 'Dela Cruz', 'Santos', 'resident@barangchan.ph', '09171234567', '$2b$10$I/61TWRnh83J5A5QWou61e4O.Zp9/1eRk4YnIiqqjtQjosx4Y1G2S', 'resident', 'Active', NOW());
-
--- Moderator Account
-INSERT INTO User (username, first_name, last_name, middle_name, email, phone, password, role, status, created_at) VALUES
-('maria.santos', 'Maria', 'Santos', 'Reyes', 'moderator@barangchan.ph', '09271234568', '$2b$10$Eq2IDcxNmCBOTO6cFlXh/uF0dNlxAgvGMRBuAMijtootnT55vUfiC', 'moderator', 'Active', NOW());
-
--- Administrator Account
-INSERT INTO User (username, first_name, last_name, middle_name, email, phone, password, role, status, created_at) VALUES
-('admin.barangchan', 'Admin', 'User', 'BarangChan', 'admin@barangchan.ph', '09181234569', '$2b$10$S4LKu6/XbF2R7zXy6mDRZ.ZvPk.1z3HU7ENLgASHinFEfOVh4/pAi', 'administrator', 'Active', NOW());
-
--- Note: You need to generate actual bcrypt hashes. For testing, you can create them using:
--- const bcrypt = require('bcrypt');
--- const hash = bcrypt.hashSync('password123', 10);
--- Then replace the placeholder hashes above.
-
--- Insert Addresses for Users
-INSERT INTO Address (user_id, city, barangay, street, zip) VALUES
-(1, 'Baliuag', 'San Antonio', '123 Purok 3', '3006'),
-(2, 'Baliuag', 'San Antonio', '456 Purok 5', '3006'),
-(3, 'Baliuag', 'San Antonio', '789 Purok 2', '3006');
-
--- =====================================
--- Insert Default Categories (Baliuag)
--- =====================================
-
-INSERT INTO ContactCategory (name, name_tagalog, icon, color, display_order) VALUES
-('Barangay Hall', 'Bulwagang Barangay', 'fa-landmark', 'blue', 1),
-('Emergency Services', 'Pang-emergency na Serbisyo', 'fa-exclamation-circle', 'red', 2),
-('Health Services', 'Serbisyong Pangkalusugan', 'fa-hospital', 'green', 3),
-('Utilities & Public Services', 'Mga Utility at Pampublikong Serbisyo', 'fa-tools', 'orange', 4),
-('Social Welfare', 'Pangkapakanang Panlipunan', 'fa-hand-holding-heart', 'amber', 5),
-('Municipal Office', 'Opisina ng Munisipyo', 'fa-city', 'purple', 6);
-
--- =====================================
--- Insert Default Emergency Hotlines (Baliuag)
--- =====================================
-
-INSERT INTO EmergencyHotline (name, name_tagalog, number, description, description_tagalog, icon, color, is_national, display_order) VALUES
-('National Emergency', 'Pambansang Emergency', '911', 'General emergencies (Police, Fire, Medical)', 'Pangkalahatang emergency (Pulis, Sunog, Medikal)', 'fa-phone-alt', 'red', TRUE, 1),
-('PNP Hotline', 'PNP Hotline', '117', 'Philippine National Police', 'Pambansang Pulisya ng Pilipinas', 'fa-shield-alt', 'blue', TRUE, 2),
-('BFP Hotline', 'BFP Hotline', '160', 'Bureau of Fire Protection', 'Kawanihan ng Pamatay-Sunog', 'fa-fire-extinguisher', 'orange', TRUE, 3),
-('Red Cross', 'Krus na Pula', '143', 'Philippine Red Cross', 'Pambansang Krus na Pula', 'fa-ambulance', 'green', TRUE, 4),
-('Baliuag PNP', 'Pulisya ng Baliuag', '0927 123 4567', 'Baliuag Municipal Police Station', 'Himpilan ng Pulisya ng Baliuag', 'fa-shield-alt', 'blue', FALSE, 5),
-('Baliuag BFP', 'BFP Baliuag', '0917 123 4568', 'Baliuag Fire Station', 'Himpilan ng Bumbero ng Baliuag', 'fa-fire-extinguisher', 'orange', FALSE, 6);
-
--- =====================================
--- Insert Baliuag Barangay Info
--- =====================================
-
-INSERT INTO BarangayInfo (
-    barangay_name, barangay_name_tagalog, city, province, region,
-    barangay_captain, captain_contact, secretary, secretary_contact,
-    treasurer, treasurer_contact, hall_address, hall_phone, hall_email,
-    office_hours, office_hours_tagalog, facebook_page, evacuation_center,
-    evacuation_center_address
-) VALUES (
-    'San Antonio', 'San Antonio', 'Baliuag', 'Bulacan', 'Central Luzon',
-    'Hon. Maria Concepcion R. Santos', '0917 123 4567',
-    'Juan Miguel A. Dela Cruz', '0922 123 4568',
-    'Teresita M. Reyes', '0918 123 4569',
-    'Purok 3, Barangay San Antonio, Baliuag, Bulacan',
-    '(044) 123-4567', 'barangay.sanantonio@baliuag.gov.ph',
-    '8:00 AM - 5:00 PM (Monday - Friday)', '8:00 AM - 5:00 PM (Lunes - Biyernes)',
-    'https://facebook.com/barangaysanantonio.baliuag',
-    'San Antonio Elementary School', 'Purok 4, Barangay San Antonio, Baliuag, Bulacan'
-);
-
--- =====================================
--- Insert Baliuag Contacts
--- =====================================
-
--- Barangay Hall (category_id 1)
-INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
-    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
-(1, 'Kapitan ng Barangay', 'Hon. Maria Concepcion R. Santos', '(044) 123-4567', '0917 123 4567', 'kapitan@sanantonio.baliuag.gov.ph', 
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
-(1, 'Kalihim ng Barangay', 'Juan Miguel A. Dela Cruz', '(044) 123-4568', '0922 123 4568', 'kalihim@sanantonio.baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
-(1, 'Tresyurera ng Barangay', 'Teresita M. Reyes', '(044) 123-4569', '0918 123 4569', 'tresyurera@sanantonio.baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3),
-(1, 'Bulwagang Barangay', 'Barangay Hall - San Antonio', '(044) 123-4560', NULL, 'barangay@sanantonio.baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 4);
-
--- Emergency Services (category_id 2)
-INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
-    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
-(2, 'Barangay Tanod', 'Barangay Peacekeepers', '(044) 123-4570', '0917 123 4570', 'tanod@sanantonio.baliuag.gov.ph',
- '24/7', '24 oras', TRUE, 1),
-(2, 'Barangay Disaster Response', 'BDRRMC - San Antonio', '(044) 123-4571', '0922 123 4571', 'bdrrmc@sanantonio.baliuag.gov.ph',
- '24/7', '24 oras', TRUE, 2);
-
--- Health Services (category_id 3)
-INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
-    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
-(3, 'Barangay Health Center', 'Dr. Maria Theresa A. Cruz', '(044) 123-4572', '0917 123 4572', 'healthcenter@sanantonio.baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri) • 8:00 AM - 12:00 PM (Sat)', '8:00 AM - 5:00 PM (Lunes-Biyernes) • 8:00 AM - 12:00 PM (Sabado)', FALSE, 1),
-(3, 'Barangay Nutrition Scholar', 'Luzviminda M. Garcia', '(044) 123-4573', '0922 123 4573', 'bns@sanantonio.baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
-(3, 'Barangay Midwife', 'Elena R. Mendoza', '(044) 123-4574', '0918 123 4574', NULL,
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3);
-
--- Utilities (category_id 4)
-INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
-    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
-(4, 'Baliuag Water District', 'Baliuag Water District Office', '(044) 766-1234', NULL, 'customerservice@baliwagwater.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
-(4, 'Meralco - Baliuag Office', 'Meralco Baliuag Branch', '16211', '0917 123 4765', 'customerservice@meralco.com.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
-(4, 'Globe Telecom', 'Globe Customer Service', '211', NULL, NULL,
- '24/7', '24 oras', FALSE, 3),
-(4, 'Smart Communications', 'Smart Customer Service', '8888', NULL, NULL,
- '24/7', '24 oras', FALSE, 4);
-
--- Social Welfare (category_id 5)
-INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
-    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
-(5, 'MSWDO - Baliuag', 'Municipal Social Welfare Office', '(044) 766-5678', NULL, 'mswdo@baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
-(5, 'Senior Citizen Affairs', 'Office of Senior Citizen Affairs', '(044) 766-5679', NULL, 'osca@baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
-(5, 'PWD Affairs Office', 'Persons with Disability Affairs', '(044) 766-5680', NULL, 'pwd@baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3);
-
--- Municipal Office (category_id 6)
-INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
-    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
-(6, 'Baliuag Municipal Hall', 'Mayor''s Office', '(044) 766-1111', NULL, 'mayor@baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
-(6, 'Municipal Planning Office', 'MPDO - Baliuag', '(044) 766-1112', NULL, 'mplanning@baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
-(6, 'Municipal Engineering Office', 'MEO - Baliuag', '(044) 766-1113', NULL, 'engineering@baliuag.gov.ph',
- '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3);
-
--- =====================================
--- Display verification
--- =====================================
-
-SELECT '=== Users ===' as '';
-SELECT * FROM User;
-
-UPDATE User 
-SET password = '$2b$10$I/61TWRnh83J5A5QWou61e4O.Zp9/1eRk4YnIiqqjtQjosx4Y1G2S'
-WHERE email = 'resident@barangchan.ph';
-
--- Update Moderator password
-UPDATE User 
-SET password = '$2b$10$Eq2IDcxNmCBOTO6cFlXh/uF0dNlxAgvGMRBuAMijtootnT55vUfiC'
-WHERE email = 'moderator@barangchan.ph';
-
--- Update Administrator password
-UPDATE User 
-SET password = '$2b$10$S4LKu6/XbF2R7zXy6mDRZ.ZvPk.1z3HU7ENLgASHinFEfOVh4/pAi'
-WHERE email = 'admin@barangchan.ph';
-
-SELECT '=== Addresses ===' as '';
-SELECT a.address_id, u.first_name, u.last_name, a.barangay, a.city, a.street 
-FROM Address a 
-JOIN User u ON a.user_id = u.user_id;
-
-SELECT '=== Barangay Info ===' as '';
-SELECT barangay_name, city, province, barangay_captain FROM BarangayInfo;
-
-SELECT '=== Contact Categories ===' as '';
-SELECT category_id, name, name_tagalog FROM ContactCategory;
-
-SELECT '=== Emergency Hotlines ===' as '';
-SELECT name, number, is_national FROM EmergencyHotline;
-
-
 
 -- Moderator Actions Log Table
 CREATE TABLE IF NOT EXISTS ModeratorAction (
@@ -641,7 +471,7 @@ CREATE TABLE IF NOT EXISTS ChatbotLog (
     user_id INT NULL,
     query TEXT,
     response TEXT,
-    response_time INT, -- in milliseconds
+    response_time INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE SET NULL
@@ -670,3 +500,236 @@ CREATE TABLE IF NOT EXISTS ErrorLog (
     
     FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE SET NULL
 );
+
+-- =====================================
+-- Insert Default Users (Resident, Moderator, Administrator)
+-- =====================================
+
+-- Resident Account (password: resident123)
+INSERT INTO User (username, first_name, last_name, middle_name, email, phone, password, role, status, created_at) VALUES
+('juan.delacruz', 'Juan', 'Dela Cruz', 'Santos', 'resident@barangchan.ph', '09171234567', '$2b$10$I/61TWRnh83J5A5QWou61e4O.Zp9/1eRk4YnIiqqjtQjosx4Y1G2S', 'resident', 'Active', NOW());
+
+-- Moderator Account (password: moderator123)
+INSERT INTO User (username, first_name, last_name, middle_name, email, phone, password, role, status, created_at) VALUES
+('maria.santos', 'Maria', 'Santos', 'Reyes', 'moderator@barangchan.ph', '09271234568', '$2b$10$Eq2IDcxNmCBOTO6cFlXh/uF0dNlxAgvGMRBuAMijtootnT55vUfiC', 'moderator', 'Active', NOW());
+
+-- Administrator Account (password: admin123)
+INSERT INTO User (username, first_name, last_name, middle_name, email, phone, password, role, status, created_at) VALUES
+('admin.barangchan', 'Admin', 'User', 'BarangChan', 'admin@barangchan.ph', '09181234569', '$2b$10$S4LKu6/XbF2R7zXy6mDRZ.ZvPk.1z3HU7ENLgASHinFEfOVh4/pAi', 'administrator', 'Active', NOW());
+
+-- Insert Addresses for Users
+INSERT INTO Address (user_id, city, barangay, street, zip) VALUES
+(1, 'Baliuag', 'Poblacion', '123 Purok 3', '3006'),
+(2, 'Baliuag', 'Sabang', '456 Purok 5', '3006'),
+(3, 'Baliuag', 'San Antonio', '789 Purok 2', '3006');
+
+-- =====================================
+-- Insert Default Categories (Baliuag)
+-- =====================================
+
+INSERT INTO ContactCategory (name, name_tagalog, icon, color, display_order) VALUES
+('Barangay Hall', 'Bulwagang Barangay', 'fa-landmark', 'blue', 1),
+('Emergency Services', 'Pang-emergency na Serbisyo', 'fa-exclamation-circle', 'red', 2),
+('Health Services', 'Serbisyong Pangkalusugan', 'fa-hospital', 'green', 3),
+('Utilities & Public Services', 'Mga Utility at Pampublikong Serbisyo', 'fa-tools', 'orange', 4),
+('Social Welfare', 'Pangkapakanang Panlipunan', 'fa-hand-holding-heart', 'amber', 5),
+('Municipal Office', 'Opisina ng Munisipyo', 'fa-city', 'purple', 6);
+
+-- =====================================
+-- Insert Default Emergency Hotlines (Baliuag)
+-- =====================================
+
+INSERT INTO EmergencyHotline (name, name_tagalog, number, description, description_tagalog, icon, color, is_national, display_order) VALUES
+('National Emergency', 'Pambansang Emergency', '911', 'General emergencies (Police, Fire, Medical)', 'Pangkalahatang emergency (Pulis, Sunog, Medikal)', 'fa-phone-alt', 'red', TRUE, 1),
+('PNP Hotline', 'PNP Hotline', '117', 'Philippine National Police', 'Pambansang Pulisya ng Pilipinas', 'fa-shield-alt', 'blue', TRUE, 2),
+('BFP Hotline', 'BFP Hotline', '160', 'Bureau of Fire Protection', 'Kawanihan ng Pamatay-Sunog', 'fa-fire-extinguisher', 'orange', TRUE, 3),
+('Red Cross', 'Krus na Pula', '143', 'Philippine Red Cross', 'Pambansang Krus na Pula', 'fa-ambulance', 'green', TRUE, 4),
+('Baliuag PNP', 'Pulisya ng Baliuag', '0927 123 4567', 'Baliuag Municipal Police Station', 'Himpilan ng Pulisya ng Baliuag', 'fa-shield-alt', 'blue', FALSE, 5),
+('Baliuag BFP', 'BFP Baliuag', '0917 123 4568', 'Baliuag Fire Station', 'Himpilan ng Bumbero ng Baliuag', 'fa-fire-extinguisher', 'orange', FALSE, 6);
+
+-- =====================================
+-- Insert 3 Sample Barangays from Baliuag
+-- =====================================
+
+-- Barangay 1: San Antonio (Main Barangay)
+INSERT INTO BarangayInfo (
+    barangay_name, barangay_name_tagalog, city, province, region,
+    barangay_captain, captain_contact, secretary, secretary_contact,
+    treasurer, treasurer_contact, hall_address, hall_phone, hall_email,
+    office_hours, office_hours_tagalog, facebook_page, evacuation_center,
+    evacuation_center_address
+) VALUES (
+    'San Antonio', 'San Antonio', 'Baliuag', 'Bulacan', 'Central Luzon',
+    'Hon. Maria Concepcion R. Santos', '0917 123 4567',
+    'Juan Miguel A. Dela Cruz', '0922 123 4568',
+    'Teresita M. Reyes', '0918 123 4569',
+    'Purok 3, Barangay San Antonio, Baliuag, Bulacan',
+    '(044) 123-4567', 'barangay.sanantonio@baliuag.gov.ph',
+    '8:00 AM - 5:00 PM (Monday - Friday)', '8:00 AM - 5:00 PM (Lunes - Biyernes)',
+    'https://facebook.com/barangaysanantonio.baliuag',
+    'San Antonio Elementary School', 'Purok 4, Barangay San Antonio, Baliuag, Bulacan'
+);
+
+-- Barangay 2: Poblacion (Town Center)
+INSERT INTO BarangayInfo (
+    barangay_name, barangay_name_tagalog, city, province, region,
+    barangay_captain, captain_contact, secretary, secretary_contact,
+    treasurer, treasurer_contact, hall_address, hall_phone, hall_email,
+    office_hours, office_hours_tagalog, facebook_page, evacuation_center,
+    evacuation_center_address
+) VALUES (
+    'Poblacion', 'Poblacion', 'Baliuag', 'Bulacan', 'Central Luzon',
+    'Hon. Francisco D. Rivera', '0917 123 4851',
+    'Marcelina C. Santos', '0922 123 4852',
+    'Rogelio B. Gomez', '0918 123 4853',
+    'Purok 3, Poblacion, Baliuag, Bulacan',
+    '(044) 123-4850', 'poblacion@baliuag.gov.ph',
+    '8:00 AM - 5:00 PM (Monday - Friday)', '8:00 AM - 5:00 PM (Lunes - Biyernes)',
+    'https://facebook.com/barangaypoblacion.baliuag',
+    'Baliuag Central School', 'Purok 1, Poblacion, Baliuag, Bulacan'
+);
+
+-- Barangay 3: Sabang (Riverside Barangay)
+INSERT INTO BarangayInfo (
+    barangay_name, barangay_name_tagalog, city, province, region,
+    barangay_captain, captain_contact, secretary, secretary_contact,
+    treasurer, treasurer_contact, hall_address, hall_phone, hall_email,
+    office_hours, office_hours_tagalog, facebook_page, evacuation_center,
+    evacuation_center_address
+) VALUES (
+    'Sabang', 'Sabang', 'Baliuag', 'Bulacan', 'Central Luzon',
+    'Hon. Dominador M. Fernandez', '0917 123 4861',
+    'Carmela R. Dimagiba', '0922 123 4862',
+    'Nestor L. Mercado', '0918 123 4863',
+    'Purok 4, Sabang, Baliuag, Bulacan',
+    '(044) 123-4860', 'sabang@baliuag.gov.ph',
+    '8:00 AM - 5:00 PM (Monday - Friday)', '8:00 AM - 5:00 PM (Lunes - Biyernes)',
+    'https://facebook.com/barangaysabang.baliuag',
+    'Sabang Elementary School', 'Purok 2, Sabang, Baliuag, Bulacan'
+);
+
+-- =====================================
+-- Insert Baliuag Contacts for all 3 barangays
+-- =====================================
+
+-- Barangay Hall contacts for each barangay
+-- San Antonio Barangay Hall (category_id 1)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(1, 'Kapitan ng Barangay - San Antonio', 'Hon. Maria Concepcion R. Santos', '(044) 123-4567', '0917 123 4567', 'kapitan.sanantonio@baliuag.gov.ph', 
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
+(1, 'Barangay Hall - San Antonio', 'San Antonio Barangay Hall', '(044) 123-4560', NULL, 'barangay.sanantonio@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2);
+
+-- Poblacion Barangay Hall (category_id 1)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(1, 'Kapitan ng Barangay - Poblacion', 'Hon. Francisco D. Rivera', '(044) 123-4851', '0917 123 4851', 'kapitan.poblacion@baliuag.gov.ph', 
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3),
+(1, 'Barangay Hall - Poblacion', 'Poblacion Barangay Hall', '(044) 123-4850', NULL, 'poblacion@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 4);
+
+-- Sabang Barangay Hall (category_id 1)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(1, 'Kapitan ng Barangay - Sabang', 'Hon. Dominador M. Fernandez', '(044) 123-4861', '0917 123 4861', 'kapitan.sabang@baliuag.gov.ph', 
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 5),
+(1, 'Barangay Hall - Sabang', 'Sabang Barangay Hall', '(044) 123-4860', NULL, 'sabang@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 6);
+
+-- Emergency Services (shared across barangays)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(2, 'Barangay Tanod - San Antonio', 'San Antonio Peacekeepers', '(044) 123-4570', '0917 123 4570', 'tanod@sanantonio.baliuag.gov.ph',
+ '24/7', '24 oras', TRUE, 1),
+(2, 'Barangay Tanod - Poblacion', 'Poblacion Peacekeepers', '(044) 123-4852', '0917 123 4852', 'tanod@poblacion.baliuag.gov.ph',
+ '24/7', '24 oras', TRUE, 2),
+(2, 'Barangay Tanod - Sabang', 'Sabang Peacekeepers', '(044) 123-4862', '0917 123 4862', 'tanod@sabang.baliuag.gov.ph',
+ '24/7', '24 oras', TRUE, 3),
+(2, 'Barangay Disaster Response', 'BDRRMC - Baliuag', '(044) 123-4571', '0922 123 4571', 'bdrrmc@baliuag.gov.ph',
+ '24/7', '24 oras', TRUE, 4);
+
+-- Health Services (shared across barangays)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(3, 'San Antonio Health Center', 'Dr. Maria Theresa A. Cruz', '(044) 123-4572', '0917 123 4572', 'health.sanantonio@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri) • 8:00 AM - 12:00 PM (Sat)', '8:00 AM - 5:00 PM (Lunes-Biyernes) • 8:00 AM - 12:00 PM (Sabado)', FALSE, 1),
+(3, 'Poblacion Health Center', 'Dr. Ricardo M. Santos', '(044) 123-4853', '0917 123 4853', 'health.poblacion@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri) • 8:00 AM - 12:00 PM (Sat)', '8:00 AM - 5:00 PM (Lunes-Biyernes) • 8:00 AM - 12:00 PM (Sabado)', FALSE, 2),
+(3, 'Sabang Health Center', 'Dr. Elena R. Mercado', '(044) 123-4863', '0917 123 4863', 'health.sabang@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri) • 8:00 AM - 12:00 PM (Sat)', '8:00 AM - 5:00 PM (Lunes-Biyernes) • 8:00 AM - 12:00 PM (Sabado)', FALSE, 3);
+
+-- Utilities (shared across Baliuag)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(4, 'Baliuag Water District', 'Baliuag Water District Office', '(044) 766-1234', NULL, 'customerservice@baliwagwater.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
+(4, 'Meralco - Baliuag Office', 'Meralco Baliuag Branch', '16211', '0917 123 4765', 'customerservice@meralco.com.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
+(4, 'Globe Telecom', 'Globe Customer Service', '211', NULL, NULL,
+ '24/7', '24 oras', FALSE, 3),
+(4, 'Smart Communications', 'Smart Customer Service', '8888', NULL, NULL,
+ '24/7', '24 oras', FALSE, 4);
+
+-- Social Welfare (shared across Baliuag)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(5, 'MSWDO - Baliuag', 'Municipal Social Welfare Office', '(044) 766-5678', NULL, 'mswdo@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
+(5, 'Senior Citizen Affairs', 'Office of Senior Citizen Affairs', '(044) 766-5679', NULL, 'osca@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
+(5, 'PWD Affairs Office', 'Persons with Disability Affairs', '(044) 766-5680', NULL, 'pwd@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3);
+
+-- Municipal Office (shared)
+INSERT INTO BarangayContact (category_id, name, title, phone_landline, phone_mobile, email, 
+    office_hours, office_hours_tagalog, is_emergency, display_order) VALUES
+(6, 'Baliuag Municipal Hall', 'Mayor''s Office', '(044) 766-1111', NULL, 'mayor@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 1),
+(6, 'Municipal Planning Office', 'MPDO - Baliuag', '(044) 766-1112', NULL, 'mplanning@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 2),
+(6, 'Municipal Engineering Office', 'MEO - Baliuag', '(044) 766-1113', NULL, 'engineering@baliuag.gov.ph',
+ '8:00 AM - 5:00 PM (Mon-Fri)', '8:00 AM - 5:00 PM (Lunes-Biyernes)', FALSE, 3);
+ 
+ -- Insert missing BarangayInfo records for all Baliuag barangays
+-- This ensures every barangay has at least basic information
+
+INSERT INTO BarangayInfo (barangay_name, city, province, region, hall_address, office_hours)
+SELECT 
+    DISTINCT a.barangay,
+    'Baliuag',
+    'Bulacan',
+    'Central Luzon',
+    CONCAT('Barangay Hall, ', a.barangay, ', Baliuag, Bulacan'),
+    '8:00 AM - 5:00 PM (Monday - Friday)'
+FROM Address a
+WHERE a.barangay IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM BarangayInfo bi WHERE bi.barangay_name = a.barangay
+);
+
+-- =====================================
+-- Display verification
+-- =====================================
+
+SELECT '=== Users ===' as '';
+SELECT user_id, first_name, last_name, email, role, status FROM User;
+
+SELECT '=== Addresses ===' as '';
+SELECT a.address_id, u.first_name, u.last_name, a.barangay, a.city, a.street 
+FROM Address a 
+JOIN User u ON a.user_id = u.user_id;
+
+SELECT '=== Barangay Info (3 sample barangays) ===' as '';
+SELECT info_id, barangay_name, city, province, barangay_captain 
+FROM BarangayInfo 
+ORDER BY barangay_name;
+
+SELECT '=== Contact Categories ===' as '';
+SELECT category_id, name, name_tagalog FROM ContactCategory;
+
+SELECT '=== Emergency Hotlines ===' as '';
+SELECT name, number, is_national FROM EmergencyHotline;
+
+SELECT '=== Barangay Contacts Count ===' as '';
+SELECT COUNT(*) as total_contacts FROM BarangayContact;
