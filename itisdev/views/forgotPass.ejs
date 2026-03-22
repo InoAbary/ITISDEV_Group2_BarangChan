@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || "Forgot Password - BarangChan" %></title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome 6 for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* subtle philippine-inspired pattern overlay */
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+            background-repeat: repeat;
+        }
+        
+        /* Custom animation for fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Custom toast notification */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-pattern font-sans antialiased text-gray-700 min-h-screen flex items-center justify-center p-4">
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-notification hidden">
+        <div id="toast-message" class="bg-white rounded-lg shadow-lg p-4 border-l-4 min-w-[300px]">
+            <div class="flex items-center gap-3">
+                <i id="toast-icon" class="fas fa-info-circle text-blue-500 text-xl"></i>
+                <div class="flex-1">
+                    <p id="toast-text" class="text-sm text-gray-700"></p>
+                </div>
+                <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden">
+        
+        <!-- Header with brand -->
+        <div class="bg-gradient-to-r from-blue-900 to-blue-800 px-8 py-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-2xl font-bold">
+                    <i class="fas fa-hand-holding-heart text-3xl text-amber-400"></i>
+                    <span class="tracking-tight">Barang<span class="text-amber-400">Chan</span></span>
+                </div>
+                <i class="fas fa-key text-amber-400 text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold mt-4">Reset Password</h1>
+            <p class="text-blue-100 text-sm mt-1">Don't worry, we'll help you get back in</p>
+        </div>
+        
+        <!-- Form Content -->
+        <div class="px-8 py-8">
+            
+            <!-- Step 1: Email Input -->
+            <div id="step1" class="fade-in">
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-envelope mr-2 text-amber-600"></i>Email Address
+                    </label>
+                    <input type="email" id="email" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200 bg-gray-50"
+                           placeholder="your@email.com">
+                    <p class="text-xs text-gray-500 mt-1">Enter your registered email address</p>
+                </div>
+                
+                <button onclick="requestReset()" 
+                        class="w-full bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-800 hover:to-amber-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] duration-200 flex items-center justify-center gap-2">
+                    <i class="fas fa-paper-plane"></i> Send Reset Code
+                </button>
+            </div>
+            
+            <!-- Step 2: Verification Code -->
+            <div id="step2" style="display:none;" class="fade-in">
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-qrcode mr-2 text-amber-600"></i>Verification Code
+                    </label>
+                    <input type="text" id="code" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200 bg-gray-50 text-center text-2xl tracking-widest"
+                           placeholder="000000" maxlength="6">
+                    <p class="text-xs text-gray-500 mt-1">Enter the 6-digit code sent to your email</p>
+                </div>
+                
+                <button onclick="verifyCode()" 
+                        class="w-full bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-800 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] duration-200 flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> Verify Code
+                </button>
+                
+                <button onclick="goBackToStep1()" 
+                        class="w-full mt-3 text-gray-600 hover:text-gray-800 text-sm font-medium py-2 transition duration-200">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Email
+                </button>
+            </div>
+            
+            <!-- Step 3: New Password -->
+            <div id="step3" style="display:none;" class="fade-in">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2 text-amber-600"></i>New Password
+                    </label>
+                    <input type="password" id="new-password" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200 bg-gray-50"
+                           placeholder="Enter new password">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-check-circle mr-2 text-amber-600"></i>Confirm Password
+                    </label>
+                    <input type="password" id="confirm-password" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200 bg-gray-50"
+                           placeholder="Confirm new password">
+                </div>
+                
+                <div class="mb-6 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p class="text-xs text-gray-600 flex items-start gap-2">
+                        <i class="fas fa-shield-alt text-amber-600 mt-0.5"></i>
+                        <span>Password must be at least 8 characters, include 1 uppercase letter and 1 special symbol.</span>
+                    </p>
+                </div>
+                
+                <button onclick="resetPassword()" 
+                        class="w-full bg-gradient-to-r from-green-700 to-green-600 hover:from-green-800 hover:to-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] duration-200 flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i> Reset Password
+                </button>
+            </div>
+            
+            <!-- Back to Login Link -->
+            <div class="mt-6 pt-4 border-t border-gray-200 text-center">
+                <a href="/login" class="text-sm text-blue-700 hover:text-blue-900 font-medium transition duration-150">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Login
+                </a>
+            </div>
+            
+            <!-- Help Text -->
+            <p class="text-center text-xs text-gray-400 mt-4">
+                <i class="fas fa-question-circle mr-1"></i> Need help? Contact your barangay administrator
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        let currentEmail = '';
+        
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toast-container');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            // Set icon and color based on type
+            if (type === 'success') {
+                toastIcon.className = 'fas fa-check-circle text-green-500 text-xl';
+                document.getElementById('toast-message').className = 'bg-white rounded-lg shadow-lg p-4 border-l-4 border-green-500 min-w-[300px]';
+            } else if (type === 'error') {
+                toastIcon.className = 'fas fa-exclamation-circle text-red-500 text-xl';
+                document.getElementById('toast-message').className = 'bg-white rounded-lg shadow-lg p-4 border-l-4 border-red-500 min-w-[300px]';
+            } else {
+                toastIcon.className = 'fas fa-info-circle text-blue-500 text-xl';
+                document.getElementById('toast-message').className = 'bg-white rounded-lg shadow-lg p-4 border-l-4 border-blue-500 min-w-[300px]';
+            }
+            
+            toastText.textContent = message;
+            toastContainer.classList.remove('hidden');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                closeToast();
+            }, 5000);
+        }
+        
+        function closeToast() {
+            document.getElementById('toast-container').classList.add('hidden');
+        }
+        
+        async function requestReset() {
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                showToast('Please enter your email address', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/bchan-forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    currentEmail = email;
+                    showToast(data.message || 'Reset code sent to your email!', 'success');
+                    document.getElementById('step1').style.display = 'none';
+                    document.getElementById('step2').style.display = 'block';
+                } else {
+                    showToast(data.error || 'Email not found', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            }
+        }
+        
+        async function verifyCode() {
+            const code = document.getElementById('code').value;
+            
+            if (!code || code.length !== 6) {
+                showToast('Please enter a valid 6-digit code', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/bchan-verify-reset-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: currentEmail, 
+                        code: code 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showToast('Code verified! Set your new password.', 'success');
+                    document.getElementById('step2').style.display = 'none';
+                    document.getElementById('step3').style.display = 'block';
+                } else {
+                    showToast(data.error || 'Invalid code', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            }
+        }
+        
+        async function resetPassword() {
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (!newPassword || !confirmPassword) {
+                showToast('Please fill in both password fields', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+            
+            // Password validation
+            const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+            if (!passwordRegex.test(newPassword)) {
+                showToast('Password must be at least 8 characters, include 1 uppercase letter and 1 special symbol', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/bchan-reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ newPassword: newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showToast('Password reset successful! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    showToast(data.error || 'Failed to reset password', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            }
+        }
+        
+        function goBackToStep1() {
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step1').style.display = 'block';
+            document.getElementById('code').value = '';
+        }
+        
+        // Allow Enter key to submit
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                if (document.getElementById('step1').style.display !== 'none') {
+                    requestReset();
+                } else if (document.getElementById('step2').style.display !== 'none') {
+                    verifyCode();
+                } else if (document.getElementById('step3').style.display !== 'none') {
+                    resetPassword();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
