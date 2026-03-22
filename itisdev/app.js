@@ -456,6 +456,18 @@ app.post('/register', async (req, res) => {
     }
 });
 
+
+// ==================== AI CHATBOT ROUTES ====================
+const chatbotController = require('./Ai/chatbotController');
+
+// Chatbot API endpoints
+app.post('/api/chatbot/chat', chatbotController.chat.bind(chatbotController));
+app.get('/api/chatbot/quick-actions', chatbotController.getQuickActions.bind(chatbotController));
+app.post('/api/chatbot/moderator/connect', chatbotController.createModeratorChat.bind(chatbotController));
+app.post('/api/chatbot/moderator/message', chatbotController.sendModeratorMessage.bind(chatbotController));
+app.get('/api/chatbot/moderator/history/:chatId', chatbotController.getModeratorChatHistory.bind(chatbotController));
+app.get('/api/chatbot/moderator/status', chatbotController.getModeratorStatus.bind(chatbotController));
+app.post('/api/chatbot/moderator/leave-message', chatbotController.leaveMessage.bind(chatbotController));
 // ==================== CLIENT ROUTES ====================
 app.get('/client/dashboard', postController.getAllPosts);
 
@@ -599,7 +611,7 @@ app.get('/administrator/users', (req, res) => {
 });
 
 
-// Add this API endpoint for complaint details (in app.js, near other API routes)
+
 // Add this API endpoint for complaint details (in app.js)
 app.get('/api/complaints/:id/details', async (req, res) => {
     try {
@@ -829,6 +841,35 @@ app.get('/contacts', (req, res) => {
     });
 });
 
+// Test Gemini connection
+app.get('/api/test-gemini', async (req, res) => {
+    try {
+        const aiService = require('./Ai/aiService');
+        const response = await aiService.generateResponse("Say 'Hello! Gemini is working!'", { pageContext: 'test' }, []);
+        res.json({ 
+            success: true, 
+            message: 'Gemini test completed',
+            response: response,
+            configured: aiService.isConfigured
+        });
+    } catch (error) {
+        res.json({ 
+            success: false, 
+            error: error.message,
+            configured: false
+        });
+    }
+});
+
+// Add this after other requires
+const serverTimeout = process.env.SERVER_TIMEOUT || 3600000; // 1 hour
+app.use((req, res, next) => {
+    req.setTimeout(serverTimeout);
+    res.setTimeout(serverTimeout);
+    next();
+});
+
+// ==================== 404 ====================
 // ==================== 404 ====================
 app.use((req, res) => {
     res.status(404).render('404', { 

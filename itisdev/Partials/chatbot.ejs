@@ -3,12 +3,13 @@
     <!-- Chatbot Toggle Button -->
     <button id="chatbotToggle" class="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4 rounded-full shadow-2xl hover:from-amber-700 hover:to-amber-800 transition-all duration-300 transform hover:scale-110">
         <i class="fas fa-comment-dots text-2xl"></i>
+        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">AI</span>
     </button>
 
     <!-- Chatbot Window -->
-    <div id="chatbotWindow" class="absolute bottom-20 right-0 w-96 bg-white rounded-2xl shadow-2xl overflow-hidden hidden">
+    <div id="chatbotWindow" class="absolute bottom-20 right-0 w-96 bg-white rounded-2xl shadow-2xl overflow-hidden hidden border border-amber-200">
         <!-- Chatbot Header -->
-        <div class="bg-gradient-to-r from-blue-900 to-amber-800 p-4 text-white">
+        <div class="bg-gradient-to-r from-amber-700 to-amber-800 p-4 text-white">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="bg-white/20 p-2 rounded-lg">
@@ -16,61 +17,38 @@
                     </div>
                     <div>
                         <h4 class="font-bold">BarangChan AI Assistant</h4>
-                        <p class="text-xs text-white/80">Online • Ready to help kabayan!</p>
+                        <p class="text-xs text-white/80">Ask me anything about BarangChan</p>
                     </div>
                 </div>
-                <button id="closeChatbot" class="text-white/80 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button id="talkToModerator" class="text-white/80 hover:text-white text-sm px-2 py-1 rounded-lg hover:bg-white/10 transition" title="Talk to a moderator">
+                        <i class="fas fa-user-headset"></i>
+                    </button>
+                    <button id="closeChatbot" class="text-white/80 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Chatbot Messages -->
         <div class="h-96 overflow-y-auto p-4 bg-gray-50" id="chatMessages">
-            <!-- Welcome Message -->
-            <div class="flex items-start gap-3 mb-4 message-bubble">
+            <div class="flex items-start gap-3 mb-4">
                 <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
                     <i class="fas fa-robot text-sm"></i>
                 </div>
-                <div class="bg-white rounded-2xl rounded-tl-none p-3 max-w-[80%] shadow-sm">
+                <div class="bg-white rounded-2xl rounded-tl-none p-3 max-w-[80%] shadow-sm border border-amber-100">
                     <p class="text-sm text-gray-700">
-                        <span class="font-bold text-amber-600">Mabuhay kabayan!</span> 👋 
+                        <span class="font-bold text-amber-600">Mabuhay!</span> 👋 
                         I'm your BarangChan AI assistant. How can I help you today?
                     </p>
                 </div>
             </div>
+        </div>
 
-            <!-- Quick Action Buttons Container -->
-            <div id="quickActionsContainer" class="flex flex-wrap gap-2 mb-4 ml-11">
-                <!-- Quick actions will be dynamically populated based on page -->
-            </div>
-
-            <!-- Templates (hidden) -->
-            <div class="hidden user-message-template">
-                <div class="flex items-start gap-3 mb-4 justify-end">
-                    <div class="bg-amber-600 text-white rounded-2xl rounded-tr-none p-3 max-w-[80%] shadow-sm">
-                        <p class="text-sm"></p>
-                    </div>
-                    <div class="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
-                        <i class="fas fa-user text-sm"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="hidden typing-indicator-container">
-                <div class="flex items-start gap-3 mb-4">
-                    <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
-                        <i class="fas fa-robot text-sm"></i>
-                    </div>
-                    <div class="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm">
-                        <div class="typing-indicator flex space-x-1">
-                            <span class="w-2 h-2 bg-amber-600 rounded-full"></span>
-                            <span class="w-2 h-2 bg-amber-600 rounded-full"></span>
-                            <span class="w-2 h-2 bg-amber-600 rounded-full"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Quick Action Buttons -->
+        <div id="quickActionsContainer" class="px-4 py-2 border-t border-gray-200 bg-white flex flex-wrap gap-2">
+            <div class="text-xs text-gray-400 w-full text-center">Loading...</div>
         </div>
 
         <!-- Chatbot Input -->
@@ -78,40 +56,87 @@
             <div class="flex items-center gap-2">
                 <input type="text" 
                        id="chatInput"
-                       placeholder="Type your message here..." 
+                       placeholder="Type your message..." 
                        class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm">
                 <button id="sendMessage" class="bg-amber-600 text-white p-2 rounded-full hover:bg-amber-700 transition w-10 h-10 flex items-center justify-center">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
-            <p class="text-xs text-gray-400 mt-2 text-center">
-                <i class="fas fa-shield-alt text-amber-600"></i> 
-                AI assistant helps you navigate BarangChan services
-            </p>
         </div>
     </div>
 </div>
 
-<!-- Chatbot JavaScript -->
+<!-- Moderator Chat Modal -->
+<div id="moderatorChatModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col">
+        <div class="bg-gradient-to-r from-amber-700 to-amber-800 p-4 text-white rounded-t-2xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-user-headset text-2xl"></i>
+                <div>
+                    <h3 class="font-bold">Talk to a Moderator</h3>
+                    <p class="text-xs text-white/80" id="moderatorStatus">Connecting...</p>
+                </div>
+            </div>
+            <button id="closeModeratorChat" class="text-white/80 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="moderatorMessages" class="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4">
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin text-2xl"></i>
+                <p class="mt-2">Connecting to a moderator...</p>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 bg-white">
+            <div class="flex items-center gap-2">
+                <input type="text" 
+                       id="moderatorChatInput"
+                       placeholder="Type your message..." 
+                       class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm">
+                <button id="sendModeratorMessage" class="bg-amber-600 text-white p-2 rounded-full hover:bg-amber-700 transition w-10 h-10 flex items-center justify-center">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Message Modal -->
+<div id="leaveMessageModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="bg-gradient-to-r from-amber-700 to-amber-800 p-4 text-white rounded-t-2xl">
+            <h3 class="font-bold">Leave a Message</h3>
+            <p class="text-sm text-white/80">No moderators online right now</p>
+        </div>
+        <div class="p-4">
+            <textarea id="leaveMessageText" rows="4" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-amber-400 focus:border-transparent" placeholder="Type your message here..."></textarea>
+            <div class="flex gap-2 mt-4">
+                <button id="sendLeaveMessage" class="flex-1 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition">Send</button>
+                <button id="cancelLeaveMessage" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let currentConversationId = null;
+    let currentPage = '<%= currentPath || "general" %>';
+    let moderatorChatId = null;
+    let pollingInterval = null;
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize chatbot
         initChatbot();
+        loadQuickActions();
     });
 
     function initChatbot() {
         const toggleBtn = document.getElementById('chatbotToggle');
         const closeBtn = document.getElementById('closeChatbot');
         const chatbotWindow = document.getElementById('chatbotWindow');
-        const chatMessages = document.getElementById('chatMessages');
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendMessage');
-        
-        // Template elements
-        const userMessageTemplate = document.querySelector('.user-message-template');
-        const typingIndicator = document.querySelector('.typing-indicator-container');
+        const talkToModerator = document.getElementById('talkToModerator');
 
-        // Toggle chatbot
         if (toggleBtn) {
             toggleBtn.addEventListener('click', function() {
                 chatbotWindow.classList.remove('hidden');
@@ -126,119 +151,388 @@
             });
         }
 
-        // Send message function
-        function sendUserMessage(message) {
+        async function sendUserMessage(message) {
             if (!message.trim()) return;
 
-            // Show user message
-            const userMsg = userMessageTemplate.cloneNode(true);
-            userMsg.classList.remove('hidden', 'user-message-template');
-            userMsg.querySelector('p').textContent = message;
-            chatMessages.appendChild(userMsg);
-
-            // Clear input
+            addMessage(message, 'user');
             if (chatInput) chatInput.value = '';
+            showTypingIndicator();
 
-            // Scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            try {
+                const response = await fetch('/api/chatbot/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        context: { pageContext: currentPage },
+                        conversationId: currentConversationId
+                    })
+                });
 
-            // Show typing indicator
-            const typingClone = typingIndicator.cloneNode(true);
-            typingClone.classList.remove('hidden', 'typing-indicator-container');
-            chatMessages.appendChild(typingClone);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            // Get page context for better responses
-            const pageContext = document.body.getAttribute('data-page-context') || 'general';
-
-            // Simulate AI response after delay
-            setTimeout(() => {
-                // Remove typing indicator
-                typingClone.remove();
-
-                // Add AI response
-                const aiMsg = document.createElement('div');
-                aiMsg.className = 'flex items-start gap-3 mb-4 message-bubble';
-                aiMsg.innerHTML = `
-                    <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
-                        <i class="fas fa-robot text-sm"></i>
-                    </div>
-                    <div class="bg-white rounded-2xl rounded-tl-none p-3 max-w-[80%] shadow-sm">
-                        <p class="text-sm text-gray-700">${getAIResponse(message, pageContext)}</p>
-                    </div>
-                `;
-                chatMessages.appendChild(aiMsg);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 1500);
+                const data = await response.json();
+                hideTypingIndicator();
+                
+                if (data.success) {
+                    currentConversationId = data.conversationId;
+                    addMessage(data.response, 'ai');
+                } else {
+                    addMessage(data.response || "I'm having trouble. Please try again or talk to a moderator.", 'ai');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Chat error:', error);
+                addMessage("Connection error. Please check your internet and try again.", 'ai');
+            }
         }
 
-        // Send button click
         if (sendBtn) {
-            sendBtn.addEventListener('click', function() {
-                sendUserMessage(chatInput.value);
-            });
+            sendBtn.addEventListener('click', () => sendUserMessage(chatInput.value));
         }
 
-        // Enter key press
         if (chatInput) {
-            chatInput.addEventListener('keypress', function(e) {
+            chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     sendUserMessage(chatInput.value);
                 }
             });
         }
 
-        // Attach quick action buttons if they exist
-        const quickActions = document.querySelectorAll('.quick-action');
-        quickActions.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const message = this.getAttribute('data-message') || this.textContent.trim();
-                sendUserMessage(message);
-            });
-        });
+        if (talkToModerator) {
+            talkToModerator.addEventListener('click', initModeratorChat);
+        }
     }
 
-    // AI response generator with context awareness
-    function getAIResponse(message, context) {
-        const msg = message.toLowerCase();
+    async function loadQuickActions() {
+        try {
+            const response = await fetch(`/api/chatbot/quick-actions?page=${currentPage}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('quickActionsContainer');
+            if (data.success && data.actions && data.actions.length > 0) {
+                container.innerHTML = data.actions.map(action => `
+                    <button class="quick-action bg-gray-100 hover:bg-amber-100 text-gray-700 hover:text-amber-700 px-3 py-1.5 rounded-full text-xs transition" 
+                            data-message="${escapeHtml(action.message)}">
+                        ${escapeHtml(action.text)}
+                    </button>
+                `).join('');
+                
+                document.querySelectorAll('.quick-action').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const message = this.getAttribute('data-message');
+                        const chatInput = document.getElementById('chatInput');
+                        if (chatInput) {
+                            chatInput.value = message;
+                            setTimeout(() => {
+                                const sendBtn = document.getElementById('sendMessage');
+                                if (sendBtn) sendBtn.click();
+                            }, 100);
+                        }
+                    });
+                });
+            } else {
+                container.innerHTML = '<button class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full text-xs">Ask me anything!</button>';
+            }
+        } catch (error) {
+            console.error('Error loading quick actions:', error);
+            document.getElementById('quickActionsContainer').innerHTML = '<button class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full text-xs">How can I help?</button>';
+        }
+    }
+
+    function addMessage(message, type) {
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
         
-        // Context-specific responses
-        if (context === 'dashboard') {
-            if (msg.includes('post') || msg.includes('create')) {
-                return "To create a post, use the 'What's on your mind' section at the top of the dashboard. You can share updates, concerns, or suggestions! 📝";
-            } else if (msg.includes('request') || msg.includes('clearance')) {
-                return "To request a Barangay Clearance, go to Quick Actions and click 'Request Barangay Clearance'. You can also visit the Barangay Hall from 8AM-5PM. 📄";
-            } else if (msg.includes('emergency') || msg.includes('hotline')) {
-                return "🚨 EMERGENCY HOTLINES:\n• Barangay Hall: 8123-4567\n• Police/Ambulance: 911\n• Fire Dept: 160\nIs this an emergency?";
-            } else {
-                return "I can help you with dashboard features: creating posts, requesting documents, tracking requests, or finding emergency contacts. What do you need? 🤗";
-            }
-        } 
-        else if (context === 'forum') {
-            if (msg.includes('how to post') || msg.includes('create topic')) {
-                return "To create a new topic, click the 'Create New Topic' button at the top of the forum page. Fill in the title, category, and your message, then click submit! 📝";
-            } else if (msg.includes('category')) {
-                return "Forum categories include: General Discussion, Announcements, Community Concerns, Suggestions, Emergency Alerts, and Events & Activities. Choose the most appropriate one for your topic! 🏷️";
-            } else if (msg.includes('trending') || msg.includes('hot')) {
-                return "Check out the topics with 'Hot' badges or sort by 'Most Viewed' to see what's trending in your barangay right now! 🔥";
-            } else {
-                return "Welcome to the forum! I can help you create topics, find discussions, or explain categories. What would you like to know? 🤗";
-            }
+        if (type === 'user') {
+            messageDiv.className = 'flex items-start gap-3 mb-4 justify-end';
+            messageDiv.innerHTML = `
+                <div class="bg-amber-600 text-white rounded-2xl rounded-tr-none p-3 max-w-[80%] shadow-sm">
+                    <p class="text-sm">${escapeHtml(message)}</p>
+                </div>
+                <div class="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
+                    <i class="fas fa-user text-sm"></i>
+                </div>
+            `;
+        } else {
+            let formattedMessage = message;
+            formattedMessage = formattedMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedMessage = formattedMessage.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            formattedMessage = formattedMessage.replace(/\n/g, '<br>');
+            
+            messageDiv.className = 'flex items-start gap-3 mb-4';
+            messageDiv.innerHTML = `
+                <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
+                    <i class="fas fa-robot text-sm"></i>
+                </div>
+                <div class="bg-white rounded-2xl rounded-tl-none p-3 max-w-[80%] shadow-sm border border-amber-100">
+                    <div class="text-sm text-gray-700">${formattedMessage}</div>
+                </div>
+            `;
         }
-        else {
-            // General responses
-            if (msg.includes('hello') || msg.includes('hi') || msg.includes('kumusta')) {
-                return "Kumusta kabayan! 👋 How can I assist you with BarangChan today?";
-            } else if (msg.includes('thank')) {
-                return "Walang anuman po! 🫶 Is there anything else I can help you with?";
-            } else {
-                return "Thanks for your message! I'm here to help you navigate BarangChan. You can ask about:\n• Creating posts\n• Requesting documents\n• Forum discussions\n• Emergency contacts\nWhat would you like to know? 🤗";
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+        const chatMessages = document.getElementById('chatMessages');
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typingIndicator';
+        typingDiv.className = 'flex items-start gap-3 mb-4';
+        typingDiv.innerHTML = `
+            <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
+                <i class="fas fa-robot text-sm"></i>
+            </div>
+            <div class="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-amber-100">
+                <div class="typing-indicator flex space-x-1">
+                    <span class="w-2 h-2 bg-amber-600 rounded-full"></span>
+                    <span class="w-2 h-2 bg-amber-600 rounded-full"></span>
+                    <span class="w-2 h-2 bg-amber-600 rounded-full"></span>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+        const typing = document.getElementById('typingIndicator');
+        if (typing) typing.remove();
+    }
+
+    async function initModeratorChat() {
+        const modal = document.getElementById('moderatorChatModal');
+        const moderatorMessages = document.getElementById('moderatorMessages');
+        const moderatorStatus = document.getElementById('moderatorStatus');
+        
+        modal.classList.remove('hidden');
+        moderatorMessages.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Connecting to a moderator...</p></div>';
+        moderatorStatus.textContent = 'Checking availability...';
+        
+        try {
+            const statusResponse = await fetch('/api/chatbot/moderator/status');
+            const statusData = await statusResponse.json();
+            
+            if (!statusData.hasOnlineModerator) {
+                moderatorStatus.textContent = 'No moderators online';
+                moderatorMessages.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-user-clock text-4xl text-gray-400 mb-3"></i>
+                        <p class="text-gray-600">No moderators are currently online.</p>
+                        <button id="showLeaveMessageBtn" class="mt-4 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition">
+                            Leave a Message
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('showLeaveMessageBtn')?.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                    showLeaveMessageModal();
+                });
+                return;
             }
+            
+            const response = await fetch('/api/chatbot/moderator/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                moderatorChatId = data.chatId;
+                moderatorStatus.textContent = 'Connected • Online';
+                moderatorMessages.innerHTML = '<div class="text-center text-green-600 py-4"><i class="fas fa-check-circle text-2xl"></i><p>Connected! A moderator will assist you.</p></div>';
+                
+                startMessagePolling();
+                
+                const sendBtn = document.getElementById('sendModeratorMessage');
+                const input = document.getElementById('moderatorChatInput');
+                const closeBtn = document.getElementById('closeModeratorChat');
+                
+                const newSendBtn = sendBtn.cloneNode(true);
+                sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+                
+                newSendBtn.onclick = () => sendModeratorMessage();
+                input.onkeypress = (e) => {
+                    if (e.key === 'Enter') sendModeratorMessage();
+                };
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    stopMessagePolling();
+                };
+            } else {
+                moderatorStatus.textContent = 'Connection failed';
+                moderatorMessages.innerHTML = `
+                    <div class="text-center text-red-600 py-8">
+                        <i class="fas fa-exclamation-circle text-2xl"></i>
+                        <p class="mt-2">${data.message || 'Failed to connect.'}</p>
+                        <button id="retryModeratorConnect" class="mt-4 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('retryModeratorConnect')?.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                    setTimeout(() => initModeratorChat(), 500);
+                });
+            }
+        } catch (error) {
+            console.error('Error connecting to moderator:', error);
+            moderatorStatus.textContent = 'Connection error';
+            moderatorMessages.innerHTML = `
+                <div class="text-center text-red-600 py-8">
+                    <i class="fas fa-wifi text-2xl"></i>
+                    <p class="mt-2">Network error. Please check your connection.</p>
+                    <button id="retryModeratorConnect" class="mt-4 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition">
+                        Retry
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('retryModeratorConnect')?.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                setTimeout(() => initModeratorChat(), 500);
+            });
         }
+    }
+    
+    function showLeaveMessageModal() {
+        const modal = document.getElementById('leaveMessageModal');
+        const textarea = document.getElementById('leaveMessageText');
+        const sendBtn = document.getElementById('sendLeaveMessage');
+        const cancelBtn = document.getElementById('cancelLeaveMessage');
+        
+        modal.classList.remove('hidden');
+        textarea.value = '';
+        
+        sendBtn.onclick = async () => {
+            const message = textarea.value.trim();
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/chatbot/moderator/leave-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Message sent! Moderators will get back to you.');
+                    modal.classList.add('hidden');
+                } else {
+                    alert('Failed to send message.');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Network error. Please try again.');
+            }
+        };
+        
+        cancelBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+    }
+    
+    async function sendModeratorMessage() {
+        const input = document.getElementById('moderatorChatInput');
+        const message = input.value.trim();
+        
+        if (!message || !moderatorChatId) return;
+        
+        addModeratorMessage(message, true);
+        input.value = '';
+        
+        try {
+            await fetch('/api/chatbot/moderator/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chatId: moderatorChatId,
+                    message: message,
+                    isModerator: false
+                })
+            });
+        } catch (error) {
+            console.error('Error sending message:', error);
+            addModeratorMessage('Failed to send message.', false);
+        }
+    }
+    
+    function addModeratorMessage(message, isUser) {
+        const container = document.getElementById('moderatorMessages');
+        const messageDiv = document.createElement('div');
+        
+        if (isUser) {
+            messageDiv.className = 'flex justify-end mb-3';
+            messageDiv.innerHTML = `
+                <div class="bg-amber-600 text-white rounded-2xl rounded-tr-none p-3 max-w-[70%]">
+                    <p class="text-sm">${escapeHtml(message)}</p>
+                </div>
+            `;
+        } else {
+            messageDiv.className = 'flex justify-start mb-3';
+            messageDiv.innerHTML = `
+                <div class="bg-gray-200 text-gray-800 rounded-2xl rounded-tl-none p-3 max-w-[70%]">
+                    <p class="text-sm">${escapeHtml(message)}</p>
+                </div>
+            `;
+        }
+        
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function startMessagePolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+        
+        pollingInterval = setInterval(async () => {
+            if (!moderatorChatId) return;
+            
+            try {
+                const response = await fetch(`/api/chatbot/moderator/history/${moderatorChatId}`);
+                const data = await response.json();
+                
+                if (data.success && data.messages) {
+                    const container = document.getElementById('moderatorMessages');
+                    const currentMessages = container.querySelectorAll('.moderator-message-item');
+                    
+                    if (data.messages.length > currentMessages.length) {
+                        container.innerHTML = data.messages.map(msg => `
+                            <div class="${msg.is_moderator ? 'flex justify-start' : 'flex justify-end'} mb-3 moderator-message-item">
+                                <div class="${msg.is_moderator ? 'bg-gray-200 text-gray-800' : 'bg-amber-600 text-white'} rounded-2xl ${msg.is_moderator ? 'rounded-tl-none' : 'rounded-tr-none'} p-3 max-w-[70%]">
+                                    <p class="text-sm">${escapeHtml(msg.message)}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                        container.scrollTop = container.scrollHeight;
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling messages:', error);
+            }
+        }, 3000);
+    }
+    
+    function stopMessagePolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 </script>
 
-<!-- Chatbot Styles (include these in your main CSS or head section) -->
 <style>
     .message-bubble {
         animation: fadeInUp 0.3s ease-out;
@@ -267,5 +561,15 @@
         0% { opacity: 0.1; }
         20% { opacity: 1; }
         100% { opacity: 0.1; }
+    }
+    .quick-action {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .quick-action:hover {
+        transform: scale(1.02);
+    }
+    #chatMessages {
+        scroll-behavior: smooth;
     }
 </style>

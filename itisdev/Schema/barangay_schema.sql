@@ -743,3 +743,21 @@ CREATE TABLE IF NOT EXISTS ComplaintUpdate (
     FOREIGN KEY (complaint_id) REFERENCES ComplaintForm(complaint_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
 );
+
+-- Create moderator messages table for live chat
+CREATE TABLE IF NOT EXISTS ModeratorMessage (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT NOT NULL,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    is_moderator BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_chat_id (chat_id),
+    INDEX idx_created_at (created_at),
+    
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Add response_time column to ChatbotLog if not exists
+ALTER TABLE ChatbotLog ADD COLUMN  response_time INT DEFAULT NULL;
