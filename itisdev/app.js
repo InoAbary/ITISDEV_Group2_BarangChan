@@ -5,9 +5,24 @@ const path = require('path');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const nodemailer = require("nodemailer");
+const cors = require('cors');
+
+const NG_URL = process.env.NGROK_URL ; 
+
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.NODE_MAIL,
+        pass: process.env.NODE_PASS
+    }
+});
 
 const multer = require('multer'); 
 const fs = require('fs'); 
+
+const rateLimit = require("express-rate-limit");
 
 const conn = require('./config/db');
 const postController = require('./Controllers/postController')
@@ -23,6 +38,13 @@ const AdminController = require('./Controllers/adminController')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 2, // max 2 requests per IP
+    message: "Too many password reset attempts. Try again later."
+});
 
 // ==================== FILE UPLOAD CONFIGURATION ====================
 // Ensure upload directories exist
@@ -171,6 +193,12 @@ const documentRequests = [
 ];
 
 // ==================== MIDDLEWARE ====================
+
+
+app.use(cors({
+    origin: process.env.NGROK_URL, // Ensure this matches your active frontend URL !!IMPORANT!!
+    credentials: true 
+}));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -827,6 +855,541 @@ app.get('/contacts', (req, res) => {
         success: success,
         error: error
     });
+});
+
+
+
+
+
+
+// ==================== FORGOT PASSWORD ROUTES ====================
+
+app.get("/forgotPass", (req, res) => {
+    // Check if user is already logged in
+    if (req.session.user) {
+        switch(req.session.user.role) {
+            case 'administrator':
+                return res.redirect('/administrator/dashboard');
+            case 'moderator':
+                return res.redirect('/moderator/dashboard');
+            default:
+                return res.redirect('/client/dashboard');
+        }
+    }
+    
+    const error = req.session.error;
+    const message = req.session.message;
+    req.session.error = null;
+    req.session.message = null;
+    
+    res.render('forgotPass', {
+        title: 'BarangChan - Forgot Password',
+        error: error,
+        message: message,
+        year: new Date().getFullYear()
+    });
+});
+
+app.post("/bchan-forgot-password", forgotPasswordLimiter, async (req, res) => {
+    const { email } = req.body;
+    
+    if (!email) {
+        return res.status(400).json({ success: false, error: 'Email is required' });
+    }
+    
+    try {
+        // Check if user exists
+        const [users] = await conn.execute(
+            "SELECT user_id, email FROM User WHERE email = ?",
+            [email]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, error: 'Email not found' });
+        }
+        
+        const user = users[0];
+        const code = Math.floor(100000 + Math.random() * 900000);
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+        
+        // Store reset code in database - ensure no undefined values
+        await conn.execute(
+            "UPDATE User SET reset_code = ?, reset_expires = ? WHERE user_id = ?",
+            [code.toString(), expires, user.user_id]  // Convert code to string to avoid any issues
+        );
+
+        // Store in session for verification
+        req.session.resetEmail = email;
+        req.session.resetCode = code;
+        req.session.resetExpires = expires;
+        req.session.resetUserId = user.user_id;
+
+        await transporter.sendMail({
+            to: email,
+            subject: "🔐 BarangChan Password Reset Request",
+            html: `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Reset Your BarangChan Password</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                        
+                        body {
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: #f8fafc;
+                            line-height: 1.6;
+                        }
+                        
+                        .container {
+                            max-width: 560px;
+                            margin: 0 auto;
+                            background: #ffffff;
+                            border-radius: 24px;
+                            overflow: hidden;
+                            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        .header {
+                            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                            padding: 32px 40px;
+                            text-align: center;
+                            position: relative;
+                        }
+                        
+                        .header::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path fill="white" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
+                            background-repeat: repeat;
+                            opacity: 0.1;
+                        }
+                        
+                        .logo {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 12px;
+                            font-size: 28px;
+                            font-weight: 800;
+                            color: white;
+                            position: relative;
+                            z-index: 1;
+                        }
+                        
+                        .logo-icon {
+                            font-size: 36px;
+                            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+                        }
+                        
+                        .logo-text {
+                            letter-spacing: -0.5px;
+                        }
+                        
+                        .logo-text span {
+                            color: #fbbf24;
+                        }
+                        
+                        .content {
+                            padding: 48px 40px;
+                            background: white;
+                        }
+                        
+                        .greeting {
+                            font-size: 26px;
+                            font-weight: 700;
+                            color: #1e293b;
+                            margin-bottom: 16px;
+                            line-height: 1.3;
+                        }
+                        
+                        .message {
+                            color: #475569;
+                            font-size: 16px;
+                            margin-bottom: 32px;
+                        }
+                        
+                        .code-container {
+                            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                            border-radius: 16px;
+                            padding: 32px;
+                            text-align: center;
+                            margin: 32px 0;
+                            border: 1px solid #fbbf24;
+                        }
+                        
+                        .code-label {
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #92400e;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            margin-bottom: 12px;
+                        }
+                        
+                        .reset-code {
+                            font-size: 48px;
+                            font-weight: 800;
+                            letter-spacing: 8px;
+                            color: #b45309;
+                            font-family: 'Courier New', monospace;
+                            background: white;
+                            padding: 20px;
+                            border-radius: 12px;
+                            display: inline-block;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                        }
+                        
+                        .expiry-note {
+                            font-size: 13px;
+                            color: #92400e;
+                            margin-top: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                        }
+                        
+                        .button {
+                            display: inline-block;
+                            background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+                            color: white;
+                            text-decoration: none;
+                            padding: 14px 32px;
+                            border-radius: 12px;
+                            font-weight: 600;
+                            font-size: 16px;
+                            margin: 24px 0;
+                            transition: transform 0.2s ease, box-shadow 0.2s ease;
+                            box-shadow: 0 4px 12px rgba(180, 83, 9, 0.3);
+                        }
+                        
+                        .button:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 16px rgba(180, 83, 9, 0.4);
+                        }
+                        
+                        .divider {
+                            border-top: 1px solid #e2e8f0;
+                            margin: 32px 0;
+                        }
+                        
+                        .info-box {
+                            background: #f1f5f9;
+                            border-radius: 12px;
+                            padding: 20px;
+                            margin: 24px 0;
+                        }
+                        
+                        .info-title {
+                            font-weight: 700;
+                            color: #1e293b;
+                            margin-bottom: 12px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        }
+                        
+                        .info-text {
+                            font-size: 14px;
+                            color: #475569;
+                            margin-bottom: 8px;
+                        }
+                        
+                        .warning-text {
+                            color: #dc2626;
+                            font-size: 13px;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            margin-top: 12px;
+                        }
+                        
+                        .footer {
+                            background: #f8fafc;
+                            padding: 32px 40px;
+                            text-align: center;
+                            border-top: 1px solid #e2e8f0;
+                        }
+                        
+                        .footer-text {
+                            color: #64748b;
+                            font-size: 13px;
+                            margin-bottom: 16px;
+                        }
+                        
+                        .social-links {
+                            display: flex;
+                            justify-content: center;
+                            gap: 24px;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .social-link {
+                            color: #94a3b8;
+                            text-decoration: none;
+                            font-size: 20px;
+                            transition: color 0.2s ease;
+                        }
+                        
+                        .social-link:hover {
+                            color: #b45309;
+                        }
+                        
+                        .copyright {
+                            color: #94a3b8;
+                            font-size: 12px;
+                        }
+                        
+                        @media (max-width: 600px) {
+                            .container {
+                                border-radius: 0;
+                            }
+                            
+                            .content {
+                                padding: 32px 24px;
+                            }
+                            
+                            .reset-code {
+                                font-size: 32px;
+                                letter-spacing: 4px;
+                                padding: 16px;
+                            }
+                            
+                            .greeting {
+                                font-size: 22px;
+                            }
+                        }
+                    </style>
+                </head>
+                <body style="margin: 0; padding: 20px; background-color: #f8fafc;">
+                    <div class="container">
+                        <!-- Header with BarangChan Branding -->
+                        <div class="header">
+                            <div class="logo">
+                                <span class="logo-icon">🤝</span>
+                                <span class="logo-text">Barang<span>Chan</span></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Main Content -->
+                        <div class="content">
+                            <div class="greeting">
+                                Hello, Kabayan! 👋
+                            </div>
+                            
+                            <div class="message">
+                                We received a request to reset your BarangChan account password. 
+                                Use the verification code below to create a new password. This code will expire in <strong>10 minutes</strong>.
+                            </div>
+                            
+                            <!-- Reset Code Card -->
+                            <div class="code-container">
+                                <div class="code-label">
+                                    <span style="font-size: 20px;">🔐</span> YOUR VERIFICATION CODE
+                                </div>
+                                <div class="reset-code">
+                                    ${code}
+                                </div>
+                                <div class="expiry-note">
+                                    <span>⏰</span> Code expires in 10 minutes
+                                </div>
+                            </div>
+                            
+                            <!-- Important Security Info -->
+                            <div class="info-box">
+                                <div class="info-title">
+                                    <span>🛡️</span> Security Tips
+                                </div>
+                                <div class="info-text">
+                                    • Never share this code with anyone, including Barangay officials
+                                </div>
+                                <div class="info-text">
+                                    • BarangChan will never ask for your password or verification code
+                                </div>
+                                <div class="info-text">
+                                    • If you didn't request this, please ignore this email
+                                </div>
+                                <div class="warning-text">
+                                    <span>⚠️</span> For security, do not forward this email
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <!-- Alternative Action -->
+                            <div style="text-align: center;">
+                                <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
+                                    Didn't request a password reset?
+                                </p>
+                                <p style="color: #475569; font-size: 13px;">
+                                    If you received this email by mistake, you can safely ignore it. 
+                                    Your account remains secure.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="footer">
+                            <div class="social-links">
+                                <a href="#" class="social-link">📘</a>
+                                <a href="#" class="social-link">🐦</a>
+                                <a href="#" class="social-link">📷</a>
+                                <a href="#" class="social-link">💬</a>
+                            </div>
+                            <div class="footer-text">
+                                <strong>BarangChan</strong> — Digital Barangay Services
+                            </div>
+                            <div class="footer-text">
+                                Bringing government services closer to every Filipino home.
+                            </div>
+                            <div class="copyright">
+                                © ${new Date().getFullYear()} BarangChan. All rights reserved.<br>
+                                This is an automated message, please do not reply to this email.
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `,
+            text: `BarangChan Password Reset\n\nHello Kabayan!\n\nWe received a request to reset your BarangChan account password. Your verification code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this password reset, please ignore this email. Your account remains secure.\n\nSecurity Tips:\n• Never share this code with anyone\n• BarangChan will never ask for your password or verification code\n\n© ${new Date().getFullYear()} BarangChan - Digital Barangay Services`
+        });
+        
+        // For development, you can return the code in response (remove in production)
+        return res.json({ 
+            success: true, 
+            message: `Reset code sent to ${email}`,
+            devCode: process.env.NODE_ENV === 'development' ? code : undefined
+        });
+        
+    } catch (err) {
+        console.error('Error in forgot password:', err);
+        return res.status(500).json({ success: false, error: 'An error occurred. Please try again.' });
+    }
+});
+
+app.post("/bchan-verify-reset-code", async (req, res) => {
+    const { email, code } = req.body;
+    
+    if (!email || !code) {
+        return res.status(400).json({ success: false, error: 'Email and code are required' });
+    }
+    
+    try {
+        const [users] = await conn.execute(
+            "SELECT user_id, reset_code, reset_expires FROM User WHERE email = ?",
+            [email]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+        
+        const user = users[0];
+        
+        // Check if reset_code exists
+        if (!user.reset_code) {
+            return res.status(401).json({ success: false, error: "No reset code requested. Please request a new code." });
+        }
+        
+        // Check if code matches
+        if (user.reset_code.toString() !== code.toString()) {
+            return res.status(401).json({ success: false, error: "Invalid code" });
+        }
+        
+        // Check if code is expired
+        if (new Date() > new Date(user.reset_expires)) {
+            return res.status(401).json({ success: false, error: "Code expired. Please request a new one." });
+        }
+
+        req.session.resetUserId = user.user_id;
+        return res.json({ success: true, message: "Code verified" });
+        
+    } catch (err) {
+        console.error('Error verifying code:', err);
+        return res.status(500).json({ success: false, error: "Server error" });
+    }
+});
+
+app.post("/bchan-reset-password", async (req, res) => {
+    if (!req.session.resetUserId) {
+        return res.status(403).json({ success: false, error: "Unauthorized. Please request a reset code first." });
+    }
+
+    const { newPassword } = req.body;
+    
+    if (!newPassword) {
+        return res.status(400).json({ success: false, error: "New password is required" });
+    }
+    
+    // Validate password strength
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({ 
+            success: false, 
+            error: "Password must be at least 8 characters, include 1 uppercase letter and 1 special symbol" 
+        });
+    }
+    
+    try {
+        const hash = await bcrypt.hash(newPassword, 10);
+
+        // Update password and clear reset codes
+        await conn.execute(
+            "UPDATE User SET password = ?, reset_code = NULL, reset_expires = NULL WHERE user_id = ?",
+            [hash, req.session.resetUserId]
+        );
+
+        // Clear the reset session
+        req.session.resetUserId = null;
+        req.session.resetEmail = null;
+        req.session.resetCode = null;
+        req.session.resetExpires = null;
+        
+        return res.json({ success: true, message: "Password reset successful" });
+        
+    } catch (err) {
+        console.error('Error resetting password:', err);
+        return res.status(500).json({ success: false, error: "Server error" });
+    }
+});
+
+// ==================== AI CHATBOT ROUTES ====================
+const chatbotController = require('./Ai/chatbotController');
+
+// Chatbot API endpoints
+app.post('/api/chatbot/chat', chatbotController.chat.bind(chatbotController));
+app.get('/api/chatbot/quick-actions', chatbotController.getQuickActions.bind(chatbotController));
+app.post('/api/chatbot/moderator/connect', chatbotController.createModeratorChat.bind(chatbotController));
+app.post('/api/chatbot/moderator/message', chatbotController.sendModeratorMessage.bind(chatbotController));
+app.get('/api/chatbot/moderator/history/:chatId', chatbotController.getModeratorChatHistory.bind(chatbotController));
+app.get('/api/chatbot/moderator/status', chatbotController.getModeratorStatus.bind(chatbotController));
+app.post('/api/chatbot/moderator/leave-message', chatbotController.leaveMessage.bind(chatbotController));
+
+app.get('/api/test-gemini', async (req, res) => {
+    try {
+        const aiService = require('./Ai/aiService');
+        const response = await aiService.generateResponse("Say 'Hello! Gemini is working!'", { pageContext: 'test' }, []);
+        res.json({ 
+            success: true, 
+            message: 'Gemini test completed',
+            response: response,
+            configured: aiService.isConfigured
+        });
+    } catch (error) {
+        res.json({ 
+            success: false, 
+            error: error.message,
+            configured: false
+        });
+    }
 });
 
 // ==================== 404 ====================
