@@ -620,6 +620,7 @@ app.get('/administrator/dashboard', AdminController.getDashboard);
 
 // Moderator Management
 app.get('/administrator/moderators', AdminController.getModerators);
+app.post('/administrator/moderators/add', AdminController.createModerator);
 app.post('/administrator/moderators/:id/update', AdminController.updateModeratorRole);
 
 // Reports & Analytics
@@ -627,14 +628,8 @@ app.get('/administrator/reports/generate', AdminController.generateReport);
 app.get('/administrator/analytics/realtime', AdminController.getRealTimeAnalytics);
 
 // Keep the existing admin routes for backward compatibility
-app.get('/administrator/users', (req, res) => {
-    res.render('users_admin', {
-        title: 'Manage Users- BarangChan',
-        user: req.session.user,
-        success: req.session.success,
-        error: req.session.error
-    });
-});
+app.get('/administrator/users', AdminController.getUsers);
+app.post('/administrator/users/:id/action', AdminController.updateUserStatus);
 
 
 // Add this API endpoint for complaint details (in app.js, near other API routes)
