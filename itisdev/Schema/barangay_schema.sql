@@ -715,6 +715,8 @@ AND NOT EXISTS (
 SELECT '=== Users ===' as '';
 SELECT user_id, first_name, last_name, email, role, status FROM User;
 
+
+
 SELECT '=== Addresses ===' as '';
 SELECT a.address_id, u.first_name, u.last_name, a.barangay, a.city, a.street 
 FROM Address a 
@@ -744,7 +746,10 @@ CREATE TABLE IF NOT EXISTS ComplaintUpdate (
     FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
 );
 
--- Create moderator messages table for live chat
+alter table User 
+ADD reset_code VARCHAR(10),
+ADD reset_expires DATETIME;
+
 CREATE TABLE IF NOT EXISTS ModeratorMessage (
     message_id INT AUTO_INCREMENT PRIMARY KEY,
     chat_id INT NOT NULL,
