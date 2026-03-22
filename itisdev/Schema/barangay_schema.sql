@@ -709,6 +709,102 @@ AND NOT EXISTS (
 );
 
 -- =====================================
+-- Insert Sample Government Forms
+-- =====================================
+
+-- Sample Form 1: Barangay Clearance Form
+INSERT INTO GovernmentForm (
+    title, 
+    description, 
+    category, 
+    file_name, 
+    file_path, 
+    file_size, 
+    file_type, 
+    form_code, 
+    version, 
+    is_featured, 
+    download_count, 
+    last_updated, 
+    created_at
+) VALUES (
+    'Barangay Clearance Application Form',
+    'Official application form for obtaining Barangay Clearance. This document serves as proof of residency and good moral character within the barangay. Required for employment, business permits, government transactions, and school enrollment. Please bring valid ID and proof of residency when submitting.',
+    'barangay',
+    'Barangay_Clearance_Form_v2.pdf',
+    '/uploads/forms/barangay_clearance_form.pdf',
+    245,
+    'PDF',
+    'BC-FRM-001',
+    '2.0',
+    TRUE,
+    157,
+    '2025-01-15',
+    NOW()
+);
+
+-- Sample Form 2: PSA Birth Certificate Request Form
+INSERT INTO GovernmentForm (
+    title, 
+    description, 
+    category, 
+    file_name, 
+    file_path, 
+    file_size, 
+    file_type, 
+    form_code, 
+    version, 
+    is_featured, 
+    download_count, 
+    last_updated, 
+    created_at
+) VALUES (
+    'PSA Birth Certificate Request Form',
+    'Application form for requesting PSA (Philippine Statistics Authority) Birth Certificate. This form is used to request an official copy of birth certificate for school enrollment, passport application, marriage license, employment, and other legal transactions. Processing time: 3-5 working days for regular request.',
+    'psa',
+    'PSA_Birth_Certificate_Request_Form.pdf',
+    '/uploads/forms/psa_birth_certificate_request.pdf',
+    312,
+    'PDF',
+    'PSA-BC-2025',
+    '2025.1',
+    TRUE,
+    284,
+    '2025-02-10',
+    NOW()
+);
+
+-- Sample Form 3: Business Permit / Mayor's Permit Application Form
+INSERT INTO GovernmentForm (
+    title, 
+    description, 
+    category, 
+    file_name, 
+    file_path, 
+    file_size, 
+    file_type, 
+    form_code, 
+    version, 
+    is_featured, 
+    download_count, 
+    last_updated, 
+    created_at
+) VALUES (
+    'Business Permit / Mayor''s Permit Application Form',
+    'Complete application form for securing Business Permit (Mayor''s Permit). This package includes: Business Permit Application Form, Business Tax Declaration Form, Zoning Clearance Application, and Fire Safety Inspection Checklist. Required for new business applications and annual renewals. Please submit with all supporting documents including Barangay Clearance and DTI/SEC Registration.',
+    'bpls',
+    'Business_Permit_Application_2025.docx',
+    '/uploads/forms/business_permit_application.docx',
+    428,
+    'DOC',
+    'BP-FRM-2025-001',
+    '2025.1',
+    TRUE,
+    523,
+    '2025-02-15',
+    NOW()
+);
+-- =====================================
 -- Display verification
 -- =====================================
 
