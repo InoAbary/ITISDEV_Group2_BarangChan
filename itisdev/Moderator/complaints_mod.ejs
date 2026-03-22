@@ -1,4 +1,4 @@
-<!-- moderator/complaints_mod.ejs - Complaint Management for Moderators with Modal (FIXED) -->
+<!-- moderator/complaints_mod.ejs - Complaint Management for Moderators with Modal (COMPLETELY FIXED) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -169,6 +169,22 @@
         .update-resident {
             background: #f1f5f9;
             border-left: 3px solid #64748b;
+        }
+        
+        /* Loading spinner animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Line clamp utility */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -503,11 +519,11 @@
 
     <script>
         let currentFilter = 'all';
-        let currentPage = <%= currentPage || 1 %>;
         let currentComplaintData = null;
         let currentModalComplaintId = null;
+        let currentNoteComplaintId = null;
         
-        // Filter complaints
+        // Define all functions in global scope
         function filterComplaints(filter) {
             currentFilter = filter;
             const complaints = document.querySelectorAll('.complaint-card');
@@ -535,39 +551,6 @@
             });
         }
         
-        // Search functionality
-        document.getElementById('searchInput')?.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const complaints = document.querySelectorAll('.complaint-card');
-            
-            complaints.forEach(complaint => {
-                const text = complaint.innerText.toLowerCase();
-                complaint.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-        
-        // Sort functionality
-        document.getElementById('sortBy')?.addEventListener('change', function(e) {
-            const sortValue = e.target.value;
-            const container = document.getElementById('complaintsList');
-            const complaints = Array.from(document.querySelectorAll('.complaint-card'));
-            
-            complaints.sort((a, b) => {
-                if (sortValue === 'newest') {
-                    return new Date(b.dataset.date) - new Date(a.dataset.date);
-                } else if (sortValue === 'oldest') {
-                    return new Date(a.dataset.date) - new Date(b.dataset.date);
-                } else if (sortValue === 'status') {
-                    const statusOrder = { 'under review': 1, 'resolved': 2, 'cancelled': 3 };
-                    return (statusOrder[a.dataset.status] || 99) - (statusOrder[b.dataset.status] || 99);
-                }
-                return 0;
-            });
-            
-            complaints.forEach(complaint => container.appendChild(complaint));
-        });
-        
-        // Update complaint status
         function updateComplaintStatus(complaintId) {
             const select = document.getElementById(`status-select-${complaintId}`);
             const status = select.value;
@@ -589,18 +572,16 @@
             .catch(() => showToast('Error updating status', 'error'));
         }
         
-        // View full complaint details in modal
         async function viewComplaintDetails(complaintId) {
             const modal = document.getElementById('complaintModal');
             const modalContent = document.getElementById('complaintModalContent');
             
             currentModalComplaintId = complaintId;
             
-            // Show modal with loading state
             modal.classList.remove('hidden');
             modalContent.innerHTML = `
                 <div class="text-center py-8">
-                    <i class="fas fa-spinner fa-pulse text-3xl text-amber-600"></i>
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
                     <p class="mt-2 text-gray-500">Loading complaint details...</p>
                 </div>
             `;
@@ -612,14 +593,50 @@
             const modalContent = document.getElementById('complaintModalContent');
             
             try {
-                // Fetch full complaint details from the server
                 const response = await fetch(`/api/complaints/${complaintId}/details`);
                 const data = await response.json();
                 
                 if (data.success) {
                     const complaint = data.complaint;
                     
-                    // Build the modal content with proper update display
+                    // Format date
+                    const complaintDate = new Date(complaint.complaint_date).toLocaleString();
+                    const daysPending = complaint.days_pending || Math.floor((new Date() - new Date(complaint.complaint_date)) / (1000 * 60 * 60 * 24));
+                    
+                    // Build files HTML
+                    let filesHtml = '';
+                    if (complaint.files && complaint.files.length > 0) {
+                        filesHtml = complaint.files.map(file => `
+                            <a href="${file.file_path}" target="_blank" 
+                               class="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-600 transition">
+                                <i class="fas ${file.mime_type && file.mime_type.includes('image') ? 'fa-image' : (file.mime_type && file.mime_type.includes('pdf') ? 'fa-file-pdf' : 'fa-file')}"></i>
+                                ${escapeHtml(file.original_name || 'Evidence file')}
+                            </a>
+                        `).join('');
+                    } else {
+                        filesHtml = '<p class="text-gray-500 text-sm">No evidence files attached</p>';
+                    }
+                    
+                    // Build updates HTML
+                    let updatesHtml = '';
+                    if (complaint.updates && complaint.updates.length > 0) {
+                        updatesHtml = complaint.updates.map(update => `
+                            <div class="p-3 rounded-lg text-sm ${update.user_role === 'moderator' || update.user_role === 'administrator' ? 'bg-amber-50 border-l-4 border-amber-500' : 'bg-gray-50 border-l-4 border-gray-400'}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas ${update.user_role === 'moderator' || update.user_role === 'administrator' ? 'fa-user-shield' : 'fa-user'} text-${update.user_role === 'moderator' || update.user_role === 'administrator' ? 'amber' : 'gray'}-500"></i>
+                                        <span class="font-medium text-gray-800">${escapeHtml(update.user_name || (update.user_role === 'moderator' ? 'Moderator' : 'Resident'))}</span>
+                                        ${update.user_role === 'moderator' || update.user_role === 'administrator' ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Staff</span>' : ''}
+                                    </div>
+                                    <span class="text-xs text-gray-400">${new Date(update.created_at).toLocaleString()}</span>
+                                </div>
+                                <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(update.content)}</p>
+                            </div>
+                        `).join('');
+                    } else {
+                        updatesHtml = '<p class="text-gray-500 text-sm text-center py-4">No updates yet. Click "Add Note" to add the first update to this case.</p>';
+                    }
+                    
                     modalContent.innerHTML = `
                         <div class="space-y-5">
                             <!-- Complainant Info -->
@@ -633,8 +650,8 @@
                                     <div><span class="font-medium text-gray-600">Email:</span> ${escapeHtml(complaint.email || 'Not provided')}</div>
                                     <div><span class="font-medium text-gray-600">Phone:</span> ${escapeHtml(complaint.phone || 'Not provided')}</div>
                                     <div><span class="font-medium text-gray-600">Address:</span> ${escapeHtml(complaint.address || 'Not provided')}</div>
-                                    <div><span class="font-medium text-gray-600">Date Filed:</span> ${new Date(complaint.complaint_date).toLocaleString()}</div>
-                                    <div><span class="font-medium text-gray-600">Days Pending:</span> ${complaint.days_pending || 0} day(s)</div>
+                                    <div><span class="font-medium text-gray-600">Date Filed:</span> ${complaintDate}</div>
+                                    <div><span class="font-medium text-gray-600">Days Pending:</span> ${daysPending} day(s)</div>
                                     <div><span class="font-medium text-gray-600">Status:</span> 
                                         <span class="status-${complaint.status === 'Under Review' ? 'in-progress' : complaint.status.toLowerCase()} px-2 py-0.5 rounded-full text-xs">
                                             ${complaint.status === 'Under Review' ? 'In Progress' : complaint.status}
@@ -672,16 +689,7 @@
                                     Evidence Files (${complaint.files ? complaint.files.length : 0})
                                 </h4>
                                 <div class="flex flex-wrap gap-2">
-                                    ${complaint.files && complaint.files.length > 0 ? 
-                                        complaint.files.map(file => `
-                                            <a href="${file.file_path}" target="_blank" 
-                                               class="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-600 transition">
-                                                <i class="fas ${file.mime_type && file.mime_type.includes('image') ? 'fa-image' : (file.mime_type && file.mime_type.includes('pdf') ? 'fa-file-pdf' : 'fa-file')}"></i>
-                                                ${escapeHtml(file.original_name || 'Evidence file')}
-                                            </a>
-                                        `).join('') 
-                                        : '<p class="text-gray-500 text-sm">No evidence files attached</p>'
-                                    }
+                                    ${filesHtml}
                                 </div>
                             </div>
                             
@@ -692,24 +700,22 @@
                                     Case Updates (${complaint.updates ? complaint.updates.length : 0})
                                 </h4>
                                 <div class="space-y-3 max-h-64 overflow-y-auto">
-                                    ${complaint.updates && complaint.updates.length > 0 ? 
-                                        complaint.updates.map(update => `
-                                            <div class="update-${update.user_role === 'moderator' ? 'moderator' : (update.user_role === 'administrator' ? 'moderator' : 'resident')} p-3 rounded-lg text-sm">
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <div class="flex items-center gap-2">
-                                                        <i class="fas ${update.user_role === 'moderator' || update.user_role === 'administrator' ? 'fa-user-shield' : 'fa-user'} text-${update.user_role === 'moderator' || update.user_role === 'administrator' ? 'amber' : 'gray'}-500"></i>
-                                                        <span class="font-medium text-gray-800">${escapeHtml(update.user_name || (update.user_role === 'moderator' ? 'Moderator' : 'Resident'))}</span>
-                                                        ${update.user_role === 'moderator' || update.user_role === 'administrator' ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Staff</span>' : ''}
-                                                    </div>
-                                                    <span class="text-xs text-gray-400">${new Date(update.created_at).toLocaleString()}</span>
-                                                </div>
-                                                <p class="text-gray-700">${escapeHtml(update.content)}</p>
-                                            </div>
-                                        `).join('') 
-                                        : '<p class="text-gray-500 text-sm text-center py-4">No updates yet. Click "Add Note" to add the first update to this case.</p>'
-                                    }
+                                    ${updatesHtml}
                                 </div>
                             </div>
+                            
+                            <!-- Resolution Notes -->
+                            ${complaint.resolution_notes ? `
+                            <div>
+                                <h4 class="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                    <i class="fas fa-check-circle text-green-600"></i>
+                                    Resolution Notes
+                                </h4>
+                                <div class="bg-green-50 p-4 rounded-lg text-gray-700 whitespace-pre-wrap border-l-4 border-green-500">
+                                    ${escapeHtml(complaint.resolution_notes)}
+                                </div>
+                            </div>
+                            ` : ''}
                             
                             <!-- Quick Actions -->
                             <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
@@ -772,9 +778,7 @@
             .then(data => {
                 if (data.success) {
                     showToast('Status updated successfully', 'success');
-                    // Reload the modal content with updated data
                     loadComplaintDetailsIntoModal(currentModalComplaintId);
-                    // Also reload the page after a short delay to update the list
                     setTimeout(() => location.reload(), 1500);
                 } else {
                     showToast(data.message || 'Error updating status', 'error');
@@ -782,9 +786,6 @@
             })
             .catch(() => showToast('Error updating status', 'error'));
         }
-        
-        // Add complaint update
-        let currentNoteComplaintId = null;
         
         function addComplaintUpdate(complaintId) {
             currentNoteComplaintId = complaintId;
@@ -818,12 +819,10 @@
                     showToast('Note added successfully', 'success');
                     closeNoteModal();
                     
-                    // If the modal is open for this complaint, refresh its content
                     if (currentModalComplaintId == complaintId) {
                         loadComplaintDetailsIntoModal(complaintId);
                     }
                     
-                    // Reload the page after a short delay to update the list preview
                     setTimeout(() => location.reload(), 1500);
                 } else {
                     showToast(data.message || 'Error adding note', 'error');
@@ -856,6 +855,38 @@
             div.textContent = text;
             return div.innerHTML;
         }
+        
+        // Search functionality
+        document.getElementById('searchInput')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const complaints = document.querySelectorAll('.complaint-card');
+            
+            complaints.forEach(complaint => {
+                const text = complaint.innerText.toLowerCase();
+                complaint.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+        
+        // Sort functionality
+        document.getElementById('sortBy')?.addEventListener('change', function(e) {
+            const sortValue = e.target.value;
+            const container = document.getElementById('complaintsList');
+            const complaints = Array.from(document.querySelectorAll('.complaint-card'));
+            
+            complaints.sort((a, b) => {
+                if (sortValue === 'newest') {
+                    return new Date(b.dataset.date) - new Date(a.dataset.date);
+                } else if (sortValue === 'oldest') {
+                    return new Date(a.dataset.date) - new Date(b.dataset.date);
+                } else if (sortValue === 'status') {
+                    const statusOrder = { 'under review': 1, 'resolved': 2, 'cancelled': 3 };
+                    return (statusOrder[a.dataset.status] || 99) - (statusOrder[b.dataset.status] || 99);
+                }
+                return 0;
+            });
+            
+            complaints.forEach(complaint => container.appendChild(complaint));
+        });
     </script>
 </body>
 </html>

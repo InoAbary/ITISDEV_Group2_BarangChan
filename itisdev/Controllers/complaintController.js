@@ -285,6 +285,7 @@ fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
     },
 
     // Update complaint status (for moderators/admins)
+    // complaintController.js - FIXED updateComplaintStatus
     updateComplaintStatus: async (req, res) => {
         if (!req.session.user || (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator')) {
             return res.status(403).json({ error: 'Access denied' });
@@ -293,30 +294,53 @@ fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
         try {
             const complaintId = req.params.id;
             const { status, resolution_notes } = req.body;
+            const userId = req.session.user.id;
+
+            // Validate status
+            const validStatuses = ['Under Review', 'Resolved', 'Cancelled'];
+            if (!validStatuses.includes(status)) {
+                return res.status(400).json({ error: 'Invalid status' });
+            }
 
             // Update complaint status
+            const updateFields = ['status = ?'];
+            const updateParams = [status];
+            
+            if (resolution_notes) {
+                updateFields.push('resolution_notes = ?');
+                updateParams.push(resolution_notes);
+            }
+            
+            if (status === 'Resolved') {
+                updateFields.push('resolved_date = NOW()');
+            }
+            
             const query = `
                 UPDATE ComplaintForm 
-                SET status = ?, 
-                    resolution_notes = ?,
-                    resolved_date = CASE WHEN ? = 'Resolved' THEN NOW() ELSE resolved_date END
+                SET ${updateFields.join(', ')}
                 WHERE complaint_id = ?
             `;
-
-            await conn.execute(query, [status, resolution_notes, status, complaintId]);
+            updateParams.push(complaintId);
+            
+            await conn.execute(query, updateParams);
 
             // Log to audit table
-            const auditQuery = `
-                INSERT INTO complaint_audit 
-                SELECT *, NOW() FROM ComplaintForm WHERE complaint_id = ?
-            `;
-            await conn.execute(auditQuery, [complaintId]);
+            await conn.execute(`
+                INSERT INTO complaint_audit (complaint_id, user_id, status, date_updated)
+                VALUES (?, ?, ?, NOW())
+            `, [complaintId, userId, status]);
+
+            // Log moderator action
+            await conn.execute(`
+                INSERT INTO ModeratorAction (moderator_id, action, details, created_at)
+                VALUES (?, 'update_complaint', ?, NOW())
+            `, [userId, `Updated complaint #${complaintId} status to: ${status}`]);
 
             res.json({ success: true, message: 'Complaint status updated' });
 
         } catch (error) {
             console.error('Error updating complaint:', error);
-            res.status(500).json({ error: 'Error updating complaint' });
+            res.status(500).json({ error: 'Error updating complaint: ' + error.message });
         }
     },
 
@@ -415,6 +439,47 @@ fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
     }
 };
 
+    // complaintController.js - FIXED addComplaintNote
+    addComplaintNote: async (req, res) => {
+        if (!req.session.user || (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator')) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        try {
+            const complaintId = req.params.id;
+            const { content } = req.body;
+            const userId = req.session.user.id;
+
+            if (!content || content.trim() === '') {
+                return res.status(400).json({ error: 'Note content is required' });
+            }
+
+            // Insert the note into ComplaintUpdate table
+            await conn.execute(`
+                INSERT INTO ComplaintUpdate (complaint_id, user_id, content, created_at) 
+                VALUES (?, ?, ?, NOW())
+            `, [complaintId, userId, content]);
+
+            // Also update the main complaint's narration with the note (optional - for history)
+            await conn.execute(`
+                UPDATE ComplaintForm 
+                SET narration = CONCAT(narration, '\n\n[Update from ${req.session.user.first_name} ${req.session.user.last_name} at ${new Date().toLocaleString()}]:\n', ?)
+                WHERE complaint_id = ?
+            `, [content, complaintId]);
+
+            // Log the action
+            await conn.execute(`
+                INSERT INTO ModeratorAction (moderator_id, action, details, created_at) 
+                VALUES (?, 'add_complaint_note', ?, NOW())
+            `, [userId, `Added note to complaint #${complaintId}`]);
+
+            res.json({ success: true, message: 'Note added successfully' });
+
+        } catch (error) {
+            console.error('Error adding complaint note:', error);
+            res.status(500).json({ error: 'Error adding note: ' + error.message });
+        }
+    },
 // Helper function to handle file uploads
 async function handleFileUploads(files, complaintId) {
     const uploadPromises = files.map(async (file) => {

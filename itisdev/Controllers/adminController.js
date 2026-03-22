@@ -192,30 +192,32 @@ class AdminController {
             }
 
             try {
-                // User Growth Data (Last 6 months)
-                const [userGrowth] = await db.execute(`
-                    SELECT 
-                        DATE_FORMAT(created_at, '%b') as month,
-                        COUNT(*) as new_users
-                    FROM User
-                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-                    GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
-                    ORDER BY created_at ASC
-                `);
-                
-                if (userGrowth && userGrowth.length > 0) {
-                    months = userGrowth.map(m => m.month);
-                    newUsersData = userGrowth.map(m => m.new_users);
-                    // Calculate cumulative active users
-                    let cumulative = 0;
-                    activeUsersData = userGrowth.map(m => {
-                        cumulative += m.new_users;
-                        return cumulative;
-                    });
-                }
-            } catch (err) {
-                console.error('Error fetching user growth:', err.message);
+            // FIXED: User Growth Data (Last 6 months) - Proper GROUP BY
+            const [userGrowth] = await db.execute(`
+                SELECT 
+                    DATE_FORMAT(created_at, '%b') as month,
+                    DATE_FORMAT(created_at, '%Y-%m') as month_key,
+                    COUNT(*) as new_users
+                FROM User
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                    AND created_at IS NOT NULL
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
+                ORDER BY MIN(created_at) ASC
+            `);
+            
+            if (userGrowth && userGrowth.length > 0) {
+                months = userGrowth.map(m => m.month);
+                newUsersData = userGrowth.map(m => m.new_users);
+                // Calculate cumulative active users
+                let cumulative = 0;
+                activeUsersData = userGrowth.map(m => {
+                    cumulative += m.new_users;
+                    return cumulative;
+                });
             }
+        } catch (err) {
+            console.error('Error fetching user growth:', err.message);
+        }
 
             try {
                 // Activity Distribution (Last 30 days)
@@ -269,7 +271,7 @@ class AdminController {
                 const [documentRequestsStarted] = await db.execute(`SELECT COUNT(*) as count FROM RequestForm`);
                 const [documentsCompleted] = await db.execute(`SELECT COUNT(*) as count FROM RequestForm WHERE status = 'Completed'`);
                 const [complaintsResolved] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Resolved'`);
-                const [totalComplaints] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm`);
+                const [totalComplaintsCount] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm`);
                 
                 dropOff = {
                     registrationFunnel: emailVerified[0]?.count > 0 && dropOffData[0]?.total_registrations > 0 
@@ -278,8 +280,8 @@ class AdminController {
                     documentCompletion: documentRequestsStarted[0]?.count > 0 && documentsCompleted[0]?.count > 0
                         ? Math.round((documentsCompleted[0].count / documentRequestsStarted[0].count) * 100)
                         : 64,
-                    complaintResolution: totalComplaints[0]?.count > 0 && complaintsResolved[0]?.count > 0
-                        ? Math.round((complaintsResolved[0].count / totalComplaints[0].count) * 100)
+                    complaintResolution: totalComplaintsCount[0]?.count > 0 && complaintsResolved[0]?.count > 0
+                        ? Math.round((complaintsResolved[0].count / totalComplaintsCount[0].count) * 100)
                         : 92
                 };
             } catch (err) {
@@ -287,13 +289,14 @@ class AdminController {
             }
 
             try {
-                // Performance Bottlenecks
+                // FIXED: Performance Bottlenecks - Use proper date comparison
                 const [performanceData] = await db.execute(`
-                    SELECT AVG(TIMESTAMPDIFF(MINUTE, date_posted, NOW())) as avg_resolution_time
-                    FROM StatusPost WHERE status = 'Resolved'
+                    SELECT AVG(TIMESTAMPDIFF(HOUR, date_posted, NOW())) as avg_resolution_hours
+                    FROM StatusPost 
+                    WHERE status = 'Resolved' AND date_posted IS NOT NULL
                 `);
-                resolutionTime = performanceData[0]?.avg_resolution_time ? 
-                    (performanceData[0].avg_resolution_time / 1440).toFixed(1) : 3.2;
+                resolutionTime = performanceData[0]?.avg_resolution_hours ? 
+                    (performanceData[0].avg_resolution_hours / 24).toFixed(1) : 3.2;
             } catch (err) {
                 console.error('Error fetching performance data:', err.message);
             }
@@ -306,6 +309,7 @@ class AdminController {
                         (COUNT(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) * 100.0 / 
                         NULLIF(COUNT(CASE WHEN created_at BETWEEN DATE_SUB(NOW(), INTERVAL 60 DAY) AND DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END), 0)) as growth_percent
                     FROM User
+                    WHERE created_at IS NOT NULL
                 `);
                 growthPercent = growthRate[0]?.growth_percent ? Math.round(growthRate[0].growth_percent) : 15;
                 predictedUsers = Math.round(totalUsers * (1 + (growthPercent / 100)));
@@ -314,7 +318,7 @@ class AdminController {
             }
 
             try {
-                // Peak usage prediction
+                // FIXED: Peak usage prediction - Proper GROUP BY
                 const [peakUsage] = await db.execute(`
                     SELECT 
                         DAYNAME(last_login) as day,
@@ -322,6 +326,7 @@ class AdminController {
                         COUNT(*) as activity
                     FROM User
                     WHERE last_login > DATE_SUB(NOW(), INTERVAL 30 DAY)
+                        AND last_login IS NOT NULL
                     GROUP BY DAYNAME(last_login), HOUR(last_login)
                     ORDER BY activity DESC
                     LIMIT 1
@@ -329,7 +334,8 @@ class AdminController {
                 if (peakUsage && peakUsage[0]) {
                     predictedPeakDay = peakUsage[0].day || 'Monday';
                     const hour = peakUsage[0].hour;
-                    predictedPeakHour = hour ? `${hour}:00 ${hour >= 12 ? 'PM' : 'AM'}` : '9:00 AM';
+                    predictedPeakHour = hour !== null && hour !== undefined ? 
+                        `${hour}:00 ${hour >= 12 ? 'PM' : 'AM'}` : '9:00 AM';
                 }
                 predictedConcurrent = Math.round(totalUsers * 0.49);
             } catch (err) {
@@ -443,6 +449,7 @@ class AdminController {
                 console.error('Error fetching moderator status:', err.message);
             }
 
+            // ========== ISSUE SUMMARY ==========
             issueSummary = [
                 {
                     text: `${Math.max(0, 100 - (dropOff.registrationFunnel || 0))}% of registered users are not yet active.`,
@@ -458,6 +465,7 @@ class AdminController {
                 }
             ];
 
+            // ========== OPERATIONAL METRICS ==========
             operationalMetrics = [
                 {
                     label: 'Request Completion',
@@ -1019,14 +1027,17 @@ class AdminController {
         }
 
         try {
+            // FIXED: User Growth for report
             const [userGrowth] = await db.execute(`
                 SELECT
                     DATE_FORMAT(created_at, '%b') as month,
+                    DATE_FORMAT(created_at, '%Y-%m') as month_key,
                     COUNT(*) as new_users
                 FROM User
                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                    AND created_at IS NOT NULL
                 GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
-                ORDER BY created_at ASC
+                ORDER BY MIN(created_at) ASC
             `);
 
             if (userGrowth?.length) {
@@ -1065,7 +1076,7 @@ class AdminController {
             const [documentRequestsStarted] = await db.execute(`SELECT COUNT(*) as count FROM RequestForm`);
             const [documentsCompleted] = await db.execute(`SELECT COUNT(*) as count FROM RequestForm WHERE status = 'Completed'`);
             const [complaintsResolved] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Resolved'`);
-            const [totalComplaints] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm`);
+            const [totalComplaintsCount] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm`);
 
             dropOff = {
                 registrationFunnel: emailVerified[0]?.count > 0 && dropOffData[0]?.total_registrations > 0
@@ -1074,8 +1085,8 @@ class AdminController {
                 documentCompletion: documentRequestsStarted[0]?.count > 0 && documentsCompleted[0]?.count > 0
                     ? Math.round((documentsCompleted[0].count / documentRequestsStarted[0].count) * 100)
                     : 64,
-                complaintResolution: totalComplaints[0]?.count > 0 && complaintsResolved[0]?.count > 0
-                    ? Math.round((complaintsResolved[0].count / totalComplaints[0].count) * 100)
+                complaintResolution: totalComplaintsCount[0]?.count > 0 && complaintsResolved[0]?.count > 0
+                    ? Math.round((complaintsResolved[0].count / totalComplaintsCount[0].count) * 100)
                     : 92
             };
         } catch (err) {
@@ -1083,12 +1094,13 @@ class AdminController {
         }
 
         try {
+            // FIXED: Performance data for report
             const [performanceData] = await db.execute(`
-                SELECT AVG(TIMESTAMPDIFF(MINUTE, date_posted, NOW())) as avg_resolution_time
-                FROM StatusPost WHERE status = 'Resolved'
+                SELECT AVG(TIMESTAMPDIFF(HOUR, date_posted, NOW())) as avg_resolution_hours
+                FROM StatusPost WHERE status = 'Resolved' AND date_posted IS NOT NULL
             `);
-            resolutionTime = performanceData[0]?.avg_resolution_time
-                ? Number((performanceData[0].avg_resolution_time / 1440).toFixed(1))
+            resolutionTime = performanceData[0]?.avg_resolution_hours
+                ? Number((performanceData[0].avg_resolution_hours / 24).toFixed(1))
                 : 3.2;
         } catch (err) {
             console.error('Error fetching performance data for report:', err.message);
@@ -1100,6 +1112,7 @@ class AdminController {
                     (COUNT(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) * 100.0 /
                     NULLIF(COUNT(CASE WHEN created_at BETWEEN DATE_SUB(NOW(), INTERVAL 60 DAY) AND DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END), 0)) as growth_percent
                 FROM User
+                WHERE created_at IS NOT NULL
             `);
             growthPercent = growthRate[0]?.growth_percent ? Math.round(growthRate[0].growth_percent) : 15;
             predictedUsers = Math.round(totalUsers * (1 + (growthPercent / 100)));
@@ -1108,6 +1121,7 @@ class AdminController {
         }
 
         try {
+            // FIXED: Peak usage for report
             const [peakUsage] = await db.execute(`
                 SELECT
                     DAYNAME(last_login) as day,
@@ -1115,6 +1129,7 @@ class AdminController {
                     COUNT(*) as activity
                 FROM User
                 WHERE last_login > DATE_SUB(NOW(), INTERVAL 30 DAY)
+                    AND last_login IS NOT NULL
                 GROUP BY DAYNAME(last_login), HOUR(last_login)
                 ORDER BY activity DESC
                 LIMIT 1

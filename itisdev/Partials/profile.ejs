@@ -9,13 +9,13 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Your existing styles remain the same */
         .bg-pattern {
             background-color: #f8fafc;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23e2e8f0" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></svg>');
             background-repeat: repeat;
         }
         
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -28,11 +28,7 @@
             background: #cbd5e0;
             border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
-        }
-
-        /* Profile card hover effects */
+        
         .info-card {
             transition: all 0.2s ease;
         }
@@ -40,20 +36,17 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-
-        /* Password strength indicator */
+        
         .strength-weak { background-color: #fee2e2; }
         .strength-medium { background-color: #fef3c7; }
         .strength-strong { background-color: #dcfce7; }
-
-        /* Filipino pattern */
+        
         .filipino-divider {
             background: linear-gradient(90deg, transparent, #fbbf24, #2563eb, #fbbf24, transparent);
             height: 2px;
             width: 100%;
         }
-
-        /* Avatar upload */
+        
         .avatar-upload {
             position: relative;
             cursor: pointer;
@@ -77,23 +70,33 @@
             color: white;
             font-size: 12px;
         }
-
-        /* Edit field animation */
-        .edit-field {
-            transition: all 0.2s ease;
-        }
+        
         .edit-field:focus {
             border-color: #d97706;
             box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+        }
+        
+        /* Notification badge */
+        .notification-badge {
+            position: relative;
+        }
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body class="bg-pattern font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Include navigation -->
     <%- include('../partials/topnavigation', { currentPath: '/profile', currentUser: user }) %>
 
-    <!-- Main Content -->
     <main class="flex-grow max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
         <!-- Page Header -->
@@ -107,12 +110,12 @@
                         </h1>
                         <p class="text-blue-100 mt-1 text-sm">
                             <i class="fas fa-user-circle mr-1"></i> 
-                            Pamahalaan ang iyong impormasyon (Manage your information)
+                            Manage your personal information
                         </p>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-shield-alt mr-2"></i>Role: <%= user.role === 'admin' ? 'Administrator' : (user.role === 'moderator' ? 'Moderator' : 'Resident') %>
+                            <i class="fas fa-shield-alt mr-2"></i>Role: <%= user.role === 'administrator' ? 'Administrator' : (user.role === 'moderator' ? 'Moderator' : 'Resident') %>
                         </span>
                     </div>
                 </div>
@@ -144,7 +147,7 @@
                         <div class="avatar-upload relative w-24 h-24 mx-auto md:mx-0">
                             <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-4xl font-bold text-amber-600 border-4 border-white shadow-lg">
                                 <% if (user.photo) { %>
-                                    <img src="/uploads/<%= user.photo %>" alt="Profile" class="w-full h-full rounded-full object-cover">
+                                    <img src="/uploads/profile/<%= user.photo %>" alt="Profile" class="w-full h-full rounded-full object-cover">
                                 <% } else { %>
                                     <%= user.first_name ? user.first_name.charAt(0).toUpperCase() : 'U' %>
                                 <% } %>
@@ -152,24 +155,28 @@
                             <div class="avatar-overlay rounded-full" onclick="document.getElementById('photoUpload').click()">
                                 <i class="fas fa-camera"></i>
                             </div>
-                            <form id="photoUploadForm" action="/profile/photo" method="POST" enctype="multipart/form-data" class="hidden">
-                                <input type="file" id="photoUpload" name="photo" accept="image/*" onchange="document.getElementById('photoUploadForm').submit()">
+                            <form id="photoUploadForm" action="/profile/photo" method="POST" enctype="multipart/form-data">
+                                <input type="file" id="photoUpload" name="photo" accept="image/*" class="hidden" onchange="this.form.submit()">
                             </form>
                         </div>
                     </div>
 
                     <!-- User Info Summary -->
                     <div class="flex-1 text-center md:text-left">
-                        <h2 class="text-3xl font-bold"><%= user.first_name || '' %> <%= user.last_name || '' %></h2>
+                        <h2 class="text-3xl font-bold"><%= user.first_name %> <%= user.last_name %></h2>
                         <p class="text-blue-100 flex items-center justify-center md:justify-start gap-2 mt-1">
-                            <i class="fas fa-envelope"></i> <%= user.email || 'No email set' %>
-                            <span class="mx-2">•</span>
-                            <i class="fas fa-phone"></i> <%= user.phone || 'No phone set' %>
+                            <i class="fas fa-envelope"></i> <%= user.email %>
+                            <% if (user.phone) { %>
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-phone"></i> <%= user.phone %>
+                            <% } %>
                         </p>
                         <p class="text-sm text-blue-100 mt-2">
-                            <i class="fas fa-calendar-alt mr-1"></i> Member since: January 2026
-                            <span class="mx-2">•</span>
-                            <i class="fas fa-clock mr-1"></i> Last login: <%= user.last_login ? new Date(user.last_login).toLocaleString() : 'First time' %>
+                            <i class="fas fa-calendar-alt mr-1"></i> Member since: <%= user.created_at ? new Date(user.created_at).toLocaleDateString() : 'January 2026' %>
+                            <% if (user.last_login) { %>
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-clock mr-1"></i> Last login: <%= new Date(user.last_login).toLocaleString() %>
+                            <% } %>
                         </p>
                     </div>
 
@@ -195,12 +202,12 @@
                                 Personal Information
                             </h3>
 
-                            <!-- Username (Read-only) -->
+                            <!-- Username -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     <i class="fas fa-user text-amber-600 mr-1"></i> Username
                                 </label>
-                                <input type="text" value="<%= user.username || '' %>" readonly
+                                <input type="text" value="<%= user.username %>" readonly
                                        class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 cursor-not-allowed">
                                 <p class="text-xs text-gray-400 mt-1">Username cannot be changed</p>
                             </div>
@@ -208,21 +215,19 @@
                             <!-- First Name -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class="fas fa-user text-amber-600 mr-1"></i> First Name
+                                    <i class="fas fa-user text-amber-600 mr-1"></i> First Name *
                                 </label>
-                                <input type="text" name="first_name" value="<%= user.first_name || '' %>" 
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field"
-                                       placeholder="Enter your first name">
+                                <input type="text" name="first_name" value="<%= user.first_name %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                             </div>
 
                             <!-- Last Name -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class="fas fa-user text-amber-600 mr-1"></i> Last Name
+                                    <i class="fas fa-user text-amber-600 mr-1"></i> Last Name *
                                 </label>
-                                <input type="text" name="last_name" value="<%= user.last_name || '' %>" 
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field"
-                                       placeholder="Enter your last name">
+                                <input type="text" name="last_name" value="<%= user.last_name %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                             </div>
 
                             <!-- Middle Name -->
@@ -231,8 +236,7 @@
                                     <i class="fas fa-user text-amber-600 mr-1"></i> Middle Name
                                 </label>
                                 <input type="text" name="middle_name" value="<%= user.middle_name || '' %>" 
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field"
-                                       placeholder="Enter your middle name">
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                             </div>
                         </div>
 
@@ -246,11 +250,10 @@
                             <!-- Email -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class="fas fa-envelope text-amber-600 mr-1"></i> Email Address
+                                    <i class="fas fa-envelope text-amber-600 mr-1"></i> Email Address *
                                 </label>
-                                <input type="email" name="email" value="<%= user.email || '' %>" required
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field"
-                                       placeholder="juandelacruz@email.com">
+                                <input type="email" name="email" value="<%= user.email %>" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                                 <p class="text-xs text-gray-400 mt-1">Used for login and notifications</p>
                             </div>
 
@@ -264,7 +267,7 @@
                                        placeholder="0917 123 4567">
                             </div>
 
-                            <!-- Address Fields (from user_schema - though not in original schema, adding for completeness) -->
+                            <!-- Street Address -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     <i class="fas fa-home text-amber-600 mr-1"></i> Street Address
@@ -277,85 +280,28 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                                    <input type="text" name="barangay" value="<%= user.barangay || 'San Antonio' %>" 
+                                    <input type="text" name="barangay" value="<%= user.barangay || '' %>" 
                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
-                                    <input type="text" name="city" value="<%= user.city || 'Quezon City' %>" 
+                                    <input type="text" name="city" value="<%= user.city || '' %>" 
                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                                 </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+                                <input type="text" name="zip" value="<%= user.zip || '' %>" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent edit-field">
                             </div>
                         </div>
                     </div>
 
                     <!-- Filipino Pattern Divider -->
-                    <div class="filipino-divider my-6"></div>
+                    
 
-                    <!-- Password Change Section -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                            <i class="fas fa-lock text-amber-600"></i>
-                            Change Password
-                        </h3>
-                        
-                        <div class="bg-amber-50 rounded-xl p-5 border border-amber-200">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Current Password -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                                    <input type="password" name="current_password" id="current_password"
-                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                           placeholder="Enter current password">
-                                </div>
-
-                                <!-- New Password -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                                    <input type="password" name="new_password" id="new_password"
-                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                           placeholder="Enter new password" onkeyup="checkPasswordStrength()">
-                                </div>
-
-                                <!-- Confirm New Password -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                                    <input type="password" name="confirm_password" id="confirm_password"
-                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                           placeholder="Confirm new password" onkeyup="checkPasswordMatch()">
-                                </div>
-
-                                <!-- Password Strength Indicator -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password Strength</label>
-                                    <div id="passwordStrength" class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                        <div id="strengthBar" class="h-full" style="width: 0%"></div>
-                                    </div>
-                                    <p id="strengthText" class="text-xs text-gray-500 mt-1"></p>
-                                    <p id="passwordMatch" class="text-xs mt-1"></p>
-                                </div>
-                            </div>
-
-                            <p class="text-xs text-gray-500 mt-3">
-                                <i class="fas fa-info-circle text-amber-600"></i>
-                                Leave password fields blank if you don't want to change your password.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Two-Factor Authentication (Optional Feature) -->
-                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="font-semibold text-gray-700">Two-Factor Authentication</h4>
-                                <p class="text-xs text-gray-500">Add an extra layer of security to your account</p>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="sr-only peer" name="two_factor" value="1" <%= user.two_factor ? 'checked' : '' %>>
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-                            </label>
-                        </div>
-                    </div>
+                    
 
                     <!-- Form Actions -->
                     <div class="flex items-center justify-end gap-3 border-t pt-6">
@@ -368,83 +314,131 @@
                         </button>
                     </div>
                 </form>
+
+                <div class="filipino-divider my-6"></div>
+
+                <!-- In your profile.ejs, add a separate form for password change -->
+                <form action="/profile/password" method="POST" id="passwordForm">
+                    <div class="bg-amber-50 rounded-xl p-5 border border-amber-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                <input type="password" name="current_password" id="current_password"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                    placeholder="Enter current password" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                <input type="password" name="new_password" id="new_password"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                    placeholder="Enter new password" onkeyup="checkPasswordStrength()" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                <input type="password" name="confirm_password" id="confirm_password"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                    placeholder="Confirm new password" onkeyup="checkPasswordMatch()" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Password Strength</label>
+                                <div id="passwordStrength" class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div id="strengthBar" class="h-full" style="width: 0%"></div>
+                                </div>
+                                <p id="strengthText" class="text-xs text-gray-500 mt-1"></p>
+                                <p id="passwordMatch" class="text-xs mt-1"></p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg transition">
+                                <i class="fas fa-key mr-2"></i>Change Password
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- Account Activity Section -->
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Recent Activity -->
-            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-                <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
+        <!-- Stats Cards - Safe check for stats -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 text-center">
+                <i class="fas fa-newspaper text-2xl text-blue-600"></i>
+                <p class="text-2xl font-bold mt-2"><%= typeof stats !== 'undefined' ? (stats.total_posts || 0) : 0 %></p>
+                <p class="text-sm text-gray-600">Posts</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 text-center">
+                <i class="fas fa-comments text-2xl text-green-600"></i>
+                <p class="text-2xl font-bold mt-2"><%= typeof stats !== 'undefined' ? (stats.total_comments || 0) : 0 %></p>
+                <p class="text-sm text-gray-600">Comments</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 text-center">
+                <i class="fas fa-file-alt text-2xl text-red-600"></i>
+                <p class="text-2xl font-bold mt-2"><%= typeof stats !== 'undefined' ? (stats.total_complaints || 0) : 0 %></p>
+                <p class="text-sm text-gray-600">Complaints</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4 text-center">
+                <i class="fas fa-file-signature text-2xl text-purple-600"></i>
+                <p class="text-2xl font-bold mt-2"><%= typeof stats !== 'undefined' ? (stats.total_requests || 0) : 0 %></p>
+                <p class="text-sm text-gray-600">Requests</p>
+            </div>
+        </div>
+
+        <!-- Recent Activity Section - Safe check -->
+        <div class="mt-6 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-history text-amber-600"></i>
                     Recent Activity
                 </h3>
-                <div class="space-y-2 text-sm">
-                    <div class="flex items-start gap-2">
-                        <i class="fas fa-circle text-green-500 text-[8px] mt-2"></i>
-                        <div>
-                            <p class="text-gray-700">Logged in from new device</p>
-                            <p class="text-xs text-gray-500">2 days ago</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-2">
-                        <i class="fas fa-circle text-amber-500 text-[8px] mt-2"></i>
-                        <div>
-                            <p class="text-gray-700">Updated profile information</p>
-                            <p class="text-xs text-gray-500">1 week ago</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-2">
-                        <i class="fas fa-circle text-blue-500 text-[8px] mt-2"></i>
-                        <div>
-                            <p class="text-gray-700">Changed password</p>
-                            <p class="text-xs text-gray-500">2 weeks ago</p>
-                        </div>
-                    </div>
-                </div>
-                <a href="#" class="text-sm text-amber-600 hover:text-amber-700 mt-2 inline-block">View all activity <i class="fas fa-arrow-right ml-1"></i></a>
             </div>
-
-            <!-- Connected Accounts -->
-            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-                <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                    <i class="fas fa-link text-amber-600"></i>
-                    Connected Accounts
-                </h3>
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fab fa-google text-red-500"></i>
-                            <span class="text-sm">Google</span>
-                        </div>
-                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Connected</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fab fa-facebook text-blue-600"></i>
-                            <span class="text-sm">Facebook</span>
-                        </div>
-                        <button class="text-xs text-amber-600 hover:text-amber-700">Connect</button>
-                    </div>
+            <div class="p-6">
+                <div class="space-y-3">
+                    <% if (typeof recentActivity !== 'undefined' && recentActivity && recentActivity.length > 0) { %>
+                        <% recentActivity.forEach(activity => { %>
+                            <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center 
+                                    <% if (activity.type === 'post') { %>bg-blue-100 text-blue-600<% } 
+                                    else if (activity.type === 'comment') { %>bg-green-100 text-green-600<% } 
+                                    else if (activity.type === 'complaint') { %>bg-red-100 text-red-600<% } 
+                                    else { %>bg-purple-100 text-purple-600<% } %>">
+                                    <i class="fas 
+                                        <% if (activity.type === 'post') { %>fa-newspaper<% } 
+                                        else if (activity.type === 'comment') { %>fa-comment<% } 
+                                        else if (activity.type === 'complaint') { %>fa-file-alt<% } 
+                                        else { %>fa-file-signature<% } %> text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-800">
+                                        <% if (activity.type === 'post') { %>
+                                            Posted: <%= activity.title %>
+                                        <% } else if (activity.type === 'comment') { %>
+                                            Commented: <%= activity.content ? activity.content.substring(0, 100) : '' %><%= activity.content && activity.content.length > 100 ? '...' : '' %>
+                                        <% } else if (activity.type === 'complaint') { %>
+                                            Filed complaint: <%= activity.content ? activity.content.substring(0, 100) : '' %>
+                                        <% } else if (activity.type === 'request') { %>
+                                            Requested: <%= activity.content ? activity.content.substring(0, 100) : '' %>
+                                        <% } %>
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <%= activity.created_at ? new Date(activity.created_at).toLocaleString() : '' %>
+                                    </p>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <p class="text-gray-500 text-center py-4">No recent activity</p>
+                    <% } %>
                 </div>
-            </div>
-
-            <!-- Account Management -->
-            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-                <h3 class="font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                    <i class="fas fa-shield-alt text-amber-600"></i>
-                    Account Management
-                </h3>
-                <div class="space-y-2">
-                    <a href="#" class="block text-sm text-gray-600 hover:text-amber-600">Download my data</a>
-                    <a href="#" class="block text-sm text-gray-600 hover:text-amber-600">Privacy settings</a>
-                    <a href="#" class="block text-sm text-red-600 hover:text-red-700">Deactivate account</a>
+                <div class="mt-4 text-center">
+                    <a href="#" class="text-sm text-amber-600 hover:text-amber-700">View all activity <i class="fas fa-arrow-right ml-1"></i></a>
                 </div>
             </div>
         </div>
 
-        <!-- Danger Zone (for admin only) -->
-        <% if (user.role === 'admin') { %>
+        <!-- Danger Zone -->
         <div class="mt-6 bg-red-50 rounded-xl shadow-md border border-red-200 p-4">
             <h3 class="font-semibold text-red-700 flex items-center gap-2 mb-2">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -452,42 +446,31 @@
             </h3>
             <p class="text-sm text-red-600 mb-3">Actions here are irreversible. Please proceed with caution.</p>
             <div class="flex gap-2">
-                <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                <button onclick="confirmDeleteAccount()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
                     <i class="fas fa-trash mr-2"></i>Delete Account
-                </button>
-                <button class="border border-red-300 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition">
-                    <i class="fas fa-ban mr-2"></i>Suspend Account
                 </button>
             </div>
         </div>
-        <% } %>
     </main>
 
-    <!-- Include chatbot -->
     <%- include('../partials/chatbot') %>
-
-    <!-- Include footer -->
     <%- include('../partials/footer') %>
 
-    <!-- JavaScript for Profile Page -->
+    <!-- JavaScript -->
     <script>
-        // Password strength checker
         function checkPasswordStrength() {
             const password = document.getElementById('new_password').value;
             const strengthBar = document.getElementById('strengthBar');
             const strengthText = document.getElementById('strengthText');
             
             let strength = 0;
-            
             if (password.length >= 8) strength += 25;
             if (password.match(/[a-z]+/)) strength += 25;
             if (password.match(/[A-Z]+/)) strength += 25;
             if (password.match(/[0-9]+/)) strength += 25;
             if (password.match(/[$@#&!]+/)) strength += 25;
             
-            // Cap at 100
             strength = Math.min(strength, 100);
-            
             strengthBar.style.width = strength + '%';
             
             if (strength < 25) {
@@ -509,7 +492,6 @@
             }
         }
 
-        // Password match checker
         function checkPasswordMatch() {
             const newPass = document.getElementById('new_password').value;
             const confirmPass = document.getElementById('confirm_password').value;
@@ -529,38 +511,56 @@
             }
         }
 
-        // Form validation before submit
         document.getElementById('profileForm')?.addEventListener('submit', function(e) {
             const newPass = document.getElementById('new_password').value;
             const confirmPass = document.getElementById('confirm_password').value;
             
-            // If new password is provided, check if they match
             if (newPass && newPass !== confirmPass) {
                 e.preventDefault();
                 alert('New passwords do not match!');
                 return;
             }
             
-            // If new password is provided, check strength
-            if (newPass && newPass.length < 6) {
-                e.preventDefault();
-                alert('Password must be at least 6 characters long');
-                return;
+            if (newPass) {
+                const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+                if (!passwordRegex.test(newPass)) {
+                    e.preventDefault();
+                    alert('Password must be at least 8 characters, include 1 uppercase letter and 1 special symbol');
+                    return;
+                }
             }
         });
 
-        // Preview image before upload
-        document.getElementById('photoUpload')?.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // You can preview here if needed
-                    console.log('Image selected:', file.name);
+        async function confirmDeleteAccount() {
+            const confirmed = confirm('⚠️ WARNING: This action is permanent!\n\nAre you sure you want to delete your account? All your data will be lost forever.');
+            
+            if (confirmed) {
+                const password = prompt('Please enter your password to confirm account deletion:');
+                if (password) {
+                    try {
+                        const response = await fetch('/api/profile/delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ password: password })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            alert('Your account has been deleted. Redirecting to login...');
+                            window.location.href = '/login';
+                        } else {
+                            alert('Error: ' + data.error);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
+                    }
                 }
-                reader.readAsDataURL(file);
             }
-        });
+        }
     </script>
 </body>
 </html>

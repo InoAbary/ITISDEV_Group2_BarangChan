@@ -715,7 +715,7 @@ AND NOT EXISTS (
 SELECT '=== Users ===' as '';
 SELECT user_id, first_name, last_name, email, role, status FROM User;
 
-
+SELECT * FROM User;
 
 SELECT '=== Addresses ===' as '';
 SELECT a.address_id, u.first_name, u.last_name, a.barangay, a.city, a.street 
@@ -765,4 +765,47 @@ CREATE TABLE IF NOT EXISTS ModeratorMessage (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Add response_time column to ChatbotLog if not exists
-ALTER TABLE ChatbotLog ADD COLUMN  response_time INT DEFAULT NULL;
+
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS Notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    type ENUM('post', 'comment', 'complaint', 'request', 'system') DEFAULT 'system',
+    title VARCHAR(255),
+    message TEXT NOT NULL,
+    link VARCHAR(500),
+    is_read BOOLEAN DEFAULT FALSE,
+    read_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    
+    INDEX idx_user_read (user_id, is_read),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Create ComplaintUpdate table for moderator notes
+CREATE TABLE IF NOT EXISTS ComplaintUpdate (
+    update_id INT AUTO_INCREMENT PRIMARY KEY,
+    complaint_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (complaint_id) REFERENCES ComplaintForm(complaint_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+);
+
+ALTER TABLE ComplaintForm 
+ADD COLUMN  resolution_notes TEXT,
+ADD COLUMN  resolved_date DATETIME;
+
+-- Reorder them (if needed)
+ALTER TABLE ComplaintForm 
+MODIFY COLUMN resolution_notes TEXT AFTER narration,
+MODIFY COLUMN resolved_date DATETIME AFTER resolution_notes;
+
+-- Add index for faster queries
+CREATE INDEX idx_complaint_status ON ComplaintForm(status);
+CREATE INDEX idx_complaint_date ON ComplaintForm(complaint_date);
+

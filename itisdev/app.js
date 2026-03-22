@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require("nodemailer");
 const cors = require('cors');
 
+
 const NG_URL = process.env.NGROK_URL ; 
 
 
@@ -30,7 +31,9 @@ const forumController = require('./Controllers/forumController')
 const complaintController = require('./Controllers/complaintController')
 const requestController = require('./Controllers/requestController')
 const govformController = require('./Controllers/govFormController');
-const contactsController = require('./Controllers/contactsController')
+const contactsController = require('./Controllers/contactsController');
+const profileController = require('./Controllers/profileController');
+
 
 const moderatorController = require('./Controllers/moderatorController');
 
@@ -111,6 +114,9 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024 // 10MB limit per file
     }
 });
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 app.use((req, res, next) => {
     if (req.method === 'POST' && req.path === '/api/chatbot/chat') {
@@ -628,6 +634,25 @@ app.get('/moderator/reports/generate', moderatorController.generateReport);
 app.get('/moderator/urgent-issues', moderatorController.getUrgentIssues);
 
 
+// ==================== PROFILE ROUTES ==========================
+app.get('/profile', profileController.getProfile);
+
+// Update profile
+app.post('/profile/update', profileController.updateProfile);
+
+// Change password
+app.post('/profile/password', profileController.changePassword);
+
+// Upload profile photo
+app.post('/profile/photo', profileController.uploadPhoto);
+
+// Delete profile photo
+app.delete('/profile/photo', profileController.deletePhoto);
+
+// Delete account
+app.post('/api/profile/delete', profileController.deleteAccount);
+
+
 
 
 // ==================== ADMINISTRATOR ROUTES ====================
@@ -649,6 +674,7 @@ app.post('/administrator/users/:id/action', AdminController.updateUserStatus);
 
 // Add this API endpoint for complaint details (in app.js, near other API routes)
 // Add this API endpoint for complaint details (in app.js)
+// app.js - FIXED API endpoint for complaint details
 app.get('/api/complaints/:id/details', async (req, res) => {
     try {
         const complaintId = req.params.id;
@@ -666,6 +692,8 @@ app.get('/api/complaints/:id/details', async (req, res) => {
                 cf.narration,
                 cf.status,
                 cf.complaint_date,
+                cf.resolution_notes,
+                cf.resolved_date,
                 TIMESTAMPDIFF(DAY, cf.complaint_date, NOW()) as days_pending
             FROM ComplaintForm cf
             WHERE cf.complaint_id = ?
@@ -681,18 +709,19 @@ app.get('/api/complaints/:id/details', async (req, res) => {
             FROM ComplaintFiles WHERE complaint_id = ?
         `, [complaintId]);
         
-        // Fetch updates/comments with user information
+        // Fetch updates from ComplaintUpdate table
         const [updates] = await conn.execute(`
             SELECT 
-                pc.comment_id, 
-                pc.content, 
-                pc.created_at,
+                cu.update_id,
+                cu.content,
+                cu.created_at,
                 CONCAT(u.first_name, ' ', u.last_name) as user_name,
-                u.role as user_role
-            FROM PostComment pc
-            LEFT JOIN User u ON pc.user_id = u.user_id
-            WHERE pc.post_id = ?
-            ORDER BY pc.created_at ASC
+                u.role as user_role,
+                u.user_id
+            FROM ComplaintUpdate cu
+            LEFT JOIN User u ON cu.user_id = u.user_id
+            WHERE cu.complaint_id = ?
+            ORDER BY cu.created_at ASC
         `, [complaintId]);
         
         res.json({
@@ -715,140 +744,7 @@ app.get('/api/complaints/:id/details', async (req, res) => {
 // app.js - Profile routes (Session-based, no database)
 
 // GET profile page
-app.get('/profile', (req, res) => {
-    // Check if user is logged in via session
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-    
-    const user = req.session.user;
-    
-    // Determine which dashboard to redirect to based on role
-    let dashboardPath = '/client/dashboard';
-    if (user.role === 'admin') {
-        dashboardPath = '/administrator/dashboard';
-    } else if (user.role === 'moderator') {
-        dashboardPath = '/moderator/dashboard';
-    }
-    
-    // Get success/error messages from session and clear them
-    const success = req.session.success;
-    const error = req.session.error;
-    delete req.session.success;
-    delete req.session.error;
-    
-    res.render('profile', { 
-        user: user,
-        dashboardPath: dashboardPath,
-        currentPath: '/profile',
-        success: success,
-        error: error
-    });
-});
 
-// POST update profile
-app.post('/profile/update', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-    
-    const { 
-        first_name, 
-        last_name, 
-        middle_name, 
-        email, 
-        phone, 
-        street_address, 
-        barangay, 
-        city,
-        current_password,
-        new_password,
-        confirm_password
-    } = req.body;
-    
-    // Get current user from session
-    const user = req.session.user;
-    
-    // Update session user data
-    user.first_name = first_name || user.first_name;
-    user.last_name = last_name || user.last_name;
-    user.middle_name = middle_name || user.middle_name;
-    user.email = email || user.email;
-    user.phone = phone || user.phone;
-    user.street_address = street_address || user.street_address;
-    user.barangay = barangay || user.barangay;
-    user.city = city || user.city;
-    
-    // Handle password change if requested
-    if (new_password) {
-        // Check if current password matches (simple check - in production you'd use bcrypt)
-        if (current_password !== user.password) {
-            req.session.error = 'Current password is incorrect';
-            return res.redirect('/profile');
-        }
-        
-        // Check if new passwords match
-        if (new_password !== confirm_password) {
-            req.session.error = 'New passwords do not match';
-            return res.redirect('/profile');
-        }
-        
-        // Update password in session
-        user.password = new_password;
-    }
-    
-    // Save updated user back to session
-    req.session.user = user;
-    req.session.success = 'Profile updated successfully';
-    
-    res.redirect('/profile');
-});
-
-// POST upload profile photo (simulated)
-app.post('/profile/photo', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-    
-    // In a real implementation, you'd handle file upload here
-    // For now, we'll just set a mock photo path
-    
-    const user = req.session.user;
-    user.photo = '/images/default-avatar.png'; // Mock photo path
-    req.session.user = user;
-    req.session.success = 'Profile photo updated';
-    
-    res.redirect('/profile');
-});
-
-// POST change password only (separate endpoint)
-app.post('/profile/password', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-    
-    const { current_password, new_password, confirm_password } = req.body;
-    const user = req.session.user;
-    
-    // Check if current password matches
-    if (current_password !== user.password) {
-        req.session.error = 'Current password is incorrect';
-        return res.redirect('/profile');
-    }
-    
-    // Check if new passwords match
-    if (new_password !== confirm_password) {
-        req.session.error = 'New passwords do not match';
-        return res.redirect('/profile');
-    }
-    
-    // Update password in session
-    user.password = new_password;
-    req.session.user = user;
-    req.session.success = 'Password changed successfully';
-    
-    res.redirect('/profile');
-});
 
 app.get('/contacts', (req, res) => {
     // Check if user is logged in via session

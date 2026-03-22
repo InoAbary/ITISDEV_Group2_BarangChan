@@ -1,5 +1,5 @@
 // Controllers/moderatorController.js - FULLY POLISHED AND FIXED VERSION
-const db = require('../config/db');
+const conn = require('../config/db');
 const moment = require('moment');
 
 class moderatorController {
@@ -124,7 +124,7 @@ class moderatorController {
 
             // Fetch all posts
             try {
-                const [postsData] = await db.execute(`
+                const [postsData] = await conn.execute(`
                     SELECT 
                         sp.post_id as id,
                         sp.user_id,
@@ -182,45 +182,45 @@ class moderatorController {
 
             // Fetch stats
             try {
-                const [pendingPostsResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Pending'`);
+                const [pendingPostsResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Pending'`);
                 stats.pendingPosts = pendingPostsResult[0]?.count || 0;
                 
-                const [awaitingReviewResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Pending' AND (type = 'complaint' OR urgency IN ('high', 'emergency'))`);
+                const [awaitingReviewResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Pending' AND (type = 'complaint' OR urgency IN ('high', 'emergency'))`);
                 stats.awaitingReview = awaitingReviewResult[0]?.count || 0;
                 
-                const [totalRequestsResult] = await db.execute(`SELECT COUNT(*) as count FROM RequestForm`);
+                const [totalRequestsResult] = await conn.execute(`SELECT COUNT(*) as count FROM RequestForm`);
                 stats.totalRequests = totalRequestsResult[0]?.count || 0;
                 
-                const [activeRequestsResult] = await db.execute(`SELECT COUNT(*) as count FROM RequestForm WHERE status IN ('Pending', 'Accepted')`);
+                const [activeRequestsResult] = await conn.execute(`SELECT COUNT(*) as count FROM RequestForm WHERE status IN ('Pending', 'Accepted')`);
                 stats.activeRequests = activeRequestsResult[0]?.count || 0;
                 stats.inProgressRequests = stats.activeRequests;
                 
-                const [activeComplaintsResult] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Under Review'`);
+                const [activeComplaintsResult] = await conn.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Under Review'`);
                 stats.activeComplaints = activeComplaintsResult[0]?.count || 0;
                 
-                const [forumResult] = await db.execute(`SELECT COUNT(*) as count FROM ForumTopic WHERE status = 'active'`);
+                const [forumResult] = await conn.execute(`SELECT COUNT(*) as count FROM ForumTopic WHERE status = 'active'`);
                 stats.forumTopics = forumResult[0]?.count || 0;
                 
-                const [urgentIssuesResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE (urgency = 'high' OR urgency = 'emergency') AND status != 'Closed'`);
+                const [urgentIssuesResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE (urgency = 'high' OR urgency = 'emergency') AND status != 'Closed'`);
                 stats.urgentIssues = urgentIssuesResult[0]?.count || 0;
                 
-                const [emergenciesResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE urgency = 'emergency' AND status != 'Closed'`);
+                const [emergenciesResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE urgency = 'emergency' AND status != 'Closed'`);
                 stats.emergencies = emergenciesResult[0]?.count || 0;
                 
-                const [resolvedThisWeekResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Resolved' AND date_posted >= DATE_SUB(NOW(), INTERVAL 7 DAY)`);
+                const [resolvedThisWeekResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Resolved' AND date_posted >= DATE_SUB(NOW(), INTERVAL 7 DAY)`);
                 stats.resolvedThisWeek = resolvedThisWeekResult[0]?.count || 0;
                 
-                const [resolvedLastWeekResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Resolved' AND date_posted BETWEEN DATE_SUB(NOW(), INTERVAL 14 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)`);
+                const [resolvedLastWeekResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Resolved' AND date_posted BETWEEN DATE_SUB(NOW(), INTERVAL 14 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY)`);
                 const lastWeek = resolvedLastWeekResult[0]?.count || 0;
                 stats.resolvedIncrease = lastWeek > 0 ? stats.resolvedThisWeek - lastWeek : stats.resolvedThisWeek;
                 
-                const [resolvedCountResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Resolved'`);
+                const [resolvedCountResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Resolved'`);
                 stats.resolvedCount = resolvedCountResult[0]?.count || 0;
                 
-                const [inProgressCountResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Pending'`);
+                const [inProgressCountResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status = 'Pending'`);
                 stats.inProgressCount = inProgressCountResult[0]?.count || 0;
                 
-                const [pendingCountResult] = await db.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status NOT IN ('Resolved', 'Closed')`);
+                const [pendingCountResult] = await conn.execute(`SELECT COUNT(*) as count FROM StatusPost WHERE status NOT IN ('Resolved', 'Closed')`);
                 stats.pendingCount = pendingCountResult[0]?.count || 0;
                 
                 const totalResolvable = stats.resolvedCount + stats.pendingCount;
@@ -234,7 +234,7 @@ class moderatorController {
             try {
                 const dayMap = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4, 7: 5, 1: 6};
                 
-                const [postsByDay] = await db.execute(`
+                const [postsByDay] = await conn.execute(`
                     SELECT DAYOFWEEK(date_posted) as day_of_week, COUNT(*) as count
                     FROM StatusPost
                     WHERE date_posted >= DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -245,7 +245,7 @@ class moderatorController {
                     chartData.posts[index] = day.count || 0;
                 });
                 
-                const [requestsByDay] = await db.execute(`
+                const [requestsByDay] = await conn.execute(`
                     SELECT DAYOFWEEK(request_date) as day_of_week, COUNT(*) as count
                     FROM RequestForm
                     WHERE request_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -256,7 +256,7 @@ class moderatorController {
                     chartData.requests[index] = day.count || 0;
                 });
                 
-                const [complaintsByDay] = await db.execute(`
+                const [complaintsByDay] = await conn.execute(`
                     SELECT DAYOFWEEK(complaint_date) as day_of_week, COUNT(*) as count
                     FROM ComplaintForm
                     WHERE complaint_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -267,7 +267,7 @@ class moderatorController {
                     chartData.complaints[index] = day.count || 0;
                 });
                 
-                const [resolvedByDay] = await db.execute(`
+                const [resolvedByDay] = await conn.execute(`
                     SELECT DAYOFWEEK(date_posted) as day_of_week, COUNT(*) as count
                     FROM StatusPost
                     WHERE status = 'Resolved' AND date_posted >= DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -284,7 +284,7 @@ class moderatorController {
 
             // Fetch top categories
             try {
-                const [categoriesData] = await db.execute(`
+                const [categoriesData] = await conn.execute(`
                     SELECT 
                         CASE 
                             WHEN type = 'complaint' THEN 'Complaints'
@@ -315,7 +315,7 @@ class moderatorController {
 
             // Fetch recent requests
             try {
-                const [recentRequestsData] = await db.execute(`
+                const [recentRequestsData] = await conn.execute(`
                     SELECT 
                         r.request_id as id,
                         CONCAT(u.first_name, ' ', u.last_name) as resident,
@@ -344,7 +344,7 @@ class moderatorController {
             
             // Fetch recent complaints
             try {
-                const [recentComplaintsData] = await db.execute(`
+                const [recentComplaintsData] = await conn.execute(`
                     SELECT 
                         cf.complaint_id as id,
                         COALESCE(CONCAT(u.first_name, ' ', u.last_name), cf.name) as complainant,
@@ -372,7 +372,7 @@ class moderatorController {
             
             // Fetch pending posts
             try {
-                const [pendingPostsData] = await db.execute(`
+                const [pendingPostsData] = await conn.execute(`
                     SELECT 
                         sp.post_id as id,
                         CONCAT(u.first_name, ' ', u.last_name) as author,
@@ -410,7 +410,7 @@ class moderatorController {
             
             // Fetch urgent issues
             try {
-                const [urgentIssuesData] = await db.execute(`
+                const [urgentIssuesData] = await conn.execute(`
                     SELECT 
                         sp.post_id as id,
                         COALESCE(sp.title, 'Untitled Issue') as title,
@@ -447,7 +447,7 @@ class moderatorController {
             
             // Fetch recent activity
             try {
-                const [recentActivityData] = await db.execute(`
+                const [recentActivityData] = await conn.execute(`
                     SELECT 
                         ma.action,
                         ma.details,
@@ -472,12 +472,12 @@ class moderatorController {
             
             // Fetch system stats
             try {
-                const [activeUsersResult] = await db.execute(`SELECT COUNT(*) as count FROM User WHERE last_login > DATE_SUB(NOW(), INTERVAL 15 MINUTE)`);
+                const [activeUsersResult] = await conn.execute(`SELECT COUNT(*) as count FROM User WHERE last_login > DATE_SUB(NOW(), INTERVAL 15 MINUTE)`);
                 systemStats.activeUsers = activeUsersResult[0]?.count || 0;
                 stats.activeUsers = systemStats.activeUsers;
                 systemStats.serverUptime = Math.floor(process.uptime() / 60);
                 
-                const [avgResponseResult] = await db.execute(`
+                const [avgResponseResult] = await conn.execute(`
                     SELECT AVG(TIMESTAMPDIFF(HOUR, date_posted, NOW())) as avg_hours
                     FROM StatusPost 
                     WHERE status = 'Resolved' 
@@ -559,7 +559,7 @@ class moderatorController {
             
             // Get total count
             const countQuery = `SELECT COUNT(*) as total FROM StatusPost sp LEFT JOIN User u ON sp.user_id = u.user_id LEFT JOIN Address a ON u.user_id = a.user_id ${whereClause}`;
-            const [countResult] = params.length > 0 ? await db.execute(countQuery, params) : await db.execute(countQuery);
+            const [countResult] = params.length > 0 ? await conn.execute(countQuery, params) : await conn.execute(countQuery);
             const totalPosts = countResult[0].total;
             const totalPages = Math.ceil(totalPosts / limit);
             
@@ -593,7 +593,7 @@ class moderatorController {
                 LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
             `;
             
-            const [posts] = params.length > 0 ? await db.execute(query, params) : await db.execute(query);
+            const [posts] = params.length > 0 ? await conn.execute(query, params) : await conn.execute(query);
             
             const formattedPosts = posts.map(post => ({
                 id: post.id,
@@ -620,7 +620,7 @@ class moderatorController {
             // Get barangays for filter
             let barangays = [];
             try {
-                const [barangayList] = await db.execute(`SELECT DISTINCT barangay FROM Address WHERE barangay IS NOT NULL AND barangay != '' ORDER BY barangay`);
+                const [barangayList] = await conn.execute(`SELECT DISTINCT barangay FROM Address WHERE barangay IS NOT NULL AND barangay != '' ORDER BY barangay`);
                 barangays = barangayList.map(b => b.barangay);
             } catch (err) {
                 console.error('Error fetching barangays:', err.message);
@@ -629,9 +629,9 @@ class moderatorController {
             // Get counts for filters
             let statusCounts = [], typeCounts = [], urgencyCounts = [];
             try {
-                [statusCounts] = await db.execute(`SELECT status, COUNT(*) as count FROM StatusPost GROUP BY status`);
-                [typeCounts] = await db.execute(`SELECT type, COUNT(*) as count FROM StatusPost GROUP BY type`);
-                [urgencyCounts] = await db.execute(`SELECT urgency, COUNT(*) as count FROM StatusPost GROUP BY urgency`);
+                [statusCounts] = await conn.execute(`SELECT status, COUNT(*) as count FROM StatusPost GROUP BY status`);
+                [typeCounts] = await conn.execute(`SELECT type, COUNT(*) as count FROM StatusPost GROUP BY type`);
+                [urgencyCounts] = await conn.execute(`SELECT urgency, COUNT(*) as count FROM StatusPost GROUP BY urgency`);
             } catch (err) {
                 console.error('Error fetching counts:', err.message);
             }
@@ -671,12 +671,12 @@ class moderatorController {
             const { title, content, type, urgency } = req.body;
             const userId = req.session.user.id;
             
-            await db.execute(`
+            await conn.execute(`
                 INSERT INTO StatusPost (user_id, title, body, type, urgency, status, is_official, date_posted)
                 VALUES (?, ?, ?, ?, ?, 'Resolved', TRUE, NOW())
             `, [userId, title || null, content, moderatorController.validatePostType(type), moderatorController.validateUrgency(urgency)]);
             
-            await db.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'create_announcement', ?, NOW())`, 
+            await conn.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'create_announcement', ?, NOW())`, 
                 [userId, `Created announcement: ${title || (content ? content.substring(0, 50) : 'Announcement')}`]);
             
             if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
@@ -702,12 +702,12 @@ class moderatorController {
             const postId = req.params.id;
             const moderatorId = req.session.user.id;
             
-            const [post] = await db.execute(`SELECT title, body FROM StatusPost WHERE post_id = ?`, [postId]);
+            const [post] = await conn.execute(`SELECT title, body FROM StatusPost WHERE post_id = ?`, [postId]);
             
-            await db.execute(`UPDATE StatusPost SET status = 'Resolved', is_official = TRUE WHERE post_id = ?`, [postId]);
+            await conn.execute(`UPDATE StatusPost SET status = 'Resolved', is_official = TRUE WHERE post_id = ?`, [postId]);
             
             const postTitle = post[0]?.title || (post[0]?.body ? post[0].body.substring(0, 50) : 'Post');
-            await db.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'approve_post', ?, NOW())`, 
+            await conn.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'approve_post', ?, NOW())`, 
                 [moderatorId, `Approved post: ${postTitle}`]);
             
             if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
@@ -734,12 +734,12 @@ class moderatorController {
             const moderatorId = req.session.user.id;
             const { reason } = req.body;
             
-            const [post] = await db.execute(`SELECT title, body FROM StatusPost WHERE post_id = ?`, [postId]);
+            const [post] = await conn.execute(`SELECT title, body FROM StatusPost WHERE post_id = ?`, [postId]);
             
-            await db.execute(`UPDATE StatusPost SET status = 'Closed', is_official = FALSE WHERE post_id = ?`, [postId]);
+            await conn.execute(`UPDATE StatusPost SET status = 'Closed', is_official = FALSE WHERE post_id = ?`, [postId]);
             
             const postTitle = post[0]?.title || (post[0]?.body ? post[0].body.substring(0, 50) : 'Post');
-            await db.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'reject_post', ?, NOW())`, 
+            await conn.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'reject_post', ?, NOW())`, 
                 [moderatorId, `Rejected post: ${postTitle}. Reason: ${reason || 'No reason provided'}`]);
             
             if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
@@ -797,7 +797,7 @@ class moderatorController {
                 params.push(date_to);
             }
             
-            const [countResult] = await db.execute(`SELECT COUNT(*) as total FROM RequestForm r LEFT JOIN User u ON r.user_id = u.user_id LEFT JOIN Address a ON u.user_id = a.user_id ${whereClause}`, params);
+            const [countResult] = await conn.execute(`SELECT COUNT(*) as total FROM RequestForm r LEFT JOIN User u ON r.user_id = u.user_id LEFT JOIN Address a ON u.user_id = a.user_id ${whereClause}`, params);
             const totalRequests = countResult[0].total;
             const totalPages = Math.ceil(totalRequests / limit);
             
@@ -826,7 +826,7 @@ class moderatorController {
                 LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
             `;
             
-            const [requests] = await db.execute(query, params);
+            const [requests] = await conn.execute(query, params);
             
             const formattedRequests = requests.map(req => ({
                 id: req.id,
@@ -853,15 +853,15 @@ class moderatorController {
             
             let barangays = [];
             try {
-                const [barangayList] = await db.execute(`SELECT DISTINCT barangay FROM Address WHERE barangay IS NOT NULL AND barangay != '' ORDER BY barangay`);
+                const [barangayList] = await conn.execute(`SELECT DISTINCT barangay FROM Address WHERE barangay IS NOT NULL AND barangay != '' ORDER BY barangay`);
                 barangays = barangayList.map(b => b.barangay);
             } catch (err) {
                 console.error('Error fetching barangays:', err.message);
             }
             
-            const [statusCounts] = await db.execute(`SELECT status, COUNT(*) as count FROM RequestForm GROUP BY status`);
+            const [statusCounts] = await conn.execute(`SELECT status, COUNT(*) as count FROM RequestForm GROUP BY status`);
             
-            const [monthlyCounts] = await db.execute(`
+            const [monthlyCounts] = await conn.execute(`
                 SELECT DATE_FORMAT(request_date, '%b') as month, COUNT(*) as count,
                     SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending,
                     SUM(CASE WHEN status = 'Accepted' THEN 1 ELSE 0 END) as accepted,
@@ -872,7 +872,7 @@ class moderatorController {
                 ORDER BY DATE_FORMAT(request_date, '%Y-%m') ASC
             `);
             
-            const [topDocuments] = await db.execute(`
+            const [topDocuments] = await conn.execute(`
                 SELECT 
                     CASE 
                         WHEN document_request LIKE '%Barangay Clearance%' THEN 'Barangay Clearance'
@@ -925,11 +925,11 @@ class moderatorController {
             
             const validStatus = moderatorController.validateRequestStatus(status);
             
-            await db.execute(`UPDATE RequestForm SET status = ? WHERE request_id = ?`, [validStatus, requestId]);
+            await conn.execute(`UPDATE RequestForm SET status = ? WHERE request_id = ?`, [validStatus, requestId]);
             
-            await db.execute(`INSERT INTO request_audit (request_id, status, date_updated) VALUES (?, ?, NOW())`, [requestId, validStatus]);
+            await conn.execute(`INSERT INTO request_audit (request_id, status, date_updated) VALUES (?, ?, NOW())`, [requestId, validStatus]);
             
-            await db.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'update_request', ?, NOW())`, 
+            await conn.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'update_request', ?, NOW())`, 
                 [moderatorId, `Updated request ID: ${requestId} to status: ${validStatus}. Notes: ${notes || 'None'}`]);
             
             res.json({ success: true, message: 'Request status updated' });
@@ -942,6 +942,7 @@ class moderatorController {
     
     // ==================== COMPLAINTS MANAGEMENT ====================
     
+    // moderatorController.js - FIXED getComplaints
     static async getComplaints(req, res) {
         try {
             if (!req.session.user || (req.session.user.role !== 'moderator' && req.session.user.role !== 'administrator')) {
@@ -966,11 +967,11 @@ class moderatorController {
                 params.push(searchTerm, searchTerm, searchTerm);
             }
             
-            const [countResult] = await db.execute(`SELECT COUNT(*) as total FROM ComplaintForm cf ${whereClause}`, params);
+            const [countResult] = await conn.execute(`SELECT COUNT(*) as total FROM ComplaintForm cf ${whereClause}`, params);
             const totalComplaints = countResult[0].total;
             const totalPages = Math.ceil(totalComplaints / limit);
             
-            const [complaints] = await db.execute(`
+            const [complaints] = await conn.execute(`
                 SELECT 
                     cf.complaint_id as id, 
                     cf.user_id, 
@@ -982,7 +983,9 @@ class moderatorController {
                     cf.narration,
                     cf.status, 
                     cf.complaint_date,
+                    cf.resolution_notes,
                     (SELECT COUNT(*) FROM ComplaintFiles WHERE complaint_id = cf.complaint_id) as file_count,
+                    (SELECT COUNT(*) FROM ComplaintUpdate WHERE complaint_id = cf.complaint_id) as update_count,
                     TIMESTAMPDIFF(DAY, cf.complaint_date, NOW()) as days_pending
                 FROM ComplaintForm cf
                 ${whereClause}
@@ -999,7 +1002,7 @@ class moderatorController {
                 let updates = [];
                 
                 try {
-                    const [filesResult] = await db.execute(`
+                    const [filesResult] = await conn.execute(`
                         SELECT file_id, original_name, stored_name, mime_type, file_path, uploaded_at
                         FROM ComplaintFiles WHERE complaint_id = ?
                     `, [complaint.id]);
@@ -1009,14 +1012,15 @@ class moderatorController {
                 }
                 
                 try {
-                    const [updatesResult] = await db.execute(`
+                    const [updatesResult] = await conn.execute(`
                         SELECT cu.update_id, cu.content, cu.created_at,
-                               CONCAT(u.first_name, ' ', u.last_name) as user_name,
-                               u.role as user_role
+                            CONCAT(u.first_name, ' ', u.last_name) as user_name,
+                            u.role as user_role
                         FROM ComplaintUpdate cu
                         LEFT JOIN User u ON cu.user_id = u.user_id
                         WHERE cu.complaint_id = ?
                         ORDER BY cu.created_at ASC
+                        LIMIT 5
                     `, [complaint.id]);
                     updates = updatesResult;
                 } catch (err) {
@@ -1027,11 +1031,11 @@ class moderatorController {
             }
             
             // Get stats
-            const [totalResult] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm`);
-            const [inProgressResult] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Under Review'`);
-            const [resolvedResult] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Resolved'`);
-            const [thisMonthResult] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE MONTH(complaint_date) = MONTH(CURRENT_DATE()) AND YEAR(complaint_date) = YEAR(CURRENT_DATE())`);
-            const [lastMonthResult] = await db.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE MONTH(complaint_date) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(complaint_date) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)`);
+            const [totalResult] = await conn.execute(`SELECT COUNT(*) as count FROM ComplaintForm`);
+            const [inProgressResult] = await conn.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Under Review'`);
+            const [resolvedResult] = await conn.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE status = 'Resolved'`);
+            const [thisMonthResult] = await conn.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE MONTH(complaint_date) = MONTH(CURRENT_DATE()) AND YEAR(complaint_date) = YEAR(CURRENT_DATE())`);
+            const [lastMonthResult] = await conn.execute(`SELECT COUNT(*) as count FROM ComplaintForm WHERE MONTH(complaint_date) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(complaint_date) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)`);
             
             const stats = {
                 totalComplaints: totalResult[0]?.count || 0,
@@ -1069,11 +1073,11 @@ class moderatorController {
             
             const validStatus = moderatorController.validateComplaintStatus(status);
             
-            await db.execute(`UPDATE ComplaintForm SET status = ? WHERE complaint_id = ?`, [validStatus, complaintId]);
+            await conn.execute(`UPDATE ComplaintForm SET status = ? WHERE complaint_id = ?`, [validStatus, complaintId]);
             
-            await db.execute(`INSERT INTO complaint_audit (complaint_id, status, date_updated) VALUES (?, ?, NOW())`, [complaintId, validStatus]);
+            await conn.execute(`INSERT INTO complaint_audit (complaint_id, status, date_updated) VALUES (?, ?, NOW())`, [complaintId, validStatus]);
             
-            await db.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'update_complaint', ?, NOW())`, 
+            await conn.execute(`INSERT INTO ModeratorAction (moderator_id, action, details, created_at) VALUES (?, 'update_complaint', ?, NOW())`, 
                 [moderatorId, `Updated complaint ID: ${complaintId} to status: ${validStatus}`]);
             
             res.json({ success: true, message: 'Complaint status updated' });
@@ -1095,13 +1099,13 @@ class moderatorController {
             }
             
             // Insert the note into ComplaintUpdate table
-            await db.execute(`
+            await conn.execute(`
                 INSERT INTO ComplaintUpdate (complaint_id, user_id, content, created_at) 
                 VALUES (?, ?, ?, NOW())
             `, [complaintId, moderatorId, content]);
             
             // Log the action
-            await db.execute(`
+            await conn.execute(`
                 INSERT INTO ModeratorAction (moderator_id, action, details, created_at) 
                 VALUES (?, 'add_complaint_note', ?, NOW())
             `, [moderatorId, `Added note to complaint ID: ${complaintId}`]);
@@ -1121,7 +1125,7 @@ class moderatorController {
             const complaintId = req.params.id;
             
             // Fetch complaint details
-            const [complaint] = await db.execute(`
+            const [complaint] = await conn.execute(`
                 SELECT 
                     cf.complaint_id as id,
                     cf.user_id,
@@ -1143,13 +1147,13 @@ class moderatorController {
             }
             
             // Fetch files
-            const [files] = await db.execute(`
+            const [files] = await conn.execute(`
                 SELECT file_id, original_name, stored_name, mime_type, file_path, uploaded_at
                 FROM ComplaintFiles WHERE complaint_id = ?
             `, [complaintId]);
             
             // Fetch updates from ComplaintUpdate table
-            const [updates] = await db.execute(`
+            const [updates] = await conn.execute(`
                 SELECT cu.update_id, cu.content, cu.created_at,
                        CONCAT(u.first_name, ' ', u.last_name) as user_name,
                        u.role as user_role
@@ -1184,7 +1188,7 @@ class moderatorController {
             
             let tickets = [];
             try {
-                const [ticketsData] = await db.execute(`
+                const [ticketsData] = await conn.execute(`
                     SELECT cl.*, CONCAT(u.first_name, ' ', u.last_name) as user_name,
                            u.email as user_email,
                            TIMESTAMPDIFF(MINUTE, cl.created_at, NOW()) as minutes_ago
@@ -1227,7 +1231,7 @@ class moderatorController {
             let reportData = {};
             
             if (type === 'weekly') {
-                const [postsData] = await db.execute(`
+                const [postsData] = await conn.execute(`
                     SELECT DATE(date_posted) as date, COUNT(*) as total,
                            SUM(CASE WHEN type = 'complaint' THEN 1 ELSE 0 END) as complaints,
                            SUM(CASE WHEN type = 'suggestion' THEN 1 ELSE 0 END) as suggestions,
@@ -1238,7 +1242,7 @@ class moderatorController {
                     ORDER BY DATE(date_posted) ASC
                 `);
                 
-                const [requestsData] = await db.execute(`
+                const [requestsData] = await conn.execute(`
                     SELECT DATE(request_date) as date, COUNT(*) as total,
                            SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending,
                            SUM(CASE WHEN status = 'Accepted' THEN 1 ELSE 0 END) as accepted,
@@ -1249,7 +1253,7 @@ class moderatorController {
                     ORDER BY DATE(request_date) ASC
                 `);
                 
-                const [complaintsData] = await db.execute(`
+                const [complaintsData] = await conn.execute(`
                     SELECT DATE(complaint_date) as date, COUNT(*) as total,
                            SUM(CASE WHEN status = 'Under Review' THEN 1 ELSE 0 END) as under_review,
                            SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved
@@ -1281,7 +1285,7 @@ class moderatorController {
     
     static async getUrgentIssues(req, res) {
         try {
-            const [issues] = await db.execute(`
+            const [issues] = await conn.execute(`
                 SELECT sp.*, CONCAT(u.first_name, ' ', u.last_name) as reporter,
                        a.barangay as location,
                        (SELECT COUNT(*) FROM PostComment WHERE post_id = sp.post_id) as comments,
