@@ -1,4 +1,4 @@
-// Ai/chatbotController.js - Working non-streaming version
+// Ai/chatbotController.js - Completely fixed with fallback for missing body
 const aiService = require('./aiService');
 const conn = require('../config/db');
 
@@ -6,16 +6,61 @@ class ChatbotController {
     
     async chat(req, res) {
         try {
-            const { message, context, conversationId } = req.body;
+            console.log('📥 Incoming request to /api/chatbot/chat');
+            console.log('Headers:', req.headers['content-type']);
+            console.log('Method:', req.method);
+            console.log('Body exists:', !!req.body);
+            console.log('Body content:', req.body);
+            
+            // Check if body exists and extract message safely
+            let message = null;
+            let context = {};
+            let conversationId = null;
+            
+            if (req.body && typeof req.body === 'object') {
+                message = req.body.message;
+                context = req.body.context || {};
+                conversationId = req.body.conversationId;
+            }
+            
+            // Also check query parameters as fallback
+            if (!message && req.query && req.query.message) {
+                message = req.query.message;
+                context = { pageContext: req.query.pageContext || 'general' };
+                conversationId = req.query.conversationId;
+            }
+            
             const userId = req.session?.user?.id || null;
             
-            console.log('💬 Chat request:', { message: message?.substring(0, 50), userId });
+            console.log('💬 Chat request processed:', { 
+                message: message?.substring(0, 50), 
+                userId,
+                hasBody: !!req.body,
+                messageExists: !!message
+            });
             
+            // If no message, try to get from raw body or send error
             if (!message || message.trim() === '') {
-                return res.status(400).json({ 
-                    success: false, 
-                    error: 'Message is required' 
-                });
+                // Try to get from raw body as last resort
+                if (req.rawBody) {
+                    try {
+                        const rawData = JSON.parse(req.rawBody);
+                        message = rawData.message;
+                        context = rawData.context || {};
+                        conversationId = rawData.conversationId;
+                    } catch (e) {
+                        console.error('Failed to parse raw body:', e);
+                    }
+                }
+                
+                if (!message) {
+                    console.error('❌ No message found in request');
+                    return res.status(400).json({ 
+                        success: false, 
+                        error: 'Message is required',
+                        response: "Please type a message to get help. 🤗"
+                    });
+                }
             }
             
             let conversationHistory = [];

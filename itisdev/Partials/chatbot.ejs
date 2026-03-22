@@ -151,39 +151,41 @@
             });
         }
 
-        async function sendUserMessage(message) {
-            if (!message.trim()) return;
+       async function sendUserMessage(message) {
+    if (!message.trim()) return;
 
-            addMessage(message, 'user');
-            if (chatInput) chatInput.value = '';
-            showTypingIndicator();
+    addMessage(message, 'user');
+    if (chatInput) chatInput.value = '';
+    showTypingIndicator();
 
-            try {
-                const response = await fetch('/api/chatbot/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: message,
-                        context: { pageContext: currentPage },
-                        conversationId: currentConversationId
-                    })
-                });
+    try {
+        const response = await fetch('/api/chatbot/chat', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                context: { pageContext: currentPage },
+                conversationId: currentConversationId
+            })
+        });
 
-                const data = await response.json();
-                hideTypingIndicator();
-                
-                if (data.success) {
-                    currentConversationId = data.conversationId;
-                    addMessage(data.response, 'ai');
-                } else {
-                    addMessage(data.response || "I'm having trouble. Please try again or talk to a moderator.", 'ai');
-                }
-            } catch (error) {
-                hideTypingIndicator();
-                console.error('Chat error:', error);
-                addMessage("Connection error. Please check your internet and try again.", 'ai');
-            }
+        const data = await response.json();
+        hideTypingIndicator();
+        
+        if (data.success) {
+            currentConversationId = data.conversationId;
+            addMessage(data.response, 'ai');
+        } else {
+            addMessage(data.response || "I'm having trouble. Please try again.", 'ai');
         }
+    } catch (error) {
+        hideTypingIndicator();
+        console.error('Chat error:', error);
+        addMessage("Connection error. Please check your internet and try again.", 'ai');
+    }
+}
 
         if (sendBtn) {
             sendBtn.addEventListener('click', () => sendUserMessage(chatInput.value));
