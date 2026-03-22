@@ -733,3 +733,13 @@ SELECT name, number, is_national FROM EmergencyHotline;
 
 SELECT '=== Barangay Contacts Count ===' as '';
 SELECT COUNT(*) as total_contacts FROM BarangayContact;
+
+CREATE TABLE IF NOT EXISTS ComplaintUpdate (
+    update_id INT AUTO_INCREMENT PRIMARY KEY,
+    complaint_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (complaint_id) REFERENCES ComplaintForm(complaint_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE
+);

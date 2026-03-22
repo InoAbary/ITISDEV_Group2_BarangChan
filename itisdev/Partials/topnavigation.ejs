@@ -50,7 +50,7 @@ function isActive(path) {
                             <i class="fas fa-file-alt mr-1"></i>Government Forms
                         </a>
                         <a href="/contacts" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/contacts') %> transition duration-150">
-                            <i class="fas fa-file-alt mr-1"></i>Contacts
+                            <i class="fas fa-address-book mr-1"></i>Contacts
                         </a>
                     <% } else if (role === 'moderator') { %>
                         <!-- MODERATOR Navigation -->
@@ -63,11 +63,14 @@ function isActive(path) {
                         <a href="/moderator/requests" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/requests') %> transition duration-150">
                             <i class="fas fa-file-signature mr-1"></i>Document Requests
                         </a>
+                        <a href="/moderator/complaints" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/complaints') %> transition duration-150">
+                            <i class="fas fa-gavel mr-1"></i>Complaints
+                        </a>
                         <a href="/moderator/help-desk" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/moderator/help-desk') %> transition duration-150">
-                            <i class="fas fa-clock mr-1"></i>Help Desk
+                            <i class="fas fa-headset mr-1"></i>Help Desk
                         </a>
                         <a href="/contacts" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/contacts') %> transition duration-150">
-                            <i class="fas fa-file-alt mr-1"></i>Contacts
+                            <i class="fas fa-address-book mr-1"></i>Contacts
                         </a>
                     <% } else if (role === 'administrator') { %>
                         <!-- ADMINISTRATOR Navigation -->
@@ -81,9 +84,8 @@ function isActive(path) {
                             <i class="fas fa-user-shield mr-1"></i>Moderators
                         </a>
                         <a href="/contacts" class="px-3 py-2 rounded-md text-sm font-medium <%= isActive('/contacts') %> transition duration-150">
-                            <i class="fas fa-file-alt mr-1"></i>Contacts
+                            <i class="fas fa-address-book mr-1"></i>Contacts
                         </a>
-                        
                     <% } %>
                 </div>
             </div>
@@ -91,8 +93,7 @@ function isActive(path) {
             <!-- Right side: User menu and notifications -->
             <div class="flex items-center space-x-4">
                 <% if (user) { %>
-                                <!-- User Info and Logout -->
-                                <!-- User Info and Profile Link -->
+                    <!-- User Info and Profile Link -->
                     <a href="/profile" class="hidden md:flex items-center gap-2 text-sm text-gray-600 hover:text-amber-600 transition group">
                         <div class="w-8 h-8 bg-gradient-to-r from-amber-600 to-amber-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:shadow-lg transition">
                             <% if (user.photo) { %>

@@ -562,6 +562,11 @@ app.post('/moderator/posts/:id/reject', moderatorController.rejectPost);
 app.get('/moderator/requests', moderatorController.getRequests);
 app.post('/moderator/requests/:id/update', moderatorController.updateRequestStatus);
 
+// ==================== COMPLAINTS MANAGEMENT (NEW) ====================
+app.get('/moderator/complaints', moderatorController.getComplaints);
+app.post('/moderator/complaints/:id/status', moderatorController.updateComplaintStatus);
+app.post('/moderator/complaints/:id/note', moderatorController.addComplaintNote);
+
 // Help Desk / Support
 app.get('/moderator/help-desk', moderatorController.getHelpDesk);
 
@@ -592,6 +597,71 @@ app.get('/administrator/users', (req, res) => {
         error: req.session.error
     });
 });
+
+
+// Add this API endpoint for complaint details (in app.js, near other API routes)
+// Add this API endpoint for complaint details (in app.js)
+app.get('/api/complaints/:id/details', async (req, res) => {
+    try {
+        const complaintId = req.params.id;
+        
+        // Fetch complaint details
+        const [complaint] = await conn.execute(`
+            SELECT 
+                cf.complaint_id as id,
+                cf.user_id,
+                cf.name as complainant_name,
+                cf.email,
+                cf.phone,
+                cf.address,
+                cf.allegations,
+                cf.narration,
+                cf.status,
+                cf.complaint_date,
+                TIMESTAMPDIFF(DAY, cf.complaint_date, NOW()) as days_pending
+            FROM ComplaintForm cf
+            WHERE cf.complaint_id = ?
+        `, [complaintId]);
+        
+        if (complaint.length === 0) {
+            return res.json({ success: false, message: 'Complaint not found' });
+        }
+        
+        // Fetch files
+        const [files] = await conn.execute(`
+            SELECT file_id, original_name, stored_name, mime_type, file_path, uploaded_at
+            FROM ComplaintFiles WHERE complaint_id = ?
+        `, [complaintId]);
+        
+        // Fetch updates/comments with user information
+        const [updates] = await conn.execute(`
+            SELECT 
+                pc.comment_id, 
+                pc.content, 
+                pc.created_at,
+                CONCAT(u.first_name, ' ', u.last_name) as user_name,
+                u.role as user_role
+            FROM PostComment pc
+            LEFT JOIN User u ON pc.user_id = u.user_id
+            WHERE pc.post_id = ?
+            ORDER BY pc.created_at ASC
+        `, [complaintId]);
+        
+        res.json({
+            success: true,
+            complaint: {
+                ...complaint[0],
+                files: files,
+                updates: updates
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching complaint details:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // ==================== PROFILE ================
 
 // app.js - Profile routes (Session-based, no database)
